@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 72" fill="none">
+  <!-- stethoscope -->
+  <path d="M118 8c-18 0-32 12-32 28 0 10 5 18 13 23" stroke="#1E88E5" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+  <path d="M202 8c18 0 32 12 32 28 0 10-5 18-13 23" stroke="#1E88E5" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+  <path d="M99 59c8 14 28 22 61 22s53-8 61-22" stroke="#1E88E5" stroke-width="5.5" stroke-linecap="round" fill="none" opacity="0"/>
+  <path d="M160 36c0 18-6 28-18 34" stroke="#1E88E5" stroke-width="5" stroke-linecap="round" fill="none"/>
+  <circle cx="136" cy="68" r="5" fill="#1E88E5"/>
+  <circle cx="98" cy="10" r="7" fill="#1E88E5"/>
+  <circle cx="222" cy="10" r="7" fill="#1E88E5"/>
+  <!-- chat bubbles -->
+  <rect x="148" y="2" width="28" height="22" rx="7" fill="#EC407A"/>
+  <path d="M158 24l4 8 4-8" fill="#EC407A"/>
+  <rect x="162" y="8" width="26" height="20" rx="7" fill="#F48FB1" opacity="0.95"/>
+  <path d="M156 9.5c2.2-2.5 6.5-2.5 8.5 0 2.2 2.6.5 6.2-2.8 9.1-1.2 1-2.7 1.9-4.2 2.6-1.5-.7-3-1.6-4.2-2.6-3.3-2.9-5-6.5-2.8-9.1z" fill="#fff"/>
+  <path d="M171 14h10M171 19h7" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+  <!-- wordmark -->
+  <text x="8" y="52" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="34" font-weight="900" fill="#1E88E5" letter-spacing="-0.5">MBBS</text>
+  <text x="178" y="52" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="34" font-weight="900" fill="#EC407A" letter-spacing="-0.5">WAALA</text>
+</svg>

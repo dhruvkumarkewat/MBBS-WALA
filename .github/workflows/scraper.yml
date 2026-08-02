@@ -1,0 +1,82 @@
+name: Automated Scraper Pipeline
+
+on:
+  # Run every 15 minutes
+  schedule:
+    - cron: '*/15 * * * *'
+  # Also allow manual trigger
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Scraper source (MCC, AACCC, or ALL)'
+        required: false
+        default: 'ALL'
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Run MCC Scraper Check
+        if: github.event.inputs.source == 'ALL' || github.event.inputs.source == 'MCC' || github.event_name == 'schedule'
+        working-directory: ./backend
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NODE_ENV: production
+          LOG_LEVEL: info
+          MCC_BASE_URL: https://mcc.nic.in
+          AACCC_BASE_URL: https://aaccc.gov.in
+          SCRAPER_USER_AGENT: 'MBBSWala-DataBot/1.0 (Educational Research)'
+          SCRAPER_DOWNLOAD_DIR: ./downloads
+          SCRAPER_INTERVAL_MINUTES: 15
+          REDIS_URL: 'redis://localhost:6379'
+          PORT: 4000
+          CORS_ORIGINS: '*'
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: npx tsx src/scrapers/cli.ts sync MCC
+        continue-on-error: true
+
+      - name: Run AACCC Scraper Check
+        if: github.event.inputs.source == 'ALL' || github.event.inputs.source == 'AACCC' || github.event_name == 'schedule'
+        working-directory: ./backend
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NODE_ENV: production
+          LOG_LEVEL: info
+          MCC_BASE_URL: https://mcc.nic.in
+          AACCC_BASE_URL: https://aaccc.gov.in
+          SCRAPER_USER_AGENT: 'MBBSWala-DataBot/1.0 (Educational Research)'
+          SCRAPER_DOWNLOAD_DIR: ./downloads
+          SCRAPER_INTERVAL_MINUTES: 15
+          REDIS_URL: 'redis://localhost:6379'
+          PORT: 4000
+          CORS_ORIGINS: '*'
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: npx tsx src/scrapers/cli.ts sync AACCC
+        continue-on-error: true
+
+      - name: Upload scraper logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scraper-logs-${{ github.run_id }}
+          path: backend/downloads/
+          retention-days: 7

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 280" fill="none" role="img" aria-label="MBBSWALA">
+  <path d="M210 150 C210 78 275 42 320 42 C365 42 430 78 430 150" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" fill="none"/>
+  <circle cx="210" cy="150" r="16" fill="#FFFFFF"/>
+  <circle cx="210" cy="150" r="7" fill="#0B1220"/>
+  <circle cx="430" cy="150" r="16" fill="#FFFFFF"/>
+  <circle cx="430" cy="150" r="7" fill="#0B1220"/>
+  <path d="M320 150 C320 188 300 218 278 242 C266 256 252 264 238 268" stroke="#FFFFFF" stroke-width="13" stroke-linecap="round" fill="none"/>
+  <circle cx="236" cy="270" r="11" fill="#FFFFFF"/>
+  <rect x="300" y="18" width="72" height="52" rx="14" fill="#E91E63"/>
+  <path d="M318 70 L334 70 L322 84 Z" fill="#E91E63"/>
+  <rect x="336" y="34" width="62" height="46" rx="13" fill="#C2185B"/>
+  <path d="M372 80 L388 80 L382 92 Z" fill="#C2185B"/>
+  <path d="M326 36 C326 31 330 28 335 28 C338 28 341 30 343 33 C345 30 348 28 351 28 C356 28 360 31 360 36 C360 44 343 56 343 56 C343 56 326 44 326 36 Z" fill="#FFFFFF"/>
+  <path d="M332 42 H338 L341 36 L345 50 L349 40 H356" stroke="#E91E63" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <text x="20" y="212" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="88" font-weight="900" fill="#FFFFFF" letter-spacing="-2">MBBS</text>
+  <text x="348" y="212" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="88" font-weight="900" fill="#E91E63" letter-spacing="-1">WALA</text>
+</svg>

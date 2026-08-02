@@ -1,0 +1,1701 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600;1,700&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════
+   MBBSWala — premium monochrome + orange
+   White #FFFFFF · Surface #F8FAFC · Dark #0E1117
+   Orange #F97316 · Text #111827 · Border #E5E7EB
+   ═══════════════════════════════════════════════════════════ */
+@theme {
+  --color-primary: #f97316;
+  --color-primary-dark: #0e1117;
+  --color-primary-light: #fb923c;
+  --color-secondary: #f97316;
+  --color-secondary-soft: #ffedd5;
+  --color-gold: #f97316;
+  --color-cream: #ffffff;
+  --color-cream-dark: #f3f4f6;
+  --color-ink: #111827;
+  --color-muted: #6b7280;
+  --color-green-zn: #0e1117;
+  --color-violet-zn: #f97316;
+  --color-text-grey: #6b7280;
+  --color-page: #ffffff;
+  --color-card: #ffffff;
+  --color-border: #e5e7eb;
+  --color-red-bg: #fff7ed;
+  --color-blue-bg: #f8fafc;
+  --color-green-bg: #f8fafc;
+  --color-yellow-bg: #fffbeb;
+  --color-orange-bg: #fff7ed;
+  --color-violet-bg: #f8fafc;
+  --color-grey-bg: #f3f4f6;
+  --color-grey-bg-light: #f8fafc;
+  --font-sans: 'Manrope', system-ui, -apple-system, sans-serif;
+  --font-display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+}
+
+/* Official MBBS WAALA PNG — true transparent plate, no black/gray box */
+.brand-logo {
+  display: block;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  object-position: left center;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  padding: 0 !important;
+  margin: 0;
+  mix-blend-mode: normal !important;
+  isolation: isolate;
+  filter: none !important;
+  -webkit-user-drag: none;
+  user-select: none;
+  image-rendering: auto;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+img[src*='logo-master'],
+img[src*='logo-official'],
+img[src*='logo-nav'],
+img[src*='logo-main'],
+img[src*='logo-tr'],
+img[src*='logo-clean'],
+img[src*='logo-full'],
+img[src*='logo-display'],
+img[src*='logo-footer'],
+img[src*='mbbs-waala-logo'],
+img[src*='icon.png'],
+img[src*='logo.png'] {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  filter: none !important;
+}
+
+/* Global readable text baseline */
+html,
+body,
+#root {
+  color: var(--color-ink, #111827);
+}
+[data-theme='dark'] html,
+[data-theme='dark'] body,
+[data-theme='dark'] #root {
+  color: #f1f5f9;
+  background: #0b0d12;
+}
+[data-theme='light'] html,
+[data-theme='light'] body,
+[data-theme='light'] #root {
+  color: #111827;
+  background: #ffffff;
+}
+
+/* Admin sidebar always keeps white labels on dark drawer */
+.admin-shell .admin-drawer,
+.admin-shell .admin-drawer * {
+  /* don't let marketing light-mode text-white overrides leak in */
+}
+.admin-shell .admin-drawer {
+  color: #ffffff;
+}
+.admin-shell .admin-drawer .text-white\/90,
+.admin-shell .admin-drawer .text-white\/55,
+.admin-shell .admin-drawer .text-white\/70,
+.admin-shell .admin-drawer .text-white\/40,
+.admin-shell .admin-drawer .text-white\/28 {
+  /* preserve intentional opacity via color-mix */
+}
+aside,
+.admin-shell aside,
+.admin-shell .admin-drawer {
+  color: #fff !important;
+}
+aside .font-semibold,
+aside .font-bold,
+aside nav a,
+aside nav span {
+  /* ensure menu labels stay readable */
+  color: inherit;
+}
+aside nav a:not(.bg-\[\#ff7a1a\]) {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+aside nav a:hover {
+  color: rgba(255, 255, 255, 1) !important;
+}
+aside nav a.bg-\[\#ff7a1a\] {
+  color: #ffffff !important;
+}
+aside nav p {
+  color: rgba(255, 255, 255, 0.35) !important;
+}
+aside button {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+aside button:hover {
+  color: rgba(255, 255, 255, 1) !important;
+}
+aside button.text-rose-300\/85 {
+  color: rgba(253, 164, 175, 0.85) !important;
+}
+.brand-logo-lg {
+  height: 4.25rem !important;
+  max-width: 280px !important;
+  margin-left: auto;
+  margin-right: auto;
+  object-position: center;
+}
+.brand-logo-on-dark {
+  background: transparent !important;
+  filter: none !important;
+}
+.brand-logo-footer {
+  height: 3.1rem !important;
+  max-width: 210px !important;
+}
+/* Logo link must never paint a white/orange plate behind the PNG */
+a:has(> .brand-logo),
+a:has(> .brand-logo):hover,
+a:has(> .brand-logo):focus,
+a:has(> .brand-logo):active,
+a:has(> img[src*="logo-nav"]),
+a:has(> img[src*="logo-main"]) {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  outline: none !important;
+  padding: 0 !important;
+}
+img[src*="logo-nav"],
+img[src*="logo-main"],
+img[src*="logo-icon-clean"],
+img[src*="logo.png"],
+img[src*="icon.png"],
+img[src*="mbbs-wala-logo"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+html {
+  scroll-behavior: auto;
+  height: auto;
+  overflow-x: clip;
+  overflow-y: auto;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  color: var(--ds-text, #0b0d12);
+  background: var(--ds-bg, #fafbfc);
+  margin: 0;
+  min-height: 100%;
+  height: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
+  overflow-y: auto;
+  font-feature-settings: 'ss01' on, 'cv11' on;
+  text-rendering: optimizeLegibility;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Mobile drawer lock — only when class present */
+html.scroll-lock,
+html.scroll-lock body {
+  overflow: hidden !important;
+}
+
+body::-webkit-scrollbar {
+  width: 8px;
+}
+body::-webkit-scrollbar-track {
+  background: transparent;
+}
+body::-webkit-scrollbar-thumb {
+  background: rgba(14, 17, 23, 0.22);
+  border-radius: 999px;
+}
+body::-webkit-scrollbar-thumb:hover {
+  background: rgba(249, 115, 22, 0.55);
+}
+
+.lenis-page {
+  position: relative;
+  background: var(--ds-bg, #fafbfc);
+}
+
+.animate-marquee {
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+a {
+  text-decoration: none;
+}
+
+button,
+[type='button'],
+[type='submit'],
+[type='reset'] {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.font-display-italic {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 600;
+}
+
+.font-body {
+  font-family: var(--font-sans);
+  font-weight: 400;
+}
+
+.font-card,
+.zn-card,
+.zn-card p,
+.zn-card span,
+.zn-card li,
+.stat-value,
+.stat-label {
+  font-family: var(--font-sans);
+}
+
+.zn-card,
+.zn-card p,
+.zn-card span:not(.font-display),
+.zn-card li,
+.stat-label {
+  font-weight: 500;
+}
+
+.stat-value {
+  font-weight: 500;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.eyebrow::before {
+  content: '';
+  width: 1.25rem;
+  height: 1.5px;
+  background: var(--color-primary);
+  opacity: 0.7;
+  border-radius: 2px;
+}
+
+.eyebrow-coral {
+  color: var(--color-secondary);
+}
+.eyebrow-coral::before {
+  background: var(--color-secondary);
+}
+
+/* Soft underline highlight — orange only */
+.zn-highlight {
+  position: relative;
+  display: inline;
+  z-index: 0;
+  font-style: italic;
+  color: inherit;
+}
+.zn-highlight::before {
+  content: '';
+  position: absolute;
+  left: -0.12em;
+  right: -0.12em;
+  bottom: 0.05em;
+  height: 0.32em;
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.35), rgba(249, 115, 22, 0.12));
+  z-index: -1;
+  border-radius: 2px;
+}
+.zn-highlight.blue::before,
+.zn-highlight.green::before,
+.zn-highlight.violet::before,
+.zn-highlight.orange::before {
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.4), rgba(249, 115, 22, 0.15));
+}
+
+/* Buttons */
+a.zn-cta,
+button.zn-cta,
+.zn-cta {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  font-family: var(--font-sans) !important;
+  font-weight: 600 !important;
+  font-size: 0.95rem;
+  line-height: 1.25;
+  padding: 0.85rem 1.75rem;
+  background: #ffffff;
+  color: #111827 !important;
+  cursor: pointer;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.25s ease,
+    border-color 0.25s ease;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 10px 28px rgba(14, 17, 23, 0.05);
+  white-space: nowrap;
+  text-decoration: none !important;
+  letter-spacing: -0.01em;
+}
+a.zn-cta:hover,
+button.zn-cta:hover,
+.zn-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(14, 17, 23, 0.08);
+  background: #ffffff;
+  border-color: #f97316;
+  color: #111827 !important;
+}
+
+a.zn-cta-primary,
+button.zn-cta-primary,
+.zn-cta.zn-cta-primary {
+  background: linear-gradient(135deg, #0e1117 0%, #1a1a1a 100%) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: 0 12px 32px rgba(14, 17, 23, 0.22);
+  font-weight: 600 !important;
+}
+a.zn-cta-primary:hover,
+button.zn-cta-primary:hover,
+.zn-cta.zn-cta-primary:hover {
+  background: linear-gradient(135deg, #1a1a1a 0%, #0e1117 100%) !important;
+  color: #ffffff !important;
+}
+
+a.zn-cta-coral,
+button.zn-cta-coral,
+.zn-cta.zn-cta-coral {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: 0 14px 32px rgba(249, 115, 22, 0.28);
+  font-weight: 600 !important;
+}
+a.zn-cta-coral:hover,
+button.zn-cta-coral:hover,
+.zn-cta.zn-cta-coral:hover {
+  filter: brightness(1.06);
+  color: #ffffff !important;
+}
+
+a.btn-dark,
+button.btn-dark,
+.btn-dark {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  font-family: var(--font-sans) !important;
+  font-weight: 600 !important;
+  line-height: 1.3;
+  background: #0e1117 !important;
+  color: #ffffff !important;
+  border: none;
+  cursor: pointer;
+  text-decoration: none !important;
+}
+a.btn-dark:hover,
+button.btn-dark:hover,
+.btn-dark:hover {
+  background: #f97316 !important;
+  color: #ffffff !important;
+}
+
+a.btn-orange,
+button.btn-orange,
+.btn-orange {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  font-family: var(--font-sans) !important;
+  font-weight: 600 !important;
+  line-height: 1.3;
+  background: linear-gradient(135deg, #f97316, #ea580c) !important;
+  color: #ffffff !important;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(249, 115, 22, 0.28);
+  text-decoration: none !important;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
+}
+a.btn-orange:hover,
+button.btn-orange:hover,
+.btn-orange:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 16px 36px rgba(249, 115, 22, 0.36);
+  color: #ffffff !important;
+}
+
+a.zn-cta-ghost,
+button.zn-cta-ghost,
+.zn-cta-ghost {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  font-family: var(--font-sans) !important;
+  font-weight: 600 !important;
+  line-height: 1.3;
+  padding: 0.85rem 1.75rem;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  cursor: pointer;
+  text-decoration: none !important;
+  backdrop-filter: blur(12px);
+  transition: background 0.25s ease, transform 0.3s ease, border-color 0.25s ease;
+}
+a.zn-cta-ghost:hover,
+button.zn-cta-ghost:hover,
+.zn-cta-ghost:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.55) !important;
+  transform: translateY(-2px);
+}
+
+.force-white {
+  color: #ffffff !important;
+}
+.force-black {
+  color: #111827 !important;
+}
+
+.zn-card {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 1.5rem;
+  transition: all 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  background: #ffffff;
+  box-shadow: 0 10px 36px rgba(15, 23, 42, 0.06);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  color: #0b0d12;
+}
+.zn-card:hover {
+  box-shadow: 0 22px 50px rgba(15, 23, 42, 0.1);
+  transform: translateY(-5px);
+  border-color: rgba(249, 115, 22, 0.35);
+}
+/* Dark theme cards */
+[data-theme='dark'] .zn-card,
+.landing-home-dark .zn-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #171b24;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  color: #e8eaed;
+}
+[data-theme='dark'] .zn-card:hover,
+.landing-home-dark .zn-card:hover {
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.4);
+  border-color: rgba(249, 115, 22, 0.45);
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(20px) saturate(1.1);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 24px 64px rgba(14, 17, 23, 0.06);
+}
+
+.hero-gradient {
+  background:
+    radial-gradient(ellipse 80% 55% at 8% 0%, rgba(249, 115, 22, 0.06), transparent 55%),
+    radial-gradient(ellipse 65% 45% at 92% 8%, rgba(15, 23, 42, 0.03), transparent 50%),
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.night-band {
+  background: #0e1117;
+  color: #ffffff;
+}
+
+.section-dark {
+  background: linear-gradient(165deg, #0e1117 0%, #141a22 50%, #0e1117 100%);
+  color: #ffffff;
+}
+
+.section-cream {
+  background: #f8fafc;
+  color: #0b0d12;
+}
+[data-theme='dark'] .section-cream,
+.landing-home-dark .section-cream {
+  background: #0b0d12;
+  color: #e8eaed;
+}
+
+.eyebrow-night {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #fdba74;
+}
+.eyebrow-night::before {
+  content: '';
+  width: 1.35rem;
+  height: 1.5px;
+  background: linear-gradient(90deg, #f97316, #fdba74);
+  border-radius: 2px;
+  opacity: 0.9;
+}
+
+.mesh-bg {
+  background-color: #f8fafc;
+  background-image:
+    radial-gradient(at 40% 20%, rgba(249, 115, 22, 0.1) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, rgba(59, 159, 232, 0.06) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, rgba(15, 23, 42, 0.03) 0px, transparent 50%);
+  color: #0b0d12;
+}
+[data-theme='dark'] .mesh-bg,
+.landing-home-dark .mesh-bg {
+  background-color: #0b0d12;
+  background-image:
+    radial-gradient(at 40% 20%, rgba(249, 115, 22, 0.12) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, rgba(59, 159, 232, 0.08) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, rgba(255, 255, 255, 0.03) 0px, transparent 50%);
+  color: #e8eaed;
+}
+
+.premium-section {
+  position: relative;
+  padding: 5rem 1.25rem;
+  isolation: isolate;
+  background: #f4f6f8;
+  color: #0b0d12;
+}
+@media (min-width: 768px) {
+  .premium-section {
+    padding: 6.5rem 2rem;
+  }
+}
+[data-theme='dark'] .premium-section,
+.landing-home-dark .premium-section {
+  background: #0b0d12;
+  color: #e8eaed;
+}
+
+.section-features-dark {
+  background: #f4f6f8 !important;
+  color: #0b0d12 !important;
+}
+[data-theme='dark'] .section-features-dark,
+.landing-home-dark .section-features-dark {
+  background: #0e1117 !important;
+  color: #ffffff !important;
+}
+.section-features-dark h1,
+.section-features-dark h2,
+.section-features-dark h3,
+.section-features-dark p,
+.section-features-dark span,
+.section-features-dark button {
+  color: inherit;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  color: #0b0d12;
+}
+[data-theme='dark'] .section-title,
+.landing-home-dark .section-title,
+#hero .section-title,
+.section-dark .section-title,
+footer .section-title {
+  color: #f3f4f6;
+}
+
+.grain::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.02;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.zn-scroll::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.zn-scroll::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+@keyframes marquee {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
+}
+.animate-marquee {
+  animation: marquee 32s linear infinite;
+  backface-visibility: hidden;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Kill expensive motion when user prefers reduced motion or on low power */
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee,
+  .floaty,
+  .pulse-glow,
+  .fade-up,
+  .fade-in-soft {
+    animation: none !important;
+  }
+  html {
+    scroll-behavior: auto !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up {
+  animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes fadeInSoft {
+  from { opacity: 0; filter: blur(6px); }
+  to { opacity: 1; filter: blur(0); }
+}
+.fade-in-soft {
+  animation: fadeInSoft 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+.floaty {
+  animation: floaty 6s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.45; transform: scale(1); }
+  50% { opacity: 0.75; transform: scale(1.05); }
+}
+.pulse-glow {
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+.img-zoom {
+  overflow: hidden;
+}
+.img-zoom img {
+  transition: transform 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.img-zoom:hover img {
+  transform: scale(1.06);
+}
+
+.story-line {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.45), rgba(229, 231, 235, 0.9), transparent);
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.35) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2.4s ease-in-out infinite;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(249, 115, 22, 0.55);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: rgba(249, 115, 22, 0.2);
+  color: #111827;
+}
+
+.shine-hover {
+  position: relative;
+  overflow: hidden;
+}
+.shine-hover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.12) 45%, transparent 50%);
+  transform: translateX(-120%);
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+.shine-hover:hover::after {
+  transform: translateX(120%);
+}
+
+.nav-surface {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid #e5e7eb;
+}
+
+input,
+select,
+textarea {
+  font-family: var(--font-sans);
+  font-weight: 500;
+}
+
+.badge-soft {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #e5e7eb;
+}
+.badge-soft-coral {
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid rgba(249, 115, 22, 0.25);
+}
+.icon-soft {
+  background: #ffffff;
+  color: #f97316;
+  border: 1px solid #e5e7eb;
+}
+
+.table-head {
+  background: #0e1117;
+  color: #fff;
+}
+.table-row-alt {
+  background: #f8fafc;
+}
+
+/* Hero rotating exam label — pure white, premium glow */
+.hero-exam-word {
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
+  background: none;
+  text-shadow:
+    0 0 36px rgba(255, 255, 255, 0.22),
+    0 2px 28px rgba(0, 0, 0, 0.55);
+  -webkit-text-stroke: 0;
+}
+.hero-exam-word.is-accent {
+  color: #ffffff;
+  background: none;
+  -webkit-text-fill-color: #ffffff;
+  text-shadow:
+    0 0 42px rgba(255, 255, 255, 0.28),
+    0 4px 32px rgba(0, 0, 0, 0.55);
+}
+
+/* ── Responsive utilities ───────────────────────────────── */
+@supports (width: 100dvw) {
+  .min-h-screen {
+    min-height: 100dvh;
+  }
+}
+
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Premium dashboard shell */
+.dash-shell {
+  -webkit-font-smoothing: antialiased;
+}
+.dash-main-pad {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Safe area for notched phones on marketing pages */
+.ds-page {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Tables scroll on small screens */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 1rem;
+}
+.table-responsive table {
+  min-width: 640px;
+  width: 100%;
+}
+
+/* Prevent horizontal overflow from long words */
+.break-anywhere {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Fluid container for marketing sections */
+.page-container {
+  width: 100%;
+  max-width: 72rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+@media (min-width: 640px) {
+  .page-container {
+    padding-left: max(1.5rem, env(safe-area-inset-left));
+    padding-right: max(1.5rem, env(safe-area-inset-right));
+  }
+}
+@media (min-width: 1024px) {
+  .page-container {
+    padding-left: max(2rem, env(safe-area-inset-left));
+    padding-right: max(2rem, env(safe-area-inset-right));
+  }
+}
+
+/* Mobile nav pill full-bleed safety */
+@media (max-width: 380px) {
+  .brand-logo {
+    height: 2.25rem !important;
+    max-width: min(140px, 42vw) !important;
+  }
+  .zn-cta,
+  a.zn-cta,
+  button.zn-cta {
+    font-size: 0.875rem !important;
+    padding: 0.75rem 1.25rem !important;
+  }
+}
+
+/* Dashboard cards polish */
+.dash-card {
+  border-radius: 1.25rem;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (hover: hover) {
+  .dash-card:hover {
+    transform: translateY(-3px);
+  }
+}
+
+/* Hide horizontal scrollbar but keep scroll (chips) */
+.zn-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
+/* Improve form controls on iOS */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+@media (min-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: inherit;
+  }
+}
+
+/* Extra-small breakpoint helpers (Tailwind v4 arbitrary via CSS) */
+@media (min-width: 400px) {
+  .xs\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .xs\:flex-row {
+    flex-direction: row;
+  }
+  .xs\:px-4 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .xs\:px-5 {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+  .xs\:text-\[2\.5rem\] {
+    font-size: 2.5rem;
+  }
+}
+
+/* ═══ Performance + full-device polish ═══ */
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* content-visibility can break scroll height — keep off */
+.premium-section,
+section {
+  content-visibility: visible;
+}
+
+/* Smooth GPU layers only where needed */
+.will-change-transform {
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Safer sticky headers on iOS */
+.sticky,
+.fixed {
+  -webkit-backface-visibility: hidden;
+}
+
+/* Mobile: slower/cheaper marquee + no hover pause thrash */
+@media (max-width: 640px) {
+  .animate-marquee {
+    animation-duration: 42s !important;
+  }
+  .zn-card:hover {
+    transform: none;
+  }
+  .floaty {
+    animation: none !important;
+  }
+}
+
+/* Dashboard mobile bottom spacing under FABs if any */
+@media (max-width: 767px) {
+  .dash-shell main {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Full-bleed safe horizontal clip — never trap vertical scroll */
+#root {
+  overflow-x: clip;
+  overflow-y: visible;
+  min-height: 100dvh;
+  height: auto;
+}
+
+/* Dashboard owns its own scrollport */
+.dash-shell {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+.dash-shell main {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+}
+
+/* Inputs never zoom-jump on iOS (16px floor already set) */
+button,
+a,
+[role='button'] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Tables */
+.table-responsive {
+  overscroll-behavior-x: contain;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Refer & Earn — premium typography system
+   Display: Cormorant Garamond · Body: Manrope
+   ═══════════════════════════════════════════════════════════ */
+.refer-earn {
+  font-family: var(--font-sans);
+  font-feature-settings: 'ss01' on, 'kern' on;
+  -webkit-font-smoothing: antialiased;
+}
+
+.refer-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.refer-page-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.15rem, 4.5vw, 3rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: inherit;
+}
+
+.refer-amp {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  color: var(--color-primary);
+  padding: 0 0.08em;
+}
+
+.refer-page-sub {
+  font-family: var(--font-sans);
+  font-size: 0.975rem;
+  font-weight: 500;
+  line-height: 1.65;
+  letter-spacing: -0.01em;
+}
+
+.refer-em {
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: -0.01em;
+}
+
+.refer-hero-title {
+  font-family: var(--font-sans);
+  font-size: clamp(2.4rem, 5vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.0;
+  color: #ffffff;
+}
+
+.refer-hero-body {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.7;
+  letter-spacing: -0.005em;
+}
+
+.refer-label {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.refer-code {
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', 'Roboto Mono', Menlo, monospace;
+  font-size: clamp(1.25rem, 2.5vw, 1.65rem);
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.refer-link {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.refer-stat-value {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 3vw, 2.15rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.refer-stat-label {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.refer-section-title {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.refer-body {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.65;
+  letter-spacing: -0.005em;
+}
+
+.refer-step-text {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.55;
+  letter-spacing: -0.01em;
+}
+
+.refer-input {
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.12em !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.refer-name {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+}
+
+.refer-meta {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.refer-badge {
+  display: inline-block;
+  font-family: var(--font-sans);
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  line-height: 1.4;
+}
+
+.refer-reward {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #059669;
+  font-variant-numeric: tabular-nums;
+}
+
+.refer-earn button,
+.refer-earn a {
+  font-family: var(--font-sans);
+}
+
+
+/* ═══ Contrast safety: white pills / light buttons on dark UI ═══ */
+.pkg-learn-more,
+a .pkg-learn-more {
+  background: #ffffff !important;
+  color: #0e1117 !important;
+}
+.pkg-learn-more span,
+.pkg-learn-more {
+  color: #0e1117 !important;
+}
+.pkg-learn-more .pkg-learn-icon {
+  background: #0e1117 !important;
+  color: #ffffff !important;
+}
+.pkg-learn-more .pkg-learn-icon svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+/* White surface buttons must never inherit parent text-white */
+.bg-white.text-white,
+.bg-white .text-white:not(svg):not(path) {
+  /* only when both apply to same element — handled in components */
+}
+
+/* Light CTA on dark sections */
+.ds-page a.zn-cta:not(.zn-cta-primary):not(.zn-cta-coral):not(.zn-cta-ghost),
+.ds-page button.zn-cta:not(.zn-cta-primary):not(.zn-cta-coral):not(.zn-cta-ghost) {
+  background: #ffffff !important;
+  color: #0e1117 !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+.ds-page a.zn-cta:not(.zn-cta-primary):not(.zn-cta-coral):not(.zn-cta-ghost) *,
+.ds-page button.zn-cta:not(.zn-cta-primary):not(.zn-cta-coral):not(.zn-cta-ghost) * {
+  color: inherit;
+}
+
+/* Ensure btn-orange text always white */
+.btn-orange,
+.btn-orange * {
+  color: #ffffff !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Admin CRM — premium light / dark theme (readable contrast)
+   Scoped under .admin-shell so marketing pages stay untouched
+   ═══════════════════════════════════════════════════════════ */
+
+.admin-shell {
+  --admin-bg: #f4f7fb;
+  --admin-surface: #ffffff;
+  --admin-surface-2: #f8fafc;
+  --admin-border: rgba(15, 23, 42, 0.1);
+  --admin-text: #0f172a;
+  --admin-text-secondary: #334155;
+  --admin-muted: #64748b;
+  --admin-input-bg: #ffffff;
+  --admin-input-border: #e2e8f0;
+  --admin-hover: #f1f5f9;
+  --admin-shadow: 0 10px 40px rgba(15, 23, 42, 0.06);
+  --admin-table-head: #f8fafc;
+  --admin-ring: rgba(249, 115, 22, 0.25);
+  color: var(--admin-text);
+  background: var(--admin-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+.admin-shell.admin-dark {
+  --admin-bg: #0a0b10;
+  --admin-surface: #141820;
+  --admin-surface-2: #1a1f2c;
+  --admin-border: rgba(255, 255, 255, 0.1);
+  --admin-text: #f1f5f9;
+  --admin-text-secondary: #cbd5e1;
+  --admin-muted: #94a3b8;
+  --admin-input-bg: #0f131a;
+  --admin-input-border: rgba(255, 255, 255, 0.14);
+  --admin-hover: rgba(255, 255, 255, 0.06);
+  --admin-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  --admin-table-head: #121722;
+  --admin-ring: rgba(251, 146, 60, 0.35);
+  color: var(--admin-text);
+  background: var(--admin-bg);
+}
+
+.admin-shell .admin-text { color: var(--admin-text) !important; }
+.admin-shell .admin-muted { color: var(--admin-muted) !important; }
+
+.admin-shell .admin-card {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+  box-shadow: var(--admin-shadow);
+  color: var(--admin-text);
+}
+.admin-shell .admin-card-hover:hover {
+  box-shadow: 0 16px 50px rgba(15, 23, 42, 0.12);
+}
+.admin-shell.admin-dark .admin-card-hover:hover {
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.55);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+/* Badges — guaranteed contrast both themes */
+.admin-shell .admin-badge-slate {
+  background: #f1f5f9;
+  color: #334155;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+.admin-shell .admin-badge-green {
+  background: #ecfdf5;
+  color: #047857;
+  box-shadow: inset 0 0 0 1px #a7f3d0;
+}
+.admin-shell .admin-badge-orange {
+  background: #fff7ed;
+  color: #c2410c;
+  box-shadow: inset 0 0 0 1px #fed7aa;
+}
+.admin-shell .admin-badge-blue {
+  background: #f0f9ff;
+  color: #0369a1;
+  box-shadow: inset 0 0 0 1px #bae6fd;
+}
+.admin-shell .admin-badge-red {
+  background: #fff1f2;
+  color: #be123c;
+  box-shadow: inset 0 0 0 1px #fecdd3;
+}
+.admin-shell .admin-badge-purple {
+  background: #f5f3ff;
+  color: #6d28d9;
+  box-shadow: inset 0 0 0 1px #ddd6fe;
+}
+
+.admin-shell.admin-dark .admin-badge-slate {
+  background: rgba(148, 163, 184, 0.16);
+  color: #e2e8f0;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.28);
+}
+.admin-shell.admin-dark .admin-badge-green {
+  background: rgba(16, 185, 129, 0.16);
+  color: #6ee7b7;
+  box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.3);
+}
+.admin-shell.admin-dark .admin-badge-orange {
+  background: rgba(249, 115, 22, 0.16);
+  color: #fdba74;
+  box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.32);
+}
+.admin-shell.admin-dark .admin-badge-blue {
+  background: rgba(14, 165, 233, 0.16);
+  color: #7dd3fc;
+  box-shadow: inset 0 0 0 1px rgba(14, 165, 233, 0.3);
+}
+.admin-shell.admin-dark .admin-badge-red {
+  background: rgba(244, 63, 94, 0.16);
+  color: #fda4af;
+  box-shadow: inset 0 0 0 1px rgba(244, 63, 94, 0.3);
+}
+.admin-shell.admin-dark .admin-badge-purple {
+  background: rgba(139, 92, 246, 0.16);
+  color: #c4b5fd;
+  box-shadow: inset 0 0 0 1px rgba(139, 92, 246, 0.3);
+}
+
+.admin-shell .admin-error {
+  border-color: #fecdd3;
+  background: #fff1f2;
+  color: #9f1239;
+}
+.admin-shell.admin-dark .admin-error {
+  border-color: rgba(244, 63, 94, 0.35);
+  background: rgba(244, 63, 94, 0.12);
+  color: #fecdd3;
+}
+
+.admin-shell .admin-toast-ok {
+  color: #065f46;
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+.admin-shell .admin-toast-err {
+  color: #9f1239;
+  background: #fff1f2;
+  border-color: #fecdd3;
+}
+.admin-shell.admin-dark .admin-toast-ok {
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.14);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+.admin-shell.admin-dark .admin-toast-err {
+  color: #fda4af;
+  background: rgba(244, 63, 94, 0.14);
+  border-color: rgba(244, 63, 94, 0.3);
+}
+
+/* Dark-mode readability overrides for existing Tailwind utility soup in AdminPages */
+.admin-shell.admin-dark .admin-content .text-slate-900,
+.admin-shell.admin-dark .admin-content .text-slate-800 {
+  color: #f1f5f9 !important;
+}
+.admin-shell.admin-dark .admin-content .text-slate-700 {
+  color: #e2e8f0 !important;
+}
+.admin-shell.admin-dark .admin-content .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+.admin-shell.admin-dark .admin-content .text-slate-500,
+.admin-shell.admin-dark .admin-content .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+/* Surfaces */
+.admin-shell.admin-dark .admin-content .bg-white,
+.admin-shell.admin-dark .admin-content .bg-white\/90 {
+  background-color: var(--admin-surface) !important;
+}
+.admin-shell.admin-dark .admin-content .bg-white\/80 {
+  background-color: rgba(20, 24, 32, 0.92) !important;
+}
+.admin-shell.admin-dark .admin-content .bg-slate-50,
+.admin-shell.admin-dark .admin-content .bg-slate-50\/80,
+.admin-shell.admin-dark .admin-content .bg-slate-50\/90 {
+  background-color: var(--admin-surface-2) !important;
+}
+.admin-shell.admin-dark .admin-content .hover\:bg-slate-50:hover,
+.admin-shell.admin-dark .admin-content .hover\:bg-orange-50\/40:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Borders */
+.admin-shell.admin-dark .admin-content .border-slate-100,
+.admin-shell.admin-dark .admin-content .border-slate-200,
+.admin-shell.admin-dark .admin-content .border-white\/80,
+.admin-shell.admin-dark .admin-content .hover\:border-slate-100:hover {
+  border-color: var(--admin-border) !important;
+}
+
+/* Forms — high contrast inputs */
+.admin-shell.admin-dark .admin-content input,
+.admin-shell.admin-dark .admin-content select,
+.admin-shell.admin-dark .admin-content textarea {
+  background-color: var(--admin-input-bg) !important;
+  border-color: var(--admin-input-border) !important;
+  color: #f8fafc !important;
+  caret-color: #fb923c;
+}
+.admin-shell.admin-dark .admin-content input::placeholder,
+.admin-shell.admin-dark .admin-content textarea::placeholder {
+  color: #64748b !important;
+}
+.admin-shell.admin-dark .admin-content input:focus,
+.admin-shell.admin-dark .admin-content select:focus,
+.admin-shell.admin-dark .admin-content textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--admin-ring) !important;
+  border-color: rgba(251, 146, 60, 0.55) !important;
+}
+.admin-shell.admin-dark .admin-content option {
+  background: #141820;
+  color: #f1f5f9;
+}
+
+/* Tables */
+.admin-shell.admin-dark .admin-content thead {
+  background: var(--admin-table-head) !important;
+}
+.admin-shell.admin-dark .admin-content tbody tr {
+  border-color: var(--admin-border) !important;
+}
+.admin-shell.admin-dark .admin-content tbody tr:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* Soft tint panels that go invisible in dark */
+.admin-shell.admin-dark .admin-content .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.12) !important;
+  color: #6ee7b7 !important;
+}
+.admin-shell.admin-dark .admin-content .bg-orange-50 {
+  background-color: rgba(249, 115, 22, 0.12) !important;
+}
+.admin-shell.admin-dark .admin-content .bg-sky-50 {
+  background-color: rgba(14, 165, 233, 0.12) !important;
+}
+.admin-shell.admin-dark .admin-content .bg-rose-50 {
+  background-color: rgba(244, 63, 94, 0.12) !important;
+}
+.admin-shell.admin-dark .admin-content .bg-violet-50 {
+  background-color: rgba(139, 92, 246, 0.12) !important;
+}
+.admin-shell.admin-dark .admin-content .text-emerald-600,
+.admin-shell.admin-dark .admin-content .text-emerald-700 {
+  color: #6ee7b7 !important;
+}
+.admin-shell.admin-dark .admin-content .text-orange-600,
+.admin-shell.admin-dark .admin-content .text-orange-700 {
+  color: #fdba74 !important;
+}
+.admin-shell.admin-dark .admin-content .text-rose-600,
+.admin-shell.admin-dark .admin-content .text-rose-700 {
+  color: #fda4af !important;
+}
+.admin-shell.admin-dark .admin-content .border-rose-200 {
+  border-color: rgba(244, 63, 94, 0.35) !important;
+}
+.admin-shell.admin-dark .admin-content .border-emerald-100 {
+  border-color: rgba(16, 185, 129, 0.28) !important;
+}
+
+/* Keep solid dark buttons readable */
+.admin-shell.admin-dark .admin-content .bg-slate-900 {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+.admin-shell.admin-dark .admin-content .bg-slate-900:hover {
+  background-color: #e2e8f0 !important;
+}
+
+/* Progress tracks */
+.admin-shell.admin-dark .admin-content .bg-slate-100 {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Links that use white bg + dark text chips */
+.admin-shell.admin-dark .admin-content a.bg-white {
+  color: var(--admin-text) !important;
+}
+
+/* Light mode form focus polish */
+.admin-shell.admin-light .admin-content input:focus,
+.admin-shell.admin-light .admin-content select:focus,
+.admin-shell.admin-light .admin-content textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.18);
+  border-color: #fdba74;
+}
+
+/* Student dashboard theme toggle polish */
+.dash-shell .theme-toggle-premium {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+.dash-shell.dash-dark .theme-toggle-premium {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fde68a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.dash-shell.dash-light .theme-toggle-premium {
+  background: #fff;
+  color: #64748b;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+.dash-shell.dash-dark .theme-toggle-premium:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fef3c7;
+}
+.dash-shell.dash-light .theme-toggle-premium:hover {
+  background: #fff7ed;
+  color: #ea580c;
+  border-color: #fed7aa;
+}
+
+/* Dashboard dark: ensure topbar profile chip stays readable */
+.dash-shell.dash-dark a[title] span.text-\[\#111827\] {
+  color: #f1f5f9 !important;
+}
+
+/* Student dashboard dark — keep secondary text readable (not washed out) */
+.dash-shell.dash-dark {
+  color-scheme: dark;
+  color: #f8fafc;
+}
+.dash-shell.dash-light {
+  color-scheme: light;
+  color: #0f172a;
+}
+/* Light theme: force readable body text (never washed gray) */
+.dash-shell.dash-light h1,
+.dash-shell.dash-light h2,
+.dash-shell.dash-light h3,
+.dash-shell.dash-light h4 {
+  color: #0f172a;
+}
+.dash-shell.dash-light p,
+.dash-shell.dash-light span,
+.dash-shell.dash-light label,
+.dash-shell.dash-light li {
+  /* don't override explicit utility colors like text-orange-500 */
+}
+.dash-shell.dash-dark input,
+.dash-shell.dash-dark select,
+.dash-shell.dash-dark textarea {
+  color-scheme: dark;
+}
+/* Package learn-more stays dark-on-white even inside light shells */
+.dash-shell .pkg-learn-more {
+  color: #0e1117 !important;
+}
+
+
+/* ═══ Admin drawer: always readable white text (never inherit marketing light overrides) ═══ */
+.admin-shell aside,
+.admin-shell .admin-drawer,
+.admin-shell aside * {
+  /* base */
+}
+.admin-shell aside {
+  color: #ffffff !important;
+}
+.admin-shell aside a,
+.admin-shell aside button,
+.admin-shell aside p,
+.admin-shell aside span,
+.admin-shell aside h1,
+.admin-shell aside h2,
+.admin-shell aside h3 {
+  /* Keep intentional colors; default to white when utility is washed out */
+}
+.admin-shell aside nav a {
+  color: rgba(255,255,255,0.82) !important;
+}
+.admin-shell aside nav a[class*='bg-\[\#ff7a1a\]'],
+.admin-shell aside nav a.bg-\[\#ff7a1a\],
+.admin-shell aside nav a.active,
+.admin-shell aside nav a[aria-current='page'] {
+  color: #ffffff !important;
+}
+.admin-shell aside .text-orange-400,
+.admin-shell aside .text-orange-400\/90 {
+  color: #fb923c !important;
+}
+.admin-shell .brand-logo {
+  filter: none !important;
+  background: transparent !important;
+}
