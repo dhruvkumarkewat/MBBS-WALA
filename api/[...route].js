@@ -1,0 +1,127 @@
+import adminActivity from './_handlers/admin-activity.js';
+import adminAuth from './_handlers/admin-auth.js';
+import adminDocuments from './_handlers/admin-documents.js';
+import adminFollowups from './_handlers/admin-followups.js';
+import adminMessages from './_handlers/admin-messages.js';
+import adminNotes from './_handlers/admin-notes.js';
+import adminNotify from './_handlers/admin-notify.js';
+import adminOverview from './_handlers/admin-overview.js';
+import adminPurchases from './_handlers/admin-purchases.js';
+import adminSessions from './_handlers/admin-sessions.js';
+import adminStaff from './_handlers/admin-staff.js';
+import adminStudents from './_handlers/admin-students.js';
+import adminWithdrawals from './_handlers/admin-withdrawals.js';
+import applications from './_handlers/applications.js';
+import badges from './_handlers/badges.js';
+import blogs from './_handlers/blogs.js';
+import careers from './_handlers/careers.js';
+import challenges from './_handlers/challenges.js';
+import choices from './_handlers/choices.js';
+import collegeCompare from './_handlers/college-compare.js';
+import collegeMatches from './_handlers/college-matches.js';
+import colleges from './_handlers/colleges.js';
+import competitionMap from './_handlers/competition-map.js';
+import coupons from './_handlers/coupons.js';
+import cutoffs from './_handlers/cutoffs.js';
+import dashboardSummary from './_handlers/dashboard-summary.js';
+import dbWake from './_handlers/db-wake.js';
+import documents from './_handlers/documents.js';
+import faqs from './_handlers/faqs.js';
+import features from './_handlers/features.js';
+import inquiries from './_handlers/inquiries.js';
+import leaderboard from './_handlers/leaderboard.js';
+import notifications from './_handlers/notifications.js';
+import packagesHandler from './_handlers/packages.js';
+import profile from './_handlers/profile.js';
+import rankCalculator from './_handlers/rank-calculator.js';
+import referrals from './_handlers/referrals.js';
+import saved from './_handlers/saved.js';
+import seatMatrix from './_handlers/seat-matrix.js';
+import stats from './_handlers/stats.js';
+import testimonials from './_handlers/testimonials.js';
+import wallet from './_handlers/wallet.js';
+import withdrawals from './_handlers/withdrawals.js';
+
+const routes = {
+  'admin-activity': adminActivity,
+  'admin-auth': adminAuth,
+  'admin-documents': adminDocuments,
+  'admin-followups': adminFollowups,
+  'admin-messages': adminMessages,
+  'admin-notes': adminNotes,
+  'admin-notify': adminNotify,
+  'admin-overview': adminOverview,
+  'admin-purchases': adminPurchases,
+  'admin-sessions': adminSessions,
+  'admin-staff': adminStaff,
+  'admin-students': adminStudents,
+  'admin-withdrawals': adminWithdrawals,
+  'applications': applications,
+  'badges': badges,
+  'blogs': blogs,
+  'careers': careers,
+  'challenges': challenges,
+  'choices': choices,
+  'college-compare': collegeCompare,
+  'college-matches': collegeMatches,
+  'colleges': colleges,
+  'competition-map': competitionMap,
+  'coupons': coupons,
+  'cutoffs': cutoffs,
+  'dashboard-summary': dashboardSummary,
+  'db-wake': dbWake,
+  'documents': documents,
+  'faqs': faqs,
+  'features': features,
+  'inquiries': inquiries,
+  'leaderboard': leaderboard,
+  'notifications': notifications,
+  'packages': packagesHandler,
+  'profile': profile,
+  'rank-calculator': rankCalculator,
+  'referrals': referrals,
+  'saved': saved,
+  'seat-matrix': seatMatrix,
+  'stats': stats,
+  'testimonials': testimonials,
+  'wallet': wallet,
+  'withdrawals': withdrawals,
+};
+
+export default async function handler(req, res) {
+  // CORS preflight
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+
+  // Determine route key from request
+  let routeName = '';
+
+  if (req.query && req.query.route) {
+    routeName = Array.isArray(req.query.route) ? req.query.route[0] : req.query.route;
+  } else {
+    const rawUrl = req.url || '';
+    const cleanPath = rawUrl.split('?')[0].replace(/^\/api\/?/, '');
+    routeName = cleanPath.split('/')[0] || '';
+  }
+
+  const endpoint = routes[routeName];
+
+  if (!endpoint) {
+    return res.status(404).json({
+      error: `API endpoint '/api/${routeName}' not found`,
+      available_routes: Object.keys(routes)
+    });
+  }
+
+  try {
+    return await endpoint(req, res);
+  } catch (err) {
+    console.error(`Error in /api/${routeName}:`, err);
+    return res.status(500).json({ error: err.message || 'Internal Server Error' });
+  }
+}
