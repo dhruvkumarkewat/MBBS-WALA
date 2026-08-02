@@ -4,9 +4,14 @@ const isMobile = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 function buildGoogleUrl(appName) {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-  const redirectUri = import.meta.env.VITE_GOOGLE_AUTH_PROXY;
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const supabaseUrl =
+    import.meta.env.VITE_SUPABASE_URL ||
+    import.meta.env.NEXT_PUBLIC_SUPABASE_URL ||
+    'https://ytzodhhrclcsgelddain.supabase.co';
+  const supabaseAnonKey =
+    import.meta.env.VITE_SUPABASE_ANON_KEY ||
+    import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    'sb_publishable_8XvVWeN8oeLRMvkTuuFPKg_vI3jOcqg';
   if (!clientId || !redirectUri) return null;
   const state = btoa(
     JSON.stringify({
