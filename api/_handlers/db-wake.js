@@ -13,3 +13,13 @@ export function triggerRestore() {
   }).catch(() => {});
   setTimeout(() => { _restoreTriggered = false; }, 60000);
 }
+
+export default async function handler(req, res) {
+  triggerRestore();
+  if (res.status) {
+    return res.status(200).json({ ok: true, message: 'Database wake triggered' });
+  }
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'application/json');
+  res.end(JSON.stringify({ ok: true, message: 'Database wake triggered' }));
+}

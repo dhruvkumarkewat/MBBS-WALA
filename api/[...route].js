@@ -95,7 +95,47 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
-    return res.status(204).end();
+    if (typeof res.status === 'function') return res.status(204).end();
+    res.statusCode = 204;
+    return res.end();
+  }
+
+  // Ensure res.status and res.json helpers exist
+  if (!res.status) {
+    res.status = function(code) {
+      this.statusCode = code;
+      return this;
+    };
+  }
+  if (!res.json) {
+    res.json = function(data) {
+      this.setHeader('Content-Type', 'application/json');
+      this.end(JSON.stringify(data));
+    };
+  }
+
+  // Ensure req.query exists
+  if (!req.query) {
+    try {
+      const urlObj = new URL(req.url || '', 'http://localhost');
+      req.query = Object.fromEntries(urlObj.searchParams.entries());
+    } catch {
+      req.query = {};
+    }
+  }
+
+  // Parse body if JSON string or buffer
+  if (req.body === undefined && (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH')) {
+    try {
+      const buffers = [];
+      for await (const chunk of req) {
+        buffers.push(chunk);
+      }
+      const raw = Buffer.concat(buffers).toString('utf-8');
+      req.body = raw ? JSON.parse(raw) : {};
+    } catch {
+      req.body = {};
+    }
   }
 
   // Determine route key from request
@@ -125,3 +165,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message || 'Internal Server Error' });
   }
 }
+
