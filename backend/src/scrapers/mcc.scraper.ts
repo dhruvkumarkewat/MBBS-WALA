@@ -26,8 +26,10 @@ const log = createChildLogger('mcc-scraper');
  */
 export class MCCScraper extends BaseScraper {
   private readonly NOTICE_PAGES = [
-    '/WebInfoUG/Page/Page?PageId=1&LevelId=1', // UG Counselling home
-    '/WebInfoUG/Info/GetCounselling',            // Current counselling info
+    '/',
+    '/ug-medical-counselling/',
+    '/pg-medical-counselling/',
+    '/super-speciality-counselling/',
   ];
 
   // Keywords that indicate specific notice types

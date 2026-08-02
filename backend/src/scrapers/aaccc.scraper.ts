@@ -21,8 +21,7 @@ const log = createChildLogger('aaccc-scraper');
  */
 export class AACCCScraper extends BaseScraper {
   private readonly NOTICE_PAGES = [
-    '/Home/Index',
-    '/Aborad/ViewNotice',
+    '/',
   ];
 
   constructor() {
