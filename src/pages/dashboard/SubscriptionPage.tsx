@@ -197,9 +197,20 @@ export function SubscriptionPage() {
       };
 
       const rzp = new (window as any).Razorpay(options);
-      rzp.on('payment.failed', function (response: any) {
+      rzp.on('payment.failed', async function (response: any) {
         toastError('Payment Failed', response.error.description);
         setUpgradingPlan(null);
+        try {
+          await apiJson('/api/payment?action=fail', {
+            method: 'POST',
+            body: JSON.stringify({
+              order_id: response.error.metadata.order_id || orderRes.orderId,
+              error_description: response.error.description
+            })
+          }, true);
+        } catch (e) {
+          console.error('Failed to record payment failure', e);
+        }
       });
       rzp.open();
 
@@ -409,7 +420,13 @@ export function SubscriptionPage() {
                     <td className="py-3 px-3 font-black text-foreground">₹{Number(p.amount || 0).toLocaleString()}</td>
                     <td className="py-3 px-3 font-mono text-muted-foreground">{p.order_id || p.payment_id || '—'}</td>
                     <td className="py-3 px-3">
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-bold uppercase text-[10px]">
+                      <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[10px] ${
+                        p.status === 'failed' 
+                          ? 'bg-destructive/10 text-destructive'
+                          : p.status === 'created' || p.status === 'pending'
+                          ? 'bg-amber-500/10 text-amber-500' 
+                          : 'bg-emerald-500/10 text-emerald-500'
+                      }`}>
                         {p.status || 'captured'}
                       </span>
                     </td>

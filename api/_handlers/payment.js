@@ -237,6 +237,31 @@ export default async function handler(req, res) {
       });
     }
 
+    // ── 4. POST action=fail (Payment Failed) ────────────────────────────────
+    if (req.method === 'POST' && action === 'fail') {
+      const { order_id, error_description } = req.body || {};
+      
+      if (!order_id) {
+        return res.status(400).json({ error: 'Order ID required' });
+      }
+
+      try {
+        await supabase
+          .from('payments')
+          .update({
+            status: 'failed',
+            updated_at: new Date().toISOString(),
+            meta: { error: error_description }
+          })
+          .eq('order_id', order_id);
+
+        return res.status(200).json({ ok: true, message: 'Payment failure recorded' });
+      } catch (err) {
+        console.error('Fail record error:', err);
+        return res.status(500).json({ error: 'Internal error recording failure' });
+      }
+    }
+
     res.status(400).json({ error: 'Invalid action specified' });
   } catch (err) {
     console.error('Payment API error:', err);
