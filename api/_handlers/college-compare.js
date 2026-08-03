@@ -105,8 +105,8 @@ export default async function handler(req, res) {
   try {
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-    const aId = Number(req.query.a);
-    const bId = Number(req.query.b);
+    const aId = req.query.a;
+    const bId = req.query.b;
     if (!aId || !bId) {
       return res.status(400).json({ error: 'Query params a and b (college ids) are required' });
     }
