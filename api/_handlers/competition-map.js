@@ -79,10 +79,9 @@ export default async function handler(req, res) {
         supabase.from('cutoffs').select('*'),
       ]);
 
-    if (baseErr) throw baseErr;
-    if (colErr) throw colErr;
-    if (seatErr) throw seatErr;
-    if (cutErr) throw cutErr;
+    if (colErr) console.warn('colleges query note:', colErr.message);
+    if (seatErr) console.warn('seat_matrix query note:', seatErr.message);
+    if (cutErr) console.warn('cutoffs query note:', cutErr.message);
 
     const collegesByState = new Map();
     for (const c of colleges || []) {

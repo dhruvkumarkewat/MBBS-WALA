@@ -37,16 +37,17 @@ export default async function handler(req, res) {
       const keysToTry = [courseKey, exam, courseKey === 'MBBS' ? 'NEET UG' : null].filter(Boolean);
       let data = [];
       for (const key of keysToTry) {
-        let query = supabase.from('choice_estimates').select('*').eq('exam', key);
-        if (counselling) query = query.eq('counselling', counselling);
-        if (quota && quota !== 'All') query = query.eq('quota', quota);
-        if (category && category !== 'All') query = query.eq('category', category);
-        const resQ = await query;
-        if (resQ.error) throw resQ.error;
-        if (resQ.data?.length) {
-          data = resQ.data;
-          break;
-        }
+        try {
+          let query = supabase.from('choice_estimates').select('*').eq('exam', key);
+          if (counselling) query = query.eq('counselling', counselling);
+          if (quota && quota !== 'All') query = query.eq('quota', quota);
+          if (category && category !== 'All') query = query.eq('category', category);
+          const resQ = await query;
+          if (!resQ.error && resQ.data?.length) {
+            data = resQ.data;
+            break;
+          }
+        } catch {}
       }
 
       let choices = 0;

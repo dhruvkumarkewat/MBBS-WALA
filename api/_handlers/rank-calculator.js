@@ -25,16 +25,22 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Invalid score' });
       }
 
-      const { data, error } = await supabase
-        .from('rank_bands')
-        .select('*')
-        .eq('exam', examKey)
-        .lte('score_min', scoreNum)
-        .gte('score_max', scoreNum);
+      let band = null;
+      try {
+        const { data, error } = await supabase
+          .from('rank_bands')
+          .select('*')
+          .eq('exam', examKey)
+          .lte('score_min', scoreNum)
+          .gte('score_max', scoreNum);
 
-      if (error) throw error;
+        if (!error && data && data.length > 0) {
+          band = data[0];
+        }
+      } catch {
+        // Table not present — fallback to formula
+      }
 
-      let band = data && data[0];
       if (!band) {
         const maxScores = {
           'NEET UG': 720,
@@ -76,9 +82,10 @@ export default async function handler(req, res) {
           : 'Estimated based on previous year trends. Actual ranks may vary.',
       });
     }
+
     res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
-    console.error('API error:', err);
+    console.error('rank-calculator API error:', err);
     res.status(500).json({ error: err.message });
   }
 }
