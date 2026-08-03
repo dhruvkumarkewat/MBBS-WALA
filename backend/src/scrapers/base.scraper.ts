@@ -407,7 +407,7 @@ export abstract class BaseScraper {
    * Upsert a college record. Matches on name + course.
    */
   private async upsertCollege(record: Record<string, any>): Promise<'created' | 'updated' | 'skipped'> {
-    if (!record.name) return 'skipped';
+    if (!record.name || !this.isLikelyCollegeName(record.name)) return 'skipped';
 
     const { data: existing } = await this.db
       .from('colleges')
@@ -419,7 +419,13 @@ export abstract class BaseScraper {
 
     const { error } = await this.db.from('colleges').insert(record);
     if (error) {
-      log.warn({ error, college: record.name }, 'College insert failed');
+      // If table lacks auto-increment sequence on id, generate a unique numeric ID
+      if (error.code === '23502' || error.message?.includes('id')) {
+        const nextId = Math.floor(Date.now() / 1000) * 1000 + Math.floor(Math.random() * 1000);
+        const { error: retryErr } = await this.db.from('colleges').insert({ ...record, id: nextId });
+        if (!retryErr) return 'created';
+      }
+      log.debug({ error: error.message, college: record.name }, 'College insert skipped');
       return 'skipped';
     }
     return 'created';

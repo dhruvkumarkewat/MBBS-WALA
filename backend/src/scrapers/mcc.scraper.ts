@@ -188,13 +188,23 @@ export class MCCScraper extends BaseScraper {
     const buffer = fs.readFileSync(filePath);
     const pdf = await pdfParse(buffer);
 
+    // Verify if PDF is an actual allotment, result, or cutoff list (not a general advisory/circular)
+    const isAllotmentDoc = /allotment|allotted|cutoff|cut-off|closing\s*rank|opening\s*rank|seat\s*matrix|seat\s*allotment|allotted\s*institute|provisional\s*result/i.test(pdf.text);
+    if (!isAllotmentDoc) {
+      log.info({ filePath }, 'PDF is an advisory/notice, skipping cutoff table extraction');
+      return {
+        targetTable: 'cutoffs',
+        matchKeys: ['college_name', 'category', 'year'],
+        records: [],
+      };
+    }
+
     const lines = pdf.text.split('\n').map((l: string) => l.trim()).filter(Boolean);
     const records: Record<string, any>[] = [];
 
     // Parse tabular data from PDF text
-    // MCC result PDFs follow a pattern: Institute | Program | Category | Quota | Opening | Closing
     for (const line of lines) {
-      const parts = line.split(/\s{2,}|\t/); // Split on multiple spaces or tabs
+      const parts = line.split(/\s{2,}|\t/);
       if (parts.length < 2) continue;
 
       // Extract all potential rank-like integers (between 1 and 2,500,000)
@@ -206,20 +216,23 @@ export class MCCScraper extends BaseScraper {
 
       // Extract text parts that look like college / course
       const textParts = parts.filter((p: string) => !/^\d+$/.test(p.replace(/,/g, '').trim()));
-      const collegeCandidate = textParts.find(p => p.length >= 8 && !/^(allotment|result|merit|counselling|round|notice|page|neet)/i.test(p));
+      const rawCandidate = textParts.find(p => p.length >= 8 && !/^(allotment|result|merit|counselling|round|notice|page|neet)/i.test(p));
 
-      if (collegeCandidate && closingRank > 0) {
-        records.push({
-          college_name: collegeCandidate.trim(),
-          course_name: textParts[1] || 'MBBS',
-          category_code: this.detectCategory(line),
-          quota_code: this.detectQuota(line),
-          opening_rank: openingRank,
-          closing_rank: closingRank,
-          year: new Date().getFullYear(),
-          round_name: this.detectRound(filePath),
-          body_code: 'MCC',
-        });
+      if (rawCandidate) {
+        const cleanedName = this.cleanCollegeCandidate(rawCandidate);
+        if (this.isLikelyCollegeName(cleanedName) && closingRank > 0) {
+          records.push({
+            college_name: cleanedName,
+            course_name: textParts[1] || 'MBBS',
+            category_code: this.detectCategory(line),
+            quota_code: this.detectQuota(line),
+            opening_rank: openingRank,
+            closing_rank: closingRank,
+            year: new Date().getFullYear(),
+            round_name: this.detectRound(filePath),
+            body_code: 'MCC',
+          });
+        }
       }
     }
 
@@ -230,6 +243,17 @@ export class MCCScraper extends BaseScraper {
       matchKeys: ['college_name', 'category', 'year'],
       records,
     };
+  }
+
+  /**
+   * Clean and normalize parsed college names from PDF tables.
+   */
+  private cleanCollegeCandidate(raw: string): string {
+    let name = raw.replace(/\r/g, ' ').replace(/\s+/g, ' ').trim();
+    name = name.replace(/^[\s\)\(\,\.\-]+/, '').trim();
+    name = name.replace(/,\s*(?:survey\s*no|opp\b|near\b|distt\b|p\.o\b|pin\b|superintendent|basement|formerly\s*known|dnb\s*program|mukhani|village).*$/i, '').trim();
+    name = name.replace(/[\s\-,]+$/, '').trim();
+    return name;
   }
 
   /**
