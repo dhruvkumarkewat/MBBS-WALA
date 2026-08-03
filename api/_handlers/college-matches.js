@@ -65,7 +65,7 @@ export default async function handler(req, res) {
     if (state && state !== 'All') {
       cutoffQuery = cutoffQuery.eq('state', state);
     }
-    if (courseNames && courseNames.length) {
+    if (courseNames && courseNames.length && course !== 'MBBS') {
       cutoffQuery = cutoffQuery.in('college_name', courseNames);
     }
 
@@ -73,7 +73,7 @@ export default async function handler(req, res) {
     if (error) throw error;
 
     let seatQuery = supabase.from('seat_matrix').select('*');
-    if (courseNames && courseNames.length) {
+    if (courseNames && courseNames.length && course !== 'MBBS') {
       seatQuery = seatQuery.in('college_name', courseNames);
     }
     const { data: seats } = await seatQuery;

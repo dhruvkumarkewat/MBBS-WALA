@@ -160,12 +160,13 @@ const DASH_COURSES = ['All', 'MBBS', 'BDS', 'BAMS', 'BHMS', 'BUMS', 'BSMS', 'BNY
 export function PredictorPage() {
   const s = useShell();
   const { isPremium } = usePremium();
+  const { profile } = useAuth();
   const [mode, setMode] = useState<'rank' | 'score'>('rank');
   const [exam, setExam] = useState('NEET UG');
   const [course, setCourse] = useState('MBBS');
-  const [rank, setRank] = useState('15000');
-  const [score, setScore] = useState('612');
-  const [category, setCategory] = useState('General');
+  const [rank, setRank] = useState(profile?.neet_rank?.toString() || profile?.rank?.toString() || '15000');
+  const [score, setScore] = useState(profile?.neet_score?.toString() || profile?.score?.toString() || '612');
+  const [category, setCategory] = useState(profile?.category || 'General');
   const [result, setResult] = useState<{
     predicted_rank_min: number;
     predicted_rank_max: number;
@@ -332,6 +333,7 @@ export function PredictorPage() {
         </button>
       </div>
 
+      <ErrorBox message={error} />
       <form onSubmit={run} className={`rounded-2xl border p-5 space-y-4 ${s.card}`}>
         <label className="block">
           <span className={`text-xs font-bold uppercase ${s.muted}`}>Exam</span>
@@ -770,7 +772,7 @@ export function ComparePage() {
   }, []);
 
   useEffect(() => {
-    if (!a || !b || a === b) {
+    if (!a || !b || a === b || a === '-' || b === '-') {
       setPayload(null);
       return;
     }
