@@ -223,7 +223,7 @@ export class MCCScraper extends BaseScraper {
         if (this.isLikelyCollegeName(cleanedName) && closingRank > 0) {
           records.push({
             college_name: cleanedName,
-            course_name: textParts[1] || 'MBBS',
+            course_name: this.detectCourseFromText(cleanedName, textParts[1]),
             category_code: this.detectCategory(line),
             quota_code: this.detectQuota(line),
             opening_rank: openingRank,

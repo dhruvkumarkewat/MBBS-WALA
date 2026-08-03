@@ -323,11 +323,29 @@ export abstract class BaseScraper {
   }
 
   /**
+   * Intelligently detect medical course (MBBS, BDS, BAMS, BHMS, BUMS, Nursing)
+   */
+  public detectCourseFromText(name: string, fallbackCourse: string = 'MBBS'): string {
+    const lower = (name || '').toLowerCase();
+    if (/\b(?:dental|dentistry|bds|oral|dental\s*college)\b/i.test(lower)) return 'BDS';
+    if (/\b(?:ayurved|ayurveda|bams|ayush)\b/i.test(lower)) return 'BAMS';
+    if (/\b(?:homeopath|homeopathy|homoeopath|homoeopathy|bhms)\b/i.test(lower)) return 'BHMS';
+    if (/\b(?:unani|tibbiya|bums)\b/i.test(lower)) return 'BUMS';
+    if (/\b(?:siddha|bsms)\b/i.test(lower)) return 'BSMS';
+    if (/\b(?:naturopath|yoga|bnys)\b/i.test(lower)) return 'BNYS';
+    if (/\b(?:nursing|b\.sc\s*nursing|con\b)\b/i.test(lower)) return 'B.Sc Nursing';
+    if (fallbackCourse && fallbackCourse !== 'MBBS') return fallbackCourse;
+    return 'MBBS';
+  }
+
+  /**
    * Map extracted record to the colleges table schema.
    */
   private mapToCollegeSchema(record: Record<string, any>): Record<string, any> {
     const name = (record.name || record.college_name || record.institute_name || '').trim();
     const colType = record.type || record.college_type || 'Government';
+    const detectedCourse = this.detectCourseFromText(name, record.course || record.course_name);
+
     return {
       name,
       short_name: record.short_name || record.short || name.slice(0, 12),
@@ -335,7 +353,7 @@ export abstract class BaseScraper {
       state: record.state || 'Unknown',
       country: record.country || 'INDIA',
       college_type: colType,
-      course: record.course || record.course_name || 'MBBS',
+      course: detectedCourse,
       source: `scraper:${this.bodyCode}`,
       is_active: true,
     };

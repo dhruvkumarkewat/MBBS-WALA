@@ -40,8 +40,29 @@ collegesRoutes.get('/', async (req: Request, res: Response, next: NextFunction) 
       );
     }
     if (state && state !== 'All') query = query.eq('state', state);
-    if (type && type !== 'All') query = query.eq('college_type', type);
-    if (course && course !== 'All') query = query.eq('course', course);
+    if (course && course !== 'All') {
+      if (course === 'MBBS') {
+        query = query
+          .or('course.eq.MBBS,course.is.null')
+          .not('name', 'ilike', '%Dental%')
+          .not('name', 'ilike', '%Dentistry%')
+          .not('name', 'ilike', '%BDS%')
+          .not('name', 'ilike', '%Ayurved%')
+          .not('name', 'ilike', '%Homeopath%')
+          .not('name', 'ilike', '%Unani%')
+          .not('name', 'ilike', '%Nursing%');
+      } else if (course === 'BDS') {
+        query = query.or('course.eq.BDS,name.ilike.%Dental%,name.ilike.%Dentistry%,name.ilike.%BDS%');
+      } else if (course === 'BAMS') {
+        query = query.or('course.eq.BAMS,name.ilike.%Ayurved%,name.ilike.%Ayush%');
+      } else if (course === 'BHMS') {
+        query = query.or('course.eq.BHMS,name.ilike.%Homeopath%,name.ilike.%Homoeopath%');
+      } else if (course === 'BUMS') {
+        query = query.or('course.eq.BUMS,name.ilike.%Unani%,name.ilike.%Tibbiya%');
+      } else {
+        query = query.eq('course', course);
+      }
+    }
     if (country && country !== 'All') {
       query = query.ilike('country', country);
     } else if (!country) {

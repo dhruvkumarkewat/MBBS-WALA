@@ -35,7 +35,23 @@ export async function collegeNamesForCourse(course) {
 
   let q = supabase.from('colleges').select('name');
   if (c === 'MBBS') {
-    q = q.or('course.eq.MBBS,course.is.null');
+    q = q
+      .or('course.eq.MBBS,course.is.null')
+      .not('name', 'ilike', '%Dental%')
+      .not('name', 'ilike', '%Dentistry%')
+      .not('name', 'ilike', '%BDS%')
+      .not('name', 'ilike', '%Ayurved%')
+      .not('name', 'ilike', '%Homeopath%')
+      .not('name', 'ilike', '%Unani%')
+      .not('name', 'ilike', '%Nursing%');
+  } else if (c === 'BDS') {
+    q = q.or('course.eq.BDS,name.ilike.%Dental%,name.ilike.%Dentistry%,name.ilike.%BDS%');
+  } else if (c === 'BAMS') {
+    q = q.or('course.eq.BAMS,name.ilike.%Ayurved%,name.ilike.%Ayush%');
+  } else if (c === 'BHMS') {
+    q = q.or('course.eq.BHMS,name.ilike.%Homeopath%,name.ilike.%Homoeopath%');
+  } else if (c === 'BUMS') {
+    q = q.or('course.eq.BUMS,name.ilike.%Unani%,name.ilike.%Tibbiya%');
   } else {
     q = q.eq('course', c);
   }
@@ -49,7 +65,27 @@ export function applyCourseFilterOnCollegesQuery(query, course) {
   const c = normalizeCourse(course);
   if (!c) return query;
   if (c === 'MBBS') {
-    return query.or('course.eq.MBBS,course.is.null');
+    return query
+      .or('course.eq.MBBS,course.is.null')
+      .not('name', 'ilike', '%Dental%')
+      .not('name', 'ilike', '%Dentistry%')
+      .not('name', 'ilike', '%BDS%')
+      .not('name', 'ilike', '%Ayurved%')
+      .not('name', 'ilike', '%Homeopath%')
+      .not('name', 'ilike', '%Unani%')
+      .not('name', 'ilike', '%Nursing%');
+  }
+  if (c === 'BDS') {
+    return query.or('course.eq.BDS,name.ilike.%Dental%,name.ilike.%Dentistry%,name.ilike.%BDS%');
+  }
+  if (c === 'BAMS') {
+    return query.or('course.eq.BAMS,name.ilike.%Ayurved%,name.ilike.%Ayush%');
+  }
+  if (c === 'BHMS') {
+    return query.or('course.eq.BHMS,name.ilike.%Homeopath%,name.ilike.%Homoeopath%');
+  }
+  if (c === 'BUMS') {
+    return query.or('course.eq.BUMS,name.ilike.%Unani%,name.ilike.%Tibbiya%');
   }
   return query.eq('course', c);
 }
