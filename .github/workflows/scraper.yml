@@ -1,4 +1,5 @@
-name: Automated Scraper Pipeline
+name: scraper.yml
+# Scraper pipeline — checks MCC + AACCC for new counselling notices
 
 on:
   # Run every 15 minutes
@@ -23,13 +24,17 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
 
       - name: Install backend dependencies
         working-directory: ./backend
         run: npm ci
+
+      - name: Ensure downloads directory exists
+        working-directory: ./backend
+        run: mkdir -p downloads
 
       - name: Run MCC Scraper Check
         if: github.event.inputs.source == 'ALL' || github.event.inputs.source == 'MCC' || github.event_name == 'schedule'
@@ -44,9 +49,9 @@ jobs:
           AACCC_BASE_URL: https://aaccc.gov.in
           SCRAPER_USER_AGENT: 'MBBSWala-DataBot/1.0 (Educational Research)'
           SCRAPER_DOWNLOAD_DIR: ./downloads
-          SCRAPER_INTERVAL_MINUTES: 15
+          SCRAPER_INTERVAL_MINUTES: '15'
           REDIS_URL: 'redis://localhost:6379'
-          PORT: 4000
+          PORT: '4000'
           CORS_ORIGINS: '*'
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: npx tsx src/scrapers/cli.ts sync MCC
@@ -65,9 +70,9 @@ jobs:
           AACCC_BASE_URL: https://aaccc.gov.in
           SCRAPER_USER_AGENT: 'MBBSWala-DataBot/1.0 (Educational Research)'
           SCRAPER_DOWNLOAD_DIR: ./downloads
-          SCRAPER_INTERVAL_MINUTES: 15
+          SCRAPER_INTERVAL_MINUTES: '15'
           REDIS_URL: 'redis://localhost:6379'
-          PORT: 4000
+          PORT: '4000'
           CORS_ORIGINS: '*'
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: npx tsx src/scrapers/cli.ts sync AACCC
@@ -80,3 +85,4 @@ jobs:
           name: scraper-logs-${{ github.run_id }}
           path: backend/downloads/
           retention-days: 7
+          if-no-files-found: ignore

@@ -85,13 +85,18 @@ export class AACCCScraper extends BaseScraper {
 
     const filtered: DetectedItem[] = [];
     for (const item of unique) {
-      const { data: existing } = await this.db
-        .from('counselling_notices')
-        .select('id')
-        .eq('title', item.title)
-        .maybeSingle();
+      try {
+        const { data: existing } = await this.db
+          .from('counselling_notices')
+          .select('id')
+          .eq('title', item.title)
+          .maybeSingle();
 
-      if (!existing) filtered.push(item);
+        if (!existing) filtered.push(item);
+      } catch {
+        // Table may not exist yet — treat all items as new
+        filtered.push(item);
+      }
     }
 
     return { pagesChecked, newItems: filtered };

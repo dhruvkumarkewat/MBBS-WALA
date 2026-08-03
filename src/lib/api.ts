@@ -2,7 +2,13 @@ import supabase from './supabase';
 
 export async function getAccessToken(): Promise<string | null> {
   const { data } = await supabase.auth.getSession();
-  return data.session?.access_token ?? null;
+  if (data.session?.access_token) return data.session.access_token;
+  try {
+    const refreshed = await supabase.auth.refreshSession();
+    return refreshed.data.session?.access_token ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function apiFetch(

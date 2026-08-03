@@ -155,13 +155,17 @@ const DASH_COURSES = ['All', 'MBBS', 'BDS', 'BAMS', 'BHMS', 'BUMS', 'BSMS', 'BNY
 /* ---------------- Predictor → rank + college matches ---------------- */
 export function PredictorPage() {
   const s = useShell();
+  const [mode, setMode] = useState<'rank' | 'score'>('rank');
   const [exam, setExam] = useState('NEET UG');
   const [course, setCourse] = useState('MBBS');
+  const [rank, setRank] = useState('15000');
   const [score, setScore] = useState('612');
   const [category, setCategory] = useState('General');
   const [result, setResult] = useState<{
     predicted_rank_min: number;
     predicted_rank_max: number;
+    score?: number;
+    rank?: number;
     note: string;
   } | null>(null);
   const [matches, setMatches] = useState<
@@ -194,23 +198,39 @@ export function PredictorPage() {
     setMatches([]);
     setSummary(null);
     try {
-      const scoreNum = Number(score);
-      if (Number.isNaN(scoreNum) || scoreNum < 0) throw new Error('Enter a valid score');
+      let targetRank = 0;
+      let scoreNum = Number(score);
+
+      if (mode === 'rank') {
+        const r = Number(rank);
+        if (Number.isNaN(r) || r < 1) throw new Error('Enter a valid NEET All India Rank (AIR)');
+        targetRank = r;
+      } else {
+        if (Number.isNaN(scoreNum) || scoreNum < 0) throw new Error('Enter a valid score');
+      }
+
       const data = await apiJson<{
         predicted_rank_min: number;
         predicted_rank_max: number;
+        score?: number;
+        rank?: number;
         note: string;
       }>('/api/rank-calculator', {
         method: 'POST',
-        body: JSON.stringify({
-          exam,
-          score: scoreNum,
-          category,
-          course: exam === 'NEET UG' ? course : undefined,
-        }),
+        body: JSON.stringify(
+          mode === 'rank'
+            ? { exam, rank: targetRank, category, course: exam === 'NEET UG' ? course : undefined }
+            : { exam, score: scoreNum, category, course: exam === 'NEET UG' ? course : undefined }
+        ),
       });
       setResult(data);
-      const mid = Math.round((data.predicted_rank_min + data.predicted_rank_max) / 2);
+
+      if (mode === 'score') {
+        targetRank = Math.round((data.predicted_rank_min + data.predicted_rank_max) / 2);
+      } else if (data.score) {
+        scoreNum = data.score;
+      }
+
       try {
         const m = await apiJson<{
           matches: typeof matches;
@@ -218,10 +238,10 @@ export function PredictorPage() {
         }>('/api/college-matches', {
           method: 'POST',
           body: JSON.stringify({
-            rank: mid,
+            rank: targetRank,
             category,
             course: exam === 'NEET UG' ? course : 'MBBS',
-            limit: 12,
+            limit: 15,
           }),
         });
         setMatches(m.matches || []);
@@ -238,6 +258,7 @@ export function PredictorPage() {
               exam,
               category,
               score: scoreNum,
+              neet_rank: targetRank,
               predicted_rank_min: data.predicted_rank_min,
               predicted_rank_max: data.predicted_rank_max,
             }),
@@ -266,9 +287,44 @@ export function PredictorPage() {
     <div className="max-w-3xl">
       <PageHead
         title="College Predictor"
-        sub="Rank range + Safe / Moderate / Reach colleges for MBBS · BDS · BAMS · BHMS · BUMS · BSMS · BNYS"
+        sub="Predict Safe / Moderate / Reach colleges by All India Rank (AIR) or Score for MBBS · BDS · AYUSH"
       />
       <ErrorBox message={error} />
+
+      {/* Mode Selector */}
+      <div className="flex p-1 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 mb-4 max-w-sm">
+        <button
+          type="button"
+          onClick={() => {
+            setMode('rank');
+            setResult(null);
+            setMatches([]);
+          }}
+          className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+            mode === 'rank'
+              ? 'bg-orange-500 text-white shadow-md'
+              : 'text-slate-600 dark:text-white/60 hover:text-orange-500'
+          }`}
+        >
+          By NEET Rank (AIR)
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setMode('score');
+            setResult(null);
+            setMatches([]);
+          }}
+          className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+            mode === 'score'
+              ? 'bg-orange-500 text-white shadow-md'
+              : 'text-slate-600 dark:text-white/60 hover:text-orange-500'
+          }`}
+        >
+          By Score / Marks
+        </button>
+      </div>
+
       <form onSubmit={run} className={`rounded-2xl border p-5 space-y-4 ${s.card}`}>
         <label className="block">
           <span className={`text-xs font-bold uppercase ${s.muted}`}>Exam</span>
@@ -296,16 +352,37 @@ export function PredictorPage() {
             </select>
           </label>
         )}
-        <label className="block">
-          <span className={`text-xs font-bold uppercase ${s.muted}`}>Score</span>
-          <input
-            type="number"
-            value={score}
-            onChange={(e) => setScore(e.target.value)}
-            className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
-            required
-          />
-        </label>
+
+        {mode === 'rank' ? (
+          <label className="block">
+            <span className={`text-xs font-bold uppercase text-orange-500`}>NEET All India Rank (AIR) *</span>
+            <input
+              type="number"
+              min="1"
+              max="2500000"
+              value={rank}
+              onChange={(e) => setRank(e.target.value)}
+              placeholder="e.g. 15400"
+              className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
+              required
+            />
+          </label>
+        ) : (
+          <label className="block">
+            <span className={`text-xs font-bold uppercase text-orange-500`}>Score (out of 720) *</span>
+            <input
+              type="number"
+              min="0"
+              max="720"
+              value={score}
+              onChange={(e) => setScore(e.target.value)}
+              placeholder="e.g. 612"
+              className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
+              required
+            />
+          </label>
+        )}
+
         <label className="block">
           <span className={`text-xs font-bold uppercase ${s.muted}`}>Category</span>
           <select
@@ -319,14 +396,28 @@ export function PredictorPage() {
           </select>
         </label>
         <button type="submit" disabled={loading} className="zn-cta zn-cta-primary w-full justify-center">
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Predict rank & colleges'}
+          {loading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : mode === 'rank' ? (
+            `Predict colleges for Rank #${Number(rank || 0).toLocaleString()}`
+          ) : (
+            'Predict rank & colleges'
+          )}
         </button>
       </form>
       {result && (
         <div className={`mt-4 rounded-2xl border p-6 text-center ${s.card}`}>
-          <p className={`text-xs font-bold uppercase mb-2 ${s.muted}`}>Estimated AIR range</p>
+          <p className={`text-xs font-bold uppercase mb-1 ${s.muted}`}>
+            {mode === 'rank' ? 'Active Rank Prediction' : 'Estimated AIR range'}
+          </p>
           <p className="text-3xl font-black text-primary">
-            {result.predicted_rank_min.toLocaleString()} – {result.predicted_rank_max.toLocaleString()}
+            {mode === 'rank' ? (
+              <>AIR #{Number(result.rank || rank).toLocaleString()}</>
+            ) : (
+              <>
+                {result.predicted_rank_min.toLocaleString()} – {result.predicted_rank_max.toLocaleString()}
+              </>
+            )}
           </p>
           <p className={`text-xs mt-2 ${s.muted}`}>{result.note}</p>
           {savedMsg && <p className="text-xs font-bold text-emerald-600 mt-2">{savedMsg}</p>}
@@ -335,7 +426,7 @@ export function PredictorPage() {
       {summary && (
         <div className="mt-4 grid grid-cols-3 gap-2">
           {[
-            { l: 'Safe', v: summary.safe_count },
+            { l: 'Safe / Likely', v: summary.safe_count },
             { l: 'Moderate', v: summary.moderate_count },
             { l: 'Reach', v: summary.reach_count },
           ].map((x) => (
@@ -348,7 +439,7 @@ export function PredictorPage() {
       )}
       {matches.length > 0 && (
         <div className="mt-4 space-y-2">
-          <p className="font-bold text-sm">Recommended shortlist</p>
+          <p className="font-bold text-sm">Recommended college shortlist</p>
           {matches.map((m) => (
             <div key={m.college_name + m.chance} className={`rounded-xl border p-3 ${s.card}`}>
               <div className="flex items-start justify-between gap-2">

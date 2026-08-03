@@ -351,6 +351,7 @@ export abstract class BaseScraper {
       source: 'scraper',
     });
 
+    if (!inserted) {
       // Fallback: log to notifications table (existing)
       await this.safeInsert('notifications', {
         title: `[${this.bodyCode}] ${item.title}`,

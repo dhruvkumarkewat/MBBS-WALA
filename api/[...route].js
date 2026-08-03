@@ -124,8 +124,8 @@ export default async function handler(req, res) {
     }
   }
 
-  // Parse body if JSON string or buffer
-  if (req.body === undefined && (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH')) {
+  // Parse body if JSON string, buffer, or stream
+  if (req.body === undefined && (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH' || req.method === 'DELETE')) {
     try {
       const buffers = [];
       for await (const chunk of req) {
@@ -136,17 +136,35 @@ export default async function handler(req, res) {
     } catch {
       req.body = {};
     }
+  } else if (typeof req.body === 'string') {
+    try {
+      req.body = JSON.parse(req.body);
+    } catch {
+      // keep as string
+    }
   }
 
   // Determine route key from request
   let routeName = '';
 
   if (req.query && req.query.route) {
-    routeName = Array.isArray(req.query.route) ? req.query.route[0] : req.query.route;
-  } else {
-    const rawUrl = req.url || '';
-    const cleanPath = rawUrl.split('?')[0].replace(/^\/api\/?/, '');
-    routeName = cleanPath.split('/')[0] || '';
+    const r = Array.isArray(req.query.route) ? req.query.route.join('-') : req.query.route;
+    routeName = r.replace(/^\/+|\/+$/g, '').replace(/\//g, '-');
+  }
+
+  if (!routeName || !routes[routeName]) {
+    const rawUrl = req.originalUrl || req.url || '';
+    const cleanPath = rawUrl.split('?')[0].replace(/^\/api\/?/, '').replace(/^\/+|\/+$/g, '');
+    const hyphenated = cleanPath.replace(/\//g, '-');
+    if (routes[hyphenated]) {
+      routeName = hyphenated;
+    } else {
+      const segments = cleanPath.split('/');
+      routeName = segments[0] || '';
+      if (segments.length > 1 && !req.query.id) {
+        req.query.id = segments[1];
+      }
+    }
   }
 
   const endpoint = routes[routeName];

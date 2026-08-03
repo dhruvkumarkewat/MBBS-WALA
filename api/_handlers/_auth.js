@@ -7,7 +7,8 @@ export function setCors(res) {
 }
 
 export async function requireUser(req, res) {
-  const token = req.headers.authorization?.replace('Bearer ', '');
+  const authHeader = req.headers?.authorization || req.headers?.Authorization || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
   if (!token) {
     res.status(401).json({ error: 'Unauthorized' });
     return null;

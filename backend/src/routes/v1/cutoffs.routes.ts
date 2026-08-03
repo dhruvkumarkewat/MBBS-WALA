@@ -66,7 +66,7 @@ cutoffsRoutes.get('/', async (req: Request, res: Response, next: NextFunction) =
 cutoffsRoutes.get('/history/:collegeName', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const db = getPublicClient();
-    const { collegeName } = req.params;
+    const collegeName = String(req.params.collegeName);
     const { category = 'General', course = 'MBBS' } = req.query as Record<string, string>;
 
     const { data, error } = await db
@@ -95,7 +95,7 @@ cutoffsRoutes.get('/history/:collegeName', async (req: Request, res: Response, n
     }
 
     res.json({
-      college_name: decodeURIComponent(collegeName),
+      college_name: decodeURIComponent(String(collegeName)),
       history: Array.from(yearMap.values()),
     });
   } catch (err) {

@@ -41,7 +41,7 @@ notificationsRoutes.get('/', async (req: Request, res: Response, next: NextFunct
  */
 notificationsRoutes.get('/user/:userId', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.params;
+    const userId = String(req.params.userId);
     const { limit: limitStr = '20' } = req.query as Record<string, string>;
     const limit = Math.min(100, parseInt(limitStr) || 20);
 
@@ -67,7 +67,7 @@ notificationsRoutes.get('/user/:userId', async (req: Request, res: Response, nex
  */
 notificationsRoutes.post('/read/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const { user_id } = req.body;
 
     if (!user_id) {

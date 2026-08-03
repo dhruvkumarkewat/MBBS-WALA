@@ -119,16 +119,21 @@ export class MCCScraper extends BaseScraper {
       return true;
     });
 
-    // Filter out already-recorded notices
+    // Filter out already-recorded notices (safe — won't crash if table missing)
     const filtered: DetectedItem[] = [];
     for (const item of unique) {
-      const { data: existing } = await this.db
-        .from('counselling_notices')
-        .select('id')
-        .eq('title', item.title)
-        .maybeSingle();
+      try {
+        const { data: existing } = await this.db
+          .from('counselling_notices')
+          .select('id')
+          .eq('title', item.title)
+          .maybeSingle();
 
-      if (!existing) {
+        if (!existing) {
+          filtered.push(item);
+        }
+      } catch {
+        // Table may not exist yet — treat all items as new
         filtered.push(item);
       }
     }
