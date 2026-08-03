@@ -75,9 +75,14 @@ export class StateScraper extends BaseScraper {
 
           if (!text || text.length < 5) return;
 
+          // Skip generic pagination & navigation button texts
+          if (/^(next\b|prev\b|previous\b|page\b|\d+$|read more|click here|home|about|contact|login|notices$|cutoff explorer$)/i.test(text.trim())) {
+            return;
+          }
+
           const isPdf = href.toLowerCase().endsWith('.pdf');
           const isExcel =
-            href.toLowerCase().endsWith('.xlsx') || href.toLowerCase().endsWith('.xls');
+            href.toLowerCase().endsWith('.xlsx') || href.toLowerCase().endsWith('.xls') || href.toLowerCase().endsWith('.csv');
           const isNoticeLink =
             isPdf || isExcel || /notice|allotment|cutoff|seat|merit|counselling/i.test(href);
 
@@ -144,7 +149,8 @@ export class StateScraper extends BaseScraper {
       fs.mkdirSync(downloadDir, { recursive: true });
     }
 
-    const fileName = `${this.config.code.toLowerCase()}_${Date.now()}.${fileType === 'excel' ? 'xlsx' : fileType}`;
+    const ext = fileType === 'excel' ? 'xlsx' : fileType === 'html' ? 'html' : fileType;
+    const fileName = `${this.config.code.toLowerCase()}_${Date.now()}.${ext}`;
     const filePath = path.join(downloadDir, fileName);
 
     const response = await axios.get(url, {
@@ -163,20 +169,54 @@ export class StateScraper extends BaseScraper {
    * Extract data from downloaded file.
    */
   async extractFromHtml(html: string): Promise<ExtractedData> {
+    const $ = cheerio.load(html);
+    const records: Record<string, any>[] = [];
+
+    // Parse any HTML tables that contain institute & rank columns
+    $('table tr').each((_, row) => {
+      const cols = $(row).find('td').map((_, td) => $(td).text().trim()).get();
+      if (cols.length >= 3) {
+        const numbers = cols.map(c => Number(c.replace(/,/g, ''))).filter(n => !isNaN(n) && n > 0 && n <= 2500000);
+        if (numbers.length > 0) {
+          const college = cols.find(c => this.isLikelyCollegeName(c));
+          if (college) {
+            records.push({
+              college_name: college,
+              state: this.config.state,
+              course_name: 'MBBS',
+              category_code: 'General',
+              quota_code: 'SQ',
+              opening_rank: numbers[0],
+              closing_rank: numbers[numbers.length - 1],
+              year: new Date().getFullYear(),
+              round_name: 'Round 1',
+            });
+          }
+        }
+      }
+    });
+
     return {
       targetTable: 'cutoffs',
       matchKeys: ['college_name', 'category', 'year'],
-      records: [],
+      records,
     };
   }
 
   async extractData(filePath: string, fileType: string): Promise<ExtractedData> {
     if (fileType === 'pdf') {
       return this.extractFromPdf(filePath);
-    } else if (fileType === 'excel') {
+    } else if (fileType === 'excel' || fileType === 'xlsx' || fileType === 'xls' || fileType === 'csv') {
       return this.extractFromExcel(filePath);
+    } else if (fileType === 'html') {
+      const html = fs.readFileSync(filePath, 'utf-8');
+      return this.extractFromHtml(html);
     }
-    throw new Error(`Unsupported file type: ${fileType}`);
+    return {
+      targetTable: 'cutoffs',
+      matchKeys: ['college_name', 'category', 'year'],
+      records: [],
+    };
   }
 
   /**
