@@ -1,28 +1,49 @@
 import supabase from './db-client.js';
 import { collegeNamesForCourse, MEDICAL_COURSES, normalizeCourse } from './_courses.js';
 
-function parseRangeMid(range) {
-  if (!range || typeof range !== 'string') return null;
-  const nums = range.replace(/,/g, '').match(/\d+/g);
-  if (!nums || !nums.length) return null;
-  if (nums.length === 1) return Number(nums[0]);
-  return Math.round((Number(nums[0]) + Number(nums[1])) / 2);
+function extractCutoffData(cutoffJson, category) {
+  if (!cutoffJson) return null;
+  let catPrefix = 'GEN';
+  if (category === 'OBC') catPrefix = 'OBC';
+  if (category === 'SC') catPrefix = 'SC';
+  if (category === 'ST') catPrefix = 'ST';
+  if (category === 'EWS') catPrefix = 'EWS';
+
+  let closing = cutoffJson[`${catPrefix}_closing`] || cutoffJson[catPrefix] || cutoffJson.closing || cutoffJson.closing_rank;
+  let opening = cutoffJson[`${catPrefix}_opening`] || cutoffJson.opening || cutoffJson.opening_rank;
+  
+  if (!closing) return null;
+  return { closing: Number(closing), opening: Number(opening) || 1 };
 }
 
-function parseRangeMax(range) {
-  if (!range || typeof range !== 'string') return null;
-  const nums = range.replace(/,/g, '').match(/\d+/g);
-  if (!nums || !nums.length) return null;
-  return Number(nums[nums.length - 1]);
-}
-
-function scoreChance(rank, closingRank) {
-  if (!closingRank || closingRank <= 0) return { label: 'Unknown', score: 0, tone: 'muted' };
-  const ratio = rank / closingRank;
-  if (ratio <= 0.75) return { label: 'Safe', score: 92, tone: 'safe' };
-  if (ratio <= 0.95) return { label: 'Likely', score: 78, tone: 'likely' };
-  if (ratio <= 1.1) return { label: 'Moderate', score: 58, tone: 'moderate' };
-  if (ratio <= 1.35) return { label: 'Reach', score: 38, tone: 'reach' };
+function scoreChanceRealistic(rank, opening, closing) {
+  if (!closing || closing <= 0) return { label: 'Unknown', score: 0, tone: 'muted' };
+  
+  // Super Safe: rank is better than or equal to opening rank
+  if (rank <= opening) {
+    return { label: 'Safe', score: 98, tone: 'safe' };
+  }
+  
+  // Safe: rank is between opening and closing
+  if (rank <= closing) {
+    return { label: 'Safe', score: 92, tone: 'safe' };
+  }
+  
+  // Likely: rank is within 10% worse than closing
+  if (rank <= closing * 1.1) {
+    return { label: 'Likely', score: 78, tone: 'likely' };
+  }
+  
+  // Moderate: rank is within 25% worse
+  if (rank <= closing * 1.25) {
+    return { label: 'Moderate', score: 58, tone: 'moderate' };
+  }
+  
+  // Reach: rank is within 50% worse
+  if (rank <= closing * 1.5) {
+    return { label: 'Reach', score: 38, tone: 'reach' };
+  }
+  
   return { label: 'Stretch', score: 18, tone: 'stretch' };
 }
 
@@ -50,93 +71,64 @@ export default async function handler(req, res) {
 
     const courseNames = await collegeNamesForCourse(course);
 
-    let cutoffQuery = supabase
-      .from('cutoffs')
-      .select('*')
-      .order('aiq_rank', { ascending: true });
-
-    if (category && category !== 'All') {
-      if (category === 'General') {
-        cutoffQuery = cutoffQuery.in('category', ['General', 'UR', 'Unreserved']);
-      } else {
-        cutoffQuery = cutoffQuery.eq('category', category);
-      }
-    }
+    // Query the comprehensive colleges table instead of cutoffs
+    let query = supabase.from('colleges').select('*');
+    
     if (state && state !== 'All') {
-      cutoffQuery = cutoffQuery.eq('state', state);
+      query = query.eq('state', state);
     }
+    
     if (courseNames && courseNames.length && course !== 'MBBS') {
-      cutoffQuery = cutoffQuery.in('college_name', courseNames);
+      query = query.in('name', courseNames);
+    } else if (course) {
+      query = query.eq('course', course);
     }
 
-    const { data: rawCutoffs, error } = await cutoffQuery;
+    const { data: colleges, error } = await query;
     if (error) throw error;
 
-    // Filter out junk rows from bad scraper (year 2026 entries are all garbage,
-    // and real college names always contain a space e.g. "Medical College")
-    const cutoffs = (rawCutoffs || []).filter(
-      (c) => c.college_name && c.college_name.includes(' ') && c.year !== 2026
-    );
-
-    let seatQuery = supabase.from('seat_matrix').select('*');
-    if (courseNames && courseNames.length && course !== 'MBBS') {
-      seatQuery = seatQuery.in('college_name', courseNames);
-    }
-    const { data: seats } = await seatQuery;
-    const seatByName = new Map();
-    (seats || []).forEach((s) => {
-      const key = (s.college_name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-      seatByName.set(key, s);
-    });
-
-    const matches = (cutoffs || []).map((c) => {
-      const stateMax = parseRangeMax(c.state_rank_range);
-      const stateMid = parseRangeMid(c.state_rank_range);
-      const aiqChance = scoreChance(rank, c.aiq_rank);
-      const stateChance = stateMax ? scoreChance(rank, stateMax) : null;
-      // Prefer the better path for the student
-      const best =
-        stateChance && stateChance.score > aiqChance.score ? stateChance : aiqChance;
-      const path =
-        stateChance && stateChance.score > aiqChance.score ? 'State quota' : 'AIQ';
-
-      const key = (c.college_name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-      let seat = seatByName.get(key) || null;
-      if (!seat) {
-        for (const [k, v] of seatByName.entries()) {
-          if (k.includes(key.slice(0, 12)) || key.includes(k.slice(0, 12))) {
-            seat = v;
-            break;
-          }
-        }
-      }
-
-      return {
-        college_name: c.college_name,
-        state: c.state,
-        category: c.category,
-        year: c.year,
-        aiq_rank: c.aiq_rank,
-        aiq_score: c.aiq_score,
-        state_rank_range: c.state_rank_range,
-        state_score_range: c.state_score_range,
-        state_mid: stateMid,
-        chance: best.label,
-        chance_score: best.score,
-        chance_tone: best.tone,
-        best_path: path,
-        aiq_chance: aiqChance.label,
-        state_chance: stateChance?.label || null,
-        total_seats: seat?.total_seats ?? null,
-        open_seats: seat?.open_seats ?? null,
-        college_kind: seat?.college_kind ?? null,
-      };
+    const validMatches = [];
+    (colleges || []).forEach(c => {
+      const cutoffData = extractCutoffData(c.cutoff, category);
+      if (!cutoffData) return; // Skip if no cutoff data for this category
+      
+      const chance = scoreChanceRealistic(rank, cutoffData.opening, cutoffData.closing);
+      
+      validMatches.push({
+        college_name: c.name,
+        state: c.state || 'Unknown',
+        category: category,
+        year: 2024,
+        aiq_rank: cutoffData.closing,
+        opening_rank: cutoffData.opening,
+        aiq_score: null, 
+        state_rank_range: null,
+        state_score_range: null,
+        state_mid: null,
+        chance: chance.label,
+        chance_score: chance.score,
+        chance_tone: chance.tone,
+        best_path: 'AIQ',
+        aiq_chance: chance.label,
+        state_chance: null,
+        total_seats: c.seats,
+        open_seats: c.seats,
+        college_kind: c.college_type,
+        nirf: c.nirf || 999999 // Fallback for sorting
+      });
     });
 
     // Meaningful outcome: keep options that are not pure stretch first, then fill
-    const ranked = matches
+    const ranked = validMatches
       .filter((m) => m.chance_score >= 18)
-      .sort((a, b) => b.chance_score - a.chance_score || (a.aiq_rank || 999999) - (b.aiq_rank || 999999));
+      .sort((a, b) => {
+        // 1. Sort by chance score descending (Safest first)
+        if (b.chance_score !== a.chance_score) return b.chance_score - a.chance_score;
+        // 2. Sort by NIRF ascending (AIIMS Delhi #1 first)
+        if (a.nirf !== b.nirf) return a.nirf - b.nirf;
+        // 3. Sort by closing rank ascending (More competitive colleges first)
+        return (a.aiq_rank || 999999) - (b.aiq_rank || 999999);
+      });
 
     const safe = ranked.filter((m) => m.chance_tone === 'safe' || m.chance_tone === 'likely');
     const moderate = ranked.filter((m) => m.chance_tone === 'moderate');
@@ -150,6 +142,7 @@ export default async function handler(req, res) {
         if (pick.filter((p) => p.college_name === item.college_name).length >= n) continue;
       }
     };
+    
     // balanced shortlist
     for (const item of safe) {
       if (pick.length >= Math.ceil(limit * 0.45)) break;
@@ -170,7 +163,7 @@ export default async function handler(req, res) {
     }
 
     const summary = {
-      total_evaluated: matches.length,
+      total_evaluated: validMatches.length,
       safe_count: safe.length,
       moderate_count: moderate.length,
       reach_count: reach.length,
