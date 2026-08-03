@@ -157,8 +157,7 @@ export function SubscriptionPage() {
         currency: orderRes.currency,
         name: 'MBBSWala Premium',
         description: plan.name,
-        // REMOVED order_id: Passing a fake order_id causes Razorpay to fail immediately.
-        // Without an order_id, Razorpay will process the payment in checkout-only mode.
+        order_id: orderRes.orderId,
         handler: async function (response: any) {
           try {
             setUpgradingPlan(plan.id);

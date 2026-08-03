@@ -47,8 +47,41 @@ export default async function handler(req, res) {
     // ── 2. POST action=create-order ──────────────────────────────────────────
     if (req.method === 'POST' && (action === 'create-order' || !action)) {
       const { plan_slug = 'premium', plan_name = 'Premium Plan', amount = 4999 } = req.body || {};
-      const orderId = `order_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-      const keyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_mbw_gateway';
+      
+      const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_TGKNxC2HkMEptZ';
+      const keySecret = process.env.RAZORPAY_KEY_SECRET || 'VJk0E7jhcJFwuOFz303O5aGJ';
+      const receipt = `rcpt_${user.id.slice(0, 6)}_${Date.now()}`;
+      
+      let orderId = `order_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+      
+      // Call Razorpay API to create a real order
+      try {
+        const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+        const rzpRes = await fetch('https://api.razorpay.com/v1/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Basic ${auth}`
+          },
+          body: JSON.stringify({
+            amount: Number(amount) * 100, // Razorpay expects amount in paise
+            currency: 'INR',
+            receipt: receipt
+          })
+        });
+        
+        if (rzpRes.ok) {
+          const rzpData = await rzpRes.json();
+          orderId = rzpData.id;
+        } else {
+          const err = await rzpRes.json();
+          console.error('Razorpay order creation failed:', err);
+          return res.status(500).json({ error: 'Failed to initialize payment gateway' });
+        }
+      } catch (e) {
+        console.error('Razorpay fetch error:', e);
+        return res.status(500).json({ error: 'Payment gateway communication error' });
+      }
 
       // Save initial payment record
       await supabase.from('payments').insert({
@@ -59,7 +92,7 @@ export default async function handler(req, res) {
         status: 'created',
         gateway: 'razorpay',
         plan_slug,
-        receipt: `rcpt_${user.id.slice(0, 6)}_${Date.now()}`,
+        receipt,
         meta: { plan_name },
         created_at: new Date().toISOString(),
       });
@@ -68,11 +101,11 @@ export default async function handler(req, res) {
         ok: true,
         orderId,
         keyId,
-        amount: Number(amount),
+        amount: Number(amount) * 100, // Send paise to frontend
         currency: 'INR',
         plan_slug,
         plan_name,
-        isLiveGateway: Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET),
+        isLiveGateway: true, // Always true now since we create real orders
       });
     }
 
@@ -88,7 +121,7 @@ export default async function handler(req, res) {
       } = req.body || {};
 
       // If Razorpay live secret is present, verify HMAC signature
-      const secret = process.env.RAZORPAY_KEY_SECRET;
+      const secret = process.env.RAZORPAY_KEY_SECRET || 'VJk0E7jhcJFwuOFz303O5aGJ';
       if (secret && signature && order_id) {
         const expected = crypto
           .createHmac('sha256', secret)
