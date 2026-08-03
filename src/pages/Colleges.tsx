@@ -14,7 +14,9 @@ interface College {
   state: string;
   country: string;
   college_type: string;
-  course: string;
+  course?: string;
+  nirf?: number;
+  cutoff?: Record<string, any>;
 }
 
 export default function Colleges() {
@@ -169,7 +171,20 @@ export default function Colleges() {
               <p className="text-sm font-medium text-[#5b6472] flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 shrink-0" />
                 {[c.city, c.state].filter(Boolean).join(', ') || '—'}
+                {c.nirf && c.nirf < 999999 ? ` · NIRF #${c.nirf}` : ''}
               </p>
+              
+              {/* Opening and Closing ranks logic for UI */}
+              {c.cutoff && (c.cutoff.closing_rank || c.cutoff.GEN_closing) ? (
+                <div className="flex gap-2">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600`}>
+                    Opening: {c.cutoff.opening_rank || c.cutoff.GEN_opening || c.cutoff.opening || '—'}
+                  </span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600`}>
+                    Closing: {c.cutoff.closing_rank || c.cutoff.GEN_closing || c.cutoff.closing || '—'}
+                  </span>
+                </div>
+              ) : null}
               <p className="text-xs font-bold uppercase tracking-wide text-primary flex items-center gap-1 mt-auto pt-2">
                 <Building2 className="w-3.5 h-3.5" /> {c.course || 'MBBS'} · India
               </p>

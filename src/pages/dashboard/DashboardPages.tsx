@@ -471,7 +471,10 @@ export function PredictorPage() {
                   </span>
                   <p className="font-bold text-sm mt-1 leading-snug">{m.college_name}</p>
                   <p className={`text-xs ${s.muted}`}>
-                    {m.state} · AIQ {m.aiq_rank?.toLocaleString?.() || '—'} · State {m.state_rank_range || '—'}
+                    {m.state}
+                    {m.nirf && m.nirf < 999999 ? ` · NIRF #${m.nirf}` : ''}
+                    {m.opening_rank ? ` · Opening: ${m.opening_rank.toLocaleString()}` : ''}
+                    {m.aiq_rank ? ` · Closing: ${m.aiq_rank.toLocaleString()}` : ''}
                     {m.total_seats ? ` · ${m.total_seats} seats` : ''}
                   </p>
                 </div>
@@ -533,7 +536,8 @@ interface College {
   country: string;
   college_type: string;
   course?: string;
-}
+  nirf?: number;
+  cutoff?: Record<string, any>;
 
 export function FinderPage() {
   const s = useShell();
@@ -687,7 +691,20 @@ export function FinderPage() {
                   </div>
                   <p className={`text-xs font-medium ${s.muted}`}>
                     {[c.city, c.state].filter(Boolean).join(', ')}
+                    {c.nirf && c.nirf < 999999 ? ` · NIRF #${c.nirf}` : ''}
                   </p>
+                  
+                  {/* Opening and Closing ranks logic for UI */}
+                  {c.cutoff && (c.cutoff.closing_rank || c.cutoff.GEN_closing) ? (
+                    <div className="flex gap-2">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600`}>
+                        Opening: {c.cutoff.opening_rank || c.cutoff.GEN_opening || c.cutoff.opening || '—'}
+                      </span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600`}>
+                        Closing: {c.cutoff.closing_rank || c.cutoff.GEN_closing || c.cutoff.closing || '—'}
+                      </span>
+                    </div>
+                  ) : null}
                   <div className="flex items-center gap-2 mt-auto pt-1 flex-wrap">
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${s.chip}`}>
                       {c.course || 'MBBS'}
