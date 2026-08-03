@@ -95,6 +95,7 @@ export default function Login() {
   // Ref prevents the routing effect from being cancelled and re-run
   // when isProfileComplete changes mid-flight (which killed the admin-auth call)
   const routingDone = useRef(false);
+  const isSubmitting = useRef(false);
 
   useEffect(() => {
     // Reset when user changes (logout → login)
@@ -102,7 +103,7 @@ export default function Login() {
   }, [user]);
 
   useEffect(() => {
-    if (!user || profileLoading || routingDone.current) return;
+    if (!user || profileLoading || routingDone.current || isSubmitting.current) return;
     routingDone.current = true; // run only once per login
     let cancelled = false;
     (async () => {
@@ -172,6 +173,7 @@ export default function Login() {
     }
 
     setLoading(true);
+    isSubmitting.current = true;
     try {
       if (mode === 'signup') {
         const { data, error: signErr } = await supabase.auth.signUp({
@@ -262,6 +264,7 @@ export default function Login() {
       navigate(from, { replace: true });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Authentication failed');
+      isSubmitting.current = false; // only reset on error so it doesn't trigger useEffect before unmount
     } finally {
       setLoading(false);
     }
