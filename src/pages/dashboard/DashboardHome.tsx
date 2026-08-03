@@ -16,6 +16,15 @@ import {
   Heart,
   FileCheck2,
   Layers,
+  User,
+  Award,
+  ShieldCheck,
+  GraduationCap,
+  Phone,
+  Edit3,
+  CheckCircle2,
+  AlertCircle,
+  IndianRupee,
 } from 'lucide-react';
 import { useDashboard } from '../../contexts/DashboardContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -36,10 +45,32 @@ interface Summary {
   unread_notifications: number;
   profile: {
     full_name?: string;
+    name?: string;
+    email?: string;
+    phone?: string;
     category?: string;
-    predicted_rank_min?: number;
-    predicted_rank_max?: number;
+    sub_category?: string;
+    domicile?: string;
+    domicile_state?: string;
+    state?: string;
+    district?: string;
+    neet_rank?: number;
+    rank?: string | number;
+    neet_score?: number;
     score?: number;
+    marks?: string | number;
+    neet_percentile?: number;
+    preferred_course?: string;
+    college_preference?: string;
+    tuition_budget?: string;
+    pwd_status?: boolean;
+    defence_quota?: boolean;
+    freedom_fighter_quota?: boolean;
+    is_premium?: boolean;
+    subscription_plan?: string;
+    profile_completed?: boolean;
+    onboarding_done?: boolean;
+    completion_percentage?: number;
   } | null;
 }
 
@@ -343,6 +374,169 @@ export default function DashboardHome() {
           </div>
         </div>
       </section>
+
+      {/* Candidate NEET Profile & Quota Snapshot */}
+      {summary?.profile && (
+        <section
+          className={`rounded-[22px] border p-5 sm:p-6 transition-all ${
+            dark
+              ? 'bg-gradient-to-br from-[#151922] via-[#10131a] to-[#0c0e14] border-white/10 shadow-lg'
+              : 'bg-gradient-to-br from-white via-orange-50/20 to-slate-50 border-orange-100/80 shadow-[0_2px_8px_rgba(249,115,22,0.06)]'
+          }`}
+        >
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-dashed border-orange-500/20">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 text-white flex items-center justify-center font-black text-lg shadow-md shadow-orange-500/25 shrink-0">
+                {(summary.profile.full_name || summary.profile.name || user?.email || 'S')
+                  .charAt(0)
+                  .toUpperCase()}
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className={`text-base sm:text-lg font-bold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
+                    {summary.profile.full_name || summary.profile.name || 'Candidate Profile'}
+                  </h3>
+                  {summary.profile.profile_completed || summary.profile.onboarding_done ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                      <CheckCircle2 className="w-3 h-3" /> Profile Active
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
+                      <AlertCircle className="w-3 h-3" /> Incomplete
+                    </span>
+                  )}
+                </div>
+                <div className={`text-xs font-semibold flex items-center gap-3 flex-wrap mt-0.5 ${dark ? 'text-white/60' : 'text-slate-500'}`}>
+                  {summary.profile.phone && (
+                    <span className="inline-flex items-center gap-1">
+                      <Phone className="w-3 h-3 text-orange-500" />
+                      {summary.profile.phone}
+                    </span>
+                  )}
+                  {summary.profile.email && <span>{summary.profile.email}</span>}
+                  <span className="text-orange-500 font-bold">
+                    {summary.profile.preferred_course || 'MBBS'} • {summary.profile.domicile_state || summary.profile.domicile || 'All India'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <Link
+                to="/dashboard/profile"
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                  dark
+                    ? 'bg-white/10 hover:bg-white/15 text-white border border-white/15'
+                    : 'bg-white hover:bg-orange-50 text-slate-800 border border-slate-200 shadow-sm'
+                }`}
+              >
+                <Edit3 className="w-3.5 h-3.5 text-orange-500" /> Edit Profile & Score
+              </Link>
+            </div>
+          </div>
+
+          {/* Quick Metrics Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+            {/* NEET Score */}
+            <div
+              className={`p-3.5 rounded-xl border ${
+                dark ? 'bg-white/[0.03] border-white/10' : 'bg-white border-slate-100 shadow-sm'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className={`text-[11px] font-bold uppercase tracking-wider ${dark ? 'text-white/60' : 'text-slate-500'}`}>
+                  NEET Score
+                </span>
+                <Award className="w-4 h-4 text-orange-500" />
+              </div>
+              <p className={`text-xl sm:text-2xl font-black tabular-nums ${dark ? 'text-white' : 'text-slate-900'}`}>
+                {summary.profile.neet_score != null
+                  ? `${summary.profile.neet_score} / 720`
+                  : summary.profile.score != null
+                  ? `${summary.profile.score} / 720`
+                  : summary.profile.marks
+                  ? `${summary.profile.marks} / 720`
+                  : '—'}
+              </p>
+              <p className={`text-[11px] font-semibold mt-0.5 ${dark ? 'text-white/50' : 'text-slate-400'}`}>
+                {summary.profile.neet_percentile
+                  ? `${summary.profile.neet_percentile}% Percentile`
+                  : 'Official NEET Marks'}
+              </p>
+            </div>
+
+            {/* NEET Rank */}
+            <div
+              className={`p-3.5 rounded-xl border ${
+                dark ? 'bg-white/[0.03] border-white/10' : 'bg-white border-slate-100 shadow-sm'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className={`text-[11px] font-bold uppercase tracking-wider ${dark ? 'text-white/60' : 'text-slate-500'}`}>
+                  NEET Rank (AIR)
+                </span>
+                <TrendingUp className="w-4 h-4 text-sky-500" />
+              </div>
+              <p className={`text-xl sm:text-2xl font-black tabular-nums ${dark ? 'text-white' : 'text-slate-900'}`}>
+                {summary.profile.neet_rank != null
+                  ? `#${Number(summary.profile.neet_rank).toLocaleString('en-IN')}`
+                  : summary.profile.rank
+                  ? `#${Number(summary.profile.rank).toLocaleString('en-IN')}`
+                  : '—'}
+              </p>
+              <p className={`text-[11px] font-semibold mt-0.5 ${dark ? 'text-white/50' : 'text-slate-400'}`}>
+                All India Merit Rank
+              </p>
+            </div>
+
+            {/* Domicile State & Quota */}
+            <div
+              className={`p-3.5 rounded-xl border ${
+                dark ? 'bg-white/[0.03] border-white/10' : 'bg-white border-slate-100 shadow-sm'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className={`text-[11px] font-bold uppercase tracking-wider ${dark ? 'text-white/60' : 'text-slate-500'}`}>
+                  State Domicile
+                </span>
+                <Map className="w-4 h-4 text-emerald-500" />
+              </div>
+              <p className={`text-base sm:text-lg font-black truncate ${dark ? 'text-white' : 'text-slate-900'}`}>
+                {summary.profile.domicile_state || summary.profile.domicile || summary.profile.state || 'All India'}
+              </p>
+              <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 inline-flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3" /> 85% State Quota
+              </p>
+            </div>
+
+            {/* Category & Quotas */}
+            <div
+              className={`p-3.5 rounded-xl border ${
+                dark ? 'bg-white/[0.03] border-white/10' : 'bg-white border-slate-100 shadow-sm'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className={`text-[11px] font-bold uppercase tracking-wider ${dark ? 'text-white/60' : 'text-slate-500'}`}>
+                  Category / Quotas
+                </span>
+                <GraduationCap className="w-4 h-4 text-violet-500" />
+              </div>
+              <p className={`text-base sm:text-lg font-black truncate ${dark ? 'text-white' : 'text-slate-900'}`}>
+                {summary.profile.category || 'General (UR)'}
+              </p>
+              <p className={`text-[11px] font-semibold mt-0.5 truncate ${dark ? 'text-white/50' : 'text-slate-400'}`}>
+                {summary.profile.pwd_status
+                  ? 'PwD Quota Active'
+                  : summary.profile.defence_quota
+                  ? 'Defence Quota Active'
+                  : summary.profile.tuition_budget
+                  ? `Budget: ${summary.profile.tuition_budget}`
+                  : 'AIQ + State Eligible'}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Stats with images + high-contrast text (light & dark) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

@@ -223,6 +223,73 @@ export default async function handler(req, res) {
         throw error;
       }
 
+      // Automatically sync to student_counselling table (for Admin CRM & counsellors)
+      try {
+        const studentRow = {
+          user_id: user.id,
+          full_name: data.full_name || data.name || user.user_metadata?.full_name || (user.email ? user.email.split('@')[0] : 'Student'),
+          email: user.email || data.email || '',
+          phone: data.phone || user.user_metadata?.phone || '',
+          neet_rank: data.neet_rank ?? (data.rank ? Number(data.rank) : null),
+          score: data.neet_score ?? (data.score ?? (data.marks ? Number(data.marks) : null)),
+          state: data.domicile_state || data.state || data.domicile || '',
+          category: data.category || 'General',
+          exam: data.exam || 'NEET UG',
+          purchased_course: data.preferred_course || 'MBBS',
+          updated_at: new Date().toISOString(),
+        };
+
+        const existing = await supabase
+          .from('student_counselling')
+          .select('id')
+          .or(`user_id.eq.${user.id},email.eq.${user.email || ''}`)
+          .maybeSingle();
+
+        if (existing?.data?.id) {
+          await supabase
+            .from('student_counselling')
+            .update(studentRow)
+            .eq('id', existing.data.id);
+        } else {
+          await supabase
+            .from('student_counselling')
+            .insert({
+              ...studentRow,
+              counselling_status: 'new',
+              payment_status: data.payment_status || 'pending',
+              created_at: new Date().toISOString(),
+            });
+        }
+      } catch (sErr) {
+        console.warn('Sync to student_counselling info:', sErr?.message);
+      }
+
+      // Automatically sync to students table (if exists)
+      try {
+        await supabase.from('students').upsert(
+          {
+            id: user.id,
+            user_id: user.id,
+            name: data.full_name || data.name || '',
+            full_name: data.full_name || data.name || '',
+            email: user.email || data.email || '',
+            phone: data.phone || '',
+            neet_score: data.neet_score ?? data.score,
+            score: data.neet_score ?? data.score,
+            neet_rank: data.neet_rank,
+            category: data.category || 'General',
+            domicile_state: data.domicile_state || data.domicile || 'Madhya Pradesh',
+            state: data.state || '',
+            preferred_course: data.preferred_course || 'MBBS',
+            profile_completed: Boolean(data.profile_completed || data.onboarding_done),
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'id' }
+        );
+      } catch (stErr) {
+        /* students table fallback */
+      }
+
       const completion = computeProfileCompletion(data || {});
       return res.status(200).json({ ...data, completion_percentage: completion });
     }

@@ -47,8 +47,45 @@ export default async function handler(req, res) {
       if (q) {
         query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%`);
       }
-      const { data, error } = await query;
-      if (error) throw error;
+      let { data, error } = await query;
+      if (error) {
+        console.warn('student_counselling query error, fallback to profiles:', error.message);
+        data = [];
+      }
+
+      // Also ensure students from profiles table are visible if super_admin
+      if (isSuper && !assigned_to && (!status || status === 'new' || status === 'all')) {
+        try {
+          const profRes = await supabase.from('profiles').select('*').order('updated_at', { ascending: false });
+          if (profRes?.data?.length) {
+            const existingUserIds = new Set((data || []).map((s) => s.user_id || s.email));
+            for (const p of profRes.data) {
+              if (p.id && !existingUserIds.has(p.id) && (!p.email || !existingUserIds.has(p.email))) {
+                (data || []).push({
+                  id: p.id,
+                  user_id: p.id,
+                  full_name: p.full_name || p.name || (p.email ? p.email.split('@')[0] : 'Student'),
+                  email: p.email || '',
+                  phone: p.phone || '',
+                  neet_rank: p.neet_rank ?? (p.rank ? Number(p.rank) : null),
+                  score: p.neet_score ?? (p.score ?? (p.marks ? Number(p.marks) : null)),
+                  state: p.domicile_state || p.state || p.domicile || '',
+                  category: p.category || 'General',
+                  exam: p.exam || 'NEET UG',
+                  purchased_course: p.preferred_course || 'MBBS',
+                  counselling_status: 'new',
+                  payment_status: p.payment_status || 'pending',
+                  created_at: p.created_at || new Date().toISOString(),
+                  updated_at: p.updated_at || new Date().toISOString(),
+                });
+              }
+            }
+          }
+        } catch {
+          /* fallback */
+        }
+      }
+
       return res.status(200).json(data || []);
     }
 
