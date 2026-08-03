@@ -115,7 +115,16 @@ export default async function handler(req, res) {
       cutsByState.get(key).push(c);
     }
 
-    const enriched = (baseRows || []).map((row) => {
+    // Deduplicate base rows so each Indian State / UT appears exactly once (36 regions)
+    const seenStates = new Set();
+    const uniqueBaseRows = (baseRows || []).filter((row) => {
+      const k = normalizeState(row.state_name || row.state_key);
+      if (!k || seenStates.has(k)) return false;
+      seenStates.add(k);
+      return true;
+    });
+
+    const enriched = uniqueBaseRows.map((row) => {
       const key = normalizeState(row.state_name);
       const key2 = row.state_key || key;
       const liveCols = collegesByState.get(key) || collegesByState.get(key2) || [];

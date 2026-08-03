@@ -66,7 +66,15 @@ export default function CompetitionMapModule({ dark, embedded }: Props) {
       const data = await apiJson<{ states: StateCompetition[]; summary: CompetitionSummary }>(
         `/api/competition-map?${qs}`
       );
-      setStates(Array.isArray(data.states) ? data.states : []);
+      const rawStates = Array.isArray(data.states) ? data.states : [];
+      const seen = new Set<string>();
+      const uniqueStates = rawStates.filter((s) => {
+        const key = canonicalStateKey(s.state_name);
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      setStates(uniqueStates);
       setSummary(data.summary || null);
       // keep selection in sync
       setSelected((prev) => {
