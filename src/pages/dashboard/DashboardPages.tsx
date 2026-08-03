@@ -538,7 +538,7 @@ interface College {
   course?: string;
   nirf?: number;
   cutoff?: Record<string, any>;
-
+}
 export function FinderPage() {
   const s = useShell();
   const [colleges, setColleges] = useState<College[]>([]);
