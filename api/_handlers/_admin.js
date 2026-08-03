@@ -45,26 +45,14 @@ export async function logActivity(staffId, action, entityType = null, entityId =
       meta,
       created_at: new Date().toISOString(),
     });
-    await supabase
-      .from('staff_profiles')
-      .update({
-        last_activity: new Date().toISOString(),
-        current_activity: action,
-      })
-      .eq('user_id', staffId);
+      // Columns don't exist in schema currently
   } catch (e) {
     console.error('logActivity failed', e);
   }
 }
 
 export async function touchPresence(staffId, presence = 'online') {
-  await supabase
-    .from('staff_profiles')
-    .update({
-      presence,
-      last_activity: new Date().toISOString(),
-    })
-    .eq('user_id', staffId);
+  // Presence columns don't exist in schema currently, ignore
 }
 
 /** Send in-app notification to one or many user ids (students or staff). */

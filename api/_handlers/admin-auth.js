@@ -32,15 +32,8 @@ export default async function handler(req, res) {
       const now = new Date().toISOString();
 
       if (action === 'login') {
-        await supabase
-          .from('staff_profiles')
-          .update({
-            presence: 'online',
-            last_login: now,
-            last_activity: now,
-            current_activity: 'Logged In',
-          })
-          .eq('user_id', user.id);
+        // Removed non-existent presence and activity columns update
+        // We only fetch the session here
 
         const { data: sess } = await supabase
           .from('login_history')
@@ -75,17 +68,6 @@ export default async function handler(req, res) {
             .update({ logout_at: now, duration_seconds: duration })
             .eq('id', open.id);
         }
-
-        await supabase
-          .from('staff_profiles')
-          .update({
-            presence: 'offline',
-            last_logout: now,
-            last_activity: now,
-            current_activity: 'Logged Out',
-            active_student_id: null,
-          })
-          .eq('user_id', user.id);
 
         await logActivity(user.id, 'Logged Out', 'session', open?.id);
         return res.status(200).json({ ok: true });
