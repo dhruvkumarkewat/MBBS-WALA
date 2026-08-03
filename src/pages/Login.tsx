@@ -80,6 +80,11 @@ export default function Login() {
   const [error, setError] = useState('');
   const [focused, setFocused] = useState<string | null>(null);
   const from = (location.state as { from?: string } | null)?.from || '/dashboard';
+  
+  // Detect if we are processing an OAuth callback
+  const isOAuthRedirect = useMemo(() => {
+    return window.location.hash.includes('access_token=') || window.location.hash.includes('type=recovery');
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -338,7 +343,16 @@ export default function Login() {
                 </AnimatePresence>
               </div>
 
-              <div className="auth-mode-track relative mt-6 grid grid-cols-2 rounded-2xl p-1">
+
+              {isOAuthRedirect ? (
+                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                  <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-slate-100 border-t-orange-500 mb-6 mx-auto" />
+                  <h3 className="text-xl font-bold tracking-tight text-slate-900">Authenticating...</h3>
+                  <p className="text-sm font-medium text-slate-500 mt-2 max-w-[240px] mx-auto">Please wait while we log you in securely.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="auth-mode-track relative mt-6 grid grid-cols-2 rounded-2xl p-1">
                 <motion.div
                   className="auth-mode-thumb absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-xl shadow-md"
                   animate={{ left: mode === 'login' ? 4 : 'calc(50% + 0px)' }}
@@ -580,6 +594,8 @@ export default function Login() {
                   </>
                 )}
               </p>
+                </>
+              )}
             </div>
           </div>
 
