@@ -14,7 +14,7 @@ function apiDevMiddlewarePlugin() {
             const { default: handler } = await import('./api/[...route].js');
             await handler(req, res);
             return;
-          } catch (err) {
+          } catch (err: any) {
             console.error('[API Middleware Error]:', err);
             res.statusCode = 500;
             res.setHeader('Content-Type', 'application/json');
@@ -30,6 +30,11 @@ function apiDevMiddlewarePlugin() {
 
 // https://vite.dev/config/
 export default defineConfig(async ({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  for (const [k, v] of Object.entries(env)) {
+    if (!process.env[k]) process.env[k] = v;
+  }
+
   const plugins = [react(), tailwindcss(), apiDevMiddlewarePlugin()];
   try {
     // @ts-ignore
@@ -37,7 +42,6 @@ export default defineConfig(async ({ mode }) => {
     plugins.push(m.sourceTags());
   } catch {}
 
-  const env = loadEnv(mode, process.cwd(), ['VITE_', 'NEXT_PUBLIC_']);
   const processEnvDefines: Record<string, string> = {};
   for (const [key, value] of Object.entries(env)) {
     processEnvDefines[`process.env.${key}`] = JSON.stringify(value);
@@ -58,17 +62,7 @@ export default defineConfig(async ({ mode }) => {
     },
     build: {
       cssCodeSplit: true,
-      target: 'es2020',
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-            'vendor-motion': ['framer-motion'],
-            'vendor-supabase': ['@supabase/supabase-js'],
-          },
-        },
-      },
-      chunkSizeWarningLimit: 700,
+      sourcemap: false,
     },
-  };
+  }
 })

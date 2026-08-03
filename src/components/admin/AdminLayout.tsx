@@ -200,35 +200,7 @@ export default function AdminLayout() {
           <div className="relative pt-28">
             <Shield className="w-10 h-10 text-orange-500 mx-auto mb-4" />
             <h1 className="text-xl font-bold mb-2">Admin access required</h1>
-            <p className={`text-sm mb-6 ${dark ? 'text-white/70' : 'text-slate-500'}`}>{error || 'Not authorized'}</p>
-            <div
-              className={`text-left text-[11px] rounded-2xl p-4 mb-6 font-mono space-y-3 leading-relaxed ${
-                dark ? 'bg-black/40 text-white/85' : 'bg-slate-50 text-slate-700 border border-slate-100'
-              }`}
-            >
-              <p className="text-orange-500 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1">
-                <HelpCircle className="w-3 h-3" /> Demo logins (copy-paste)
-              </p>
-              <p>
-                <span className="text-orange-400 font-bold">Super Admin</span>
-                <br />
-                admin@mbbswala.in · Admin@123456
-                <br />
-                <span className="opacity-70">Sees everyone · assigns packages · manages staff</span>
-              </p>
-              <p>
-                <span className="text-sky-400 font-bold">Counsellor (Sub-admin)</span>
-                <br />
-                counsellor@mbbswala.in · Counsel@123
-                <br />
-                <span className="opacity-70">Only own students · notes · follow-ups · chat</span>
-              </p>
-              <p>
-                <span className="text-emerald-400 font-bold">Student portal</span>
-                <br />
-                aarav.student@mbbswala.in · Student@123
-              </p>
-            </div>
+            <p className={`text-sm mb-6 ${dark ? 'text-white/70' : 'text-slate-500'}`}>{error || 'You do not have staff administrator privileges for this account. Please sign in with an authorized administrator or counsellor account.'}</p>
             <div className="flex gap-3 justify-center flex-wrap">
               <button
                 type="button"

@@ -12,12 +12,16 @@ const supabaseKey =
   process.env.SUPABASE_ANON_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   process.env.VITE_SUPABASE_ANON_KEY ||
-  '';
+  'sb_publishable_8XvVWeN8oeLRMvkTuuFPKg_vI3jOcqg';
 
 const supabase = createClient(
   supabaseUrl,
   supabaseKey,
   {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
     global: {
       fetch: async (url, options) => {
         const res = await fetch(url, options);

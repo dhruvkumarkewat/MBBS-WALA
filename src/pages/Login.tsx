@@ -67,9 +67,8 @@ const perks = [
 export default function Login() {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('demo@mbbswala.in');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -539,15 +538,6 @@ export default function Login() {
                 </svg>
                 Sign in with Google
               </button>
-
-              <p className="auth-demo mb-2 text-center text-[11px] font-medium leading-relaxed">
-                Student demo: <strong>demo@mbbswala.in</strong> / password123
-              </p>
-              <p className="auth-demo mb-4 text-center text-[11px] font-medium leading-relaxed">
-                Admin: <strong>admin@mbbswala.in</strong> / Admin@123456
-                <br />
-                Counsellor: <strong>counsellor@mbbswala.in</strong> / Counsel@123
-              </p>
 
               <div className="auth-privacy flex items-start gap-3 rounded-2xl p-3.5">
                 <span className="auth-privacy-icon grid h-10 w-10 shrink-0 place-items-center rounded-xl">

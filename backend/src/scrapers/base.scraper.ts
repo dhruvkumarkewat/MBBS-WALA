@@ -351,13 +351,12 @@ export abstract class BaseScraper {
       source: 'scraper',
     });
 
-    if (!inserted) {
       // Fallback: log to notifications table (existing)
       await this.safeInsert('notifications', {
         title: `[${this.bodyCode}] ${item.title}`,
-        message: item.description || item.title,
-        type: 'counselling_update',
-        is_active: true,
+        body: item.description || item.title,
+        read: false,
+        created_at: new Date().toISOString(),
       });
     }
   }
