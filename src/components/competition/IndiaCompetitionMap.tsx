@@ -111,7 +111,7 @@ export default function IndiaCompetitionMap({ paths, states, selectedKey, onSele
       {/* legend */}
       <div
         className={`absolute bottom-2 left-2 right-2 sm:right-auto sm:min-w-[200px] rounded-xl border px-3 py-2 backdrop-blur-md text-[10px] font-bold ${
-          dark ? 'bg-black/40 border-white/10 text-white/70' : 'bg-white/80 border-primary-dark/10 text-text-grey'
+          dark ? 'bg-black/40 border-white/10 text-white/70' : 'bg-white/80 border-primary-dark/10 text-gray-500'
         }`}
       >
         <p className="mb-1.5 uppercase tracking-wide opacity-70">Competition heat</p>

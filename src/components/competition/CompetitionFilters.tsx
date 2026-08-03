@@ -25,8 +25,8 @@ export default function CompetitionFiltersBar({ value, onChange, stateOptions, d
   const field =
     'rounded-xl border px-3 py-2 text-xs sm:text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/30 ' +
     (dark
-      ? 'bg-white/5 border-white/10 text-white'
-      : 'bg-white border-primary-dark/10 text-primary-dark');
+      ? 'bg-white/5 border-white/10 text-white [&>option]:bg-[#0f172a] [&>option]:text-white'
+      : 'bg-white border-primary-dark/10 text-primary-dark [&>option]:bg-white [&>option]:text-primary-dark');
 
   return (
     <div

@@ -44,7 +44,7 @@ export default function MapTooltip({ state, x, y, dark }: Props) {
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="font-display font-bold text-base leading-tight">{state.state_name}</p>
-              <p className={`text-[11px] font-semibold mt-0.5 ${dark ? 'text-white/50' : 'text-text-grey'}`}>
+              <p className={`text-[11px] font-semibold mt-0.5 ${dark ? 'text-white/50' : 'text-gray-500'}`}>
                 Competition intelligence
               </p>
             </div>
@@ -57,13 +57,13 @@ export default function MapTooltip({ state, x, y, dark }: Props) {
         <div className="p-4 space-y-3">
           <div className="flex items-end justify-between">
             <div>
-              <p className={`text-[10px] font-bold uppercase tracking-wide ${dark ? 'text-white/40' : 'text-text-grey'}`}>
+              <p className={`text-[10px] font-bold uppercase tracking-wide ${dark ? 'text-white/40' : 'text-gray-500'}`}>
                 Competition score
               </p>
               <p className="text-3xl font-black tabular-nums tracking-tight">{state.competition_score}</p>
             </div>
             <div className="text-right">
-              <p className={`text-[10px] font-bold uppercase ${dark ? 'text-white/40' : 'text-text-grey'}`}>Admit prob.</p>
+              <p className={`text-[10px] font-bold uppercase ${dark ? 'text-white/40' : 'text-gray-500'}`}>Admit prob.</p>
               <p className="text-lg font-black text-primary tabular-nums">{formatPct(state.admission_probability)}</p>
             </div>
           </div>
@@ -82,7 +82,7 @@ export default function MapTooltip({ state, x, y, dark }: Props) {
             <span className="line-clamp-3">{state.insight}</span>
           </div>
 
-          <p className={`text-[10px] font-semibold ${dark ? 'text-white/35' : 'text-text-grey'}`}>
+          <p className={`text-[10px] font-semibold ${dark ? 'text-white/35' : 'text-gray-500'}`}>
             Click state for full analytics →
           </p>
         </div>

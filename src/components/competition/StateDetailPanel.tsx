@@ -44,7 +44,7 @@ export default function StateDetailPanel({ state, onClose, dark }: Props) {
       className={`h-full flex flex-col border-l backdrop-blur-2xl ${
         dark
           ? 'bg-[#0a1219]/95 border-white/10 text-white'
-          : 'bg-white/95 border-primary-dark/8 text-primary-dark'
+          : 'bg-white/95 border-gray-200 text-gray-900'
       }`}
       aria-label={`${state.state_name} analytics panel`}
     >
@@ -58,7 +58,7 @@ export default function StateDetailPanel({ state, onClose, dark }: Props) {
             <span className={`text-[10px] font-black px-2 py-1 rounded-full border ${difficultyTone(state.difficulty)}`}>
               {state.difficulty}
             </span>
-            <span className={`text-xs font-bold tabular-nums ${dark ? 'text-white/60' : 'text-text-grey'}`}>
+            <span className={`text-xs font-bold tabular-nums ${dark ? 'text-white/60' : 'text-gray-500'}`}>
               Score {state.competition_score} · {formatPct(state.admission_probability)} admit odds
             </span>
           </div>
@@ -159,7 +159,7 @@ export default function StateDetailPanel({ state, onClose, dark }: Props) {
               height={150}
               colors={['#f43f5e', '#14b8a6']}
             />
-            <p className={`text-[11px] font-medium mt-2 ${dark ? 'text-white/45' : 'text-text-grey'}`}>
+            <p className={`text-[11px] font-medium mt-2 ${dark ? 'text-white/45' : 'text-gray-500'}`}>
               Higher demand index = tougher closing ranks relative to seat supply.
             </p>
           </section>
@@ -179,7 +179,7 @@ export default function StateDetailPanel({ state, onClose, dark }: Props) {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold leading-snug truncate">{c.name}</p>
-                  <p className={`text-[11px] font-semibold mt-0.5 ${dark ? 'text-white/45' : 'text-text-grey'}`}>
+                  <p className={`text-[11px] font-semibold mt-0.5 ${dark ? 'text-white/45' : 'text-gray-500'}`}>
                     {c.type || 'College'}
                     {c.city ? ` · ${c.city}` : ''}
                     {c.seats != null ? ` · ${c.seats} seats` : ''}
@@ -288,13 +288,13 @@ function Kpi({
   dark?: boolean;
 }) {
   return (
-    <div className={`rounded-2xl border p-3 ${dark ? 'border-white/8 bg-white/5' : 'border-primary-dark/8 bg-white shadow-sm'}`}>
-      <div className="flex items-center gap-1.5 opacity-55 mb-1">
+    <div className={`rounded-2xl border p-3 ${dark ? 'border-white/8 bg-white/5 text-white' : 'border-gray-200 bg-white shadow-sm text-gray-900'}`}>
+      <div className="flex items-center gap-1.5 opacity-60 mb-1">
         <Icon className="w-3.5 h-3.5" />
         <span className="text-[10px] font-bold uppercase">{label}</span>
       </div>
       <p className="text-lg font-black tabular-nums leading-none">{value}</p>
-      {sub && <p className={`text-[10px] font-semibold mt-1 ${dark ? 'text-white/40' : 'text-text-grey'}`}>{sub}</p>}
+      {sub && <p className={`text-[10px] font-semibold mt-1 ${dark ? 'text-white/40' : 'text-gray-500'}`}>{sub}</p>}
     </div>
   );
 }

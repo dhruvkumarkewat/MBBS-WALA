@@ -112,7 +112,7 @@ export default function CompetitionMapModule({ dark, embedded }: Props) {
             <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
               Closing ranks & competition across India
             </h1>
-            <p className={`text-sm font-medium mt-1 max-w-2xl ${dark ? 'text-white/50' : 'text-text-grey'}`}>
+            <p className={`text-sm font-medium mt-1 max-w-2xl ${dark ? 'text-white/50' : 'text-gray-500'}`}>
               Hover any state for avg closing rank, cutoff heat and seat pressure. Click for seat matrix, cutoff trends, demand vs supply, and college shortlists.
             </p>
           </div>
@@ -251,13 +251,13 @@ export default function CompetitionMapModule({ dark, embedded }: Props) {
           <div className={`px-4 py-3 border-b flex items-center gap-2 ${dark ? 'border-white/8' : 'border-primary-dark/8'}`}>
             <Maximize2 className="w-4 h-4 text-primary" />
             <h2 className="text-sm font-black">State leaderboard</h2>
-            <span className={`text-xs font-semibold ${dark ? 'text-white/40' : 'text-text-grey'}`}>
+            <span className={`text-xs font-semibold ${dark ? 'text-white/40' : 'text-gray-500'}`}>
               {states.length} regions · click row to inspect
             </span>
           </div>
           <div className="overflow-x-auto zn-scroll">
             <table className="w-full text-sm min-w-[860px]">
-              <thead className={dark ? 'bg-white/5 text-white/50' : 'bg-grey-bg-light text-text-grey'}>
+              <thead className={dark ? 'bg-white/5 text-white/50' : 'bg-grey-bg-light text-gray-500'}>
                 <tr className="text-left text-[11px] uppercase tracking-wide">
                   <th className="p-3 font-bold">#</th>
                   <th className="p-3 font-bold">State</th>
@@ -316,8 +316,8 @@ export default function CompetitionMapModule({ dark, embedded }: Props) {
 
 function Pill({ dark, label, value }: { dark?: boolean; label: string; value: string }) {
   return (
-    <div className={`rounded-2xl border px-3 py-2 min-w-[88px] ${dark ? 'border-white/10 bg-white/5' : 'border-primary-dark/8 bg-white shadow-sm'}`}>
-      <p className={`text-[10px] font-bold uppercase ${dark ? 'text-white/40' : 'text-text-grey'}`}>{label}</p>
+    <div className={`rounded-2xl border px-3 py-2 min-w-[88px] ${dark ? 'border-white/10 bg-white/5 text-white' : 'border-gray-200 bg-white shadow-sm text-gray-900'}`}>
+      <p className={`text-[10px] font-bold uppercase ${dark ? 'text-white/40' : 'text-gray-500'}`}>{label}</p>
       <p className="text-lg font-black tabular-nums leading-tight">{value}</p>
     </div>
   );
