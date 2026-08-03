@@ -83,6 +83,8 @@ export default function Login() {
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
   const [focused, setFocused] = useState<string | null>(null);
+  
+  const isRefFromURL = useMemo(() => !!new URLSearchParams(window.location.search).get('ref'), []);
   const from = (location.state as { from?: string } | null)?.from || '/dashboard';
   
   // Detect if we are processing an OAuth callback
@@ -460,12 +462,18 @@ export default function Login() {
                         <input
                           value={referralCode}
                           onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                          onFocus={() => setFocused('referral')}
+                          onFocus={() => !isRefFromURL && setFocused('referral')}
                           onBlur={() => setFocused(null)}
-                          className="login-input uppercase tracking-wider font-mono font-bold"
+                          className={`login-input uppercase tracking-wider font-mono font-bold ${isRefFromURL ? 'opacity-70 cursor-not-allowed text-muted-foreground' : ''}`}
                           placeholder="e.g. MBW-7880"
                           autoComplete="off"
+                          readOnly={isRefFromURL}
                         />
+                        {isRefFromURL && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded font-bold uppercase tracking-wider">
+                            Applied
+                          </div>
+                        )}
                       </Field>
                     </motion.div>
                   )}

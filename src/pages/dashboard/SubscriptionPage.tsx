@@ -97,6 +97,23 @@ export function SubscriptionPage() {
   const [payments, setPayments] = useState<any[]>([]);
   const [activeSub, setActiveSub] = useState<any>(null);
   const [error, setError] = useState('');
+  const [referralCode, setReferralCode] = useState('');
+  const [referralMsg, setReferralMsg] = useState({ type: '', text: '' });
+
+  const applyReferral = async () => {
+    if (!referralCode.trim()) return;
+    setReferralMsg({ type: '', text: 'Checking code...' });
+    try {
+      const res = await apiJson<{ valid: boolean; discount: number; message?: string; error?: string }>(`/api/referrals?code=${referralCode}&validate=1`);
+      if (res.valid) {
+        setReferralMsg({ type: 'success', text: `Valid code! ₹${res.discount} discount will be applied at checkout.` });
+      } else {
+        setReferralMsg({ type: 'error', text: res.message || res.error || 'Invalid or unusable code.' });
+      }
+    } catch (err: any) {
+      setReferralMsg({ type: 'error', text: err.message || 'Error validating code.' });
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -117,6 +134,10 @@ export function SubscriptionPage() {
   }, [user]);
 
   const handleUpgrade = async (plan: Plan) => {
+    if (!user) {
+        toastError('Login Required', 'Please login to subscribe.');
+        return;
+    }
     try {
       setUpgradingPlan(plan.id);
       setError('');
@@ -128,6 +149,7 @@ export function SubscriptionPage() {
           plan_slug: plan.id,
           plan_name: plan.name,
           amount: plan.price,
+          referral_code: referralCode.trim()
         }),
       }, true);
 
@@ -286,6 +308,36 @@ export function SubscriptionPage() {
           </div>
         </div>
       ) : null}
+
+      {/* Referral Code UI */}
+      {!isPremium && (
+        <div className="max-w-md mx-auto mb-6">
+          <div className="bg-card border border-border/60 rounded-2xl p-4 shadow-sm">
+            <p className="text-xs font-bold text-foreground mb-2">Have a friend's referral code?</p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Enter code e.g. MBWUSERA1B2"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                className="flex-1 rounded-xl border border-border/60 bg-transparent px-3 py-2 text-sm font-semibold uppercase outline-none focus:border-primary"
+              />
+              <button
+                type="button"
+                onClick={applyReferral}
+                className="px-4 py-2 rounded-xl bg-foreground text-background text-xs font-bold hover:opacity-90 transition-opacity"
+              >
+                Verify
+              </button>
+            </div>
+            {referralMsg.text && (
+              <p className={`mt-2 text-xs font-semibold ${referralMsg.type === 'success' ? 'text-emerald-500' : 'text-destructive'}`}>
+                {referralMsg.text}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Pricing Cards Grid */}
       <div className="grid md:grid-cols-3 gap-6">

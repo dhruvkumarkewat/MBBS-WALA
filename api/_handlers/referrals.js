@@ -99,7 +99,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
 
   try {
-    // Public validate code (for signup)
+    // Public validate code (for signup / checkout)
     if (req.method === 'GET' && req.query?.code && req.query?.validate === '1') {
       const code = String(req.query.code).trim().toUpperCase();
       const { data } = await supabase
@@ -107,10 +107,38 @@ export default async function handler(req, res) {
         .select('referral_code, user_id')
         .eq('referral_code', code)
         .maybeSingle();
+        
+      if (!data) {
+        return res.status(200).json({ valid: false, message: 'Invalid referral code.' });
+      }
+      
+      // If we have the logged in user, do extra checks
+      const authHeader = req.headers.authorization;
+      if (authHeader) {
+        try {
+          const { data: { user: currentUser } } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+          if (currentUser) {
+            if (data.user_id === currentUser.id) {
+              return res.status(200).json({ valid: false, message: 'You cannot use your own referral code.' });
+            }
+            const { data: existingAsReferee } = await supabase
+              .from('referrals')
+              .select('id')
+              .eq('referee_id', currentUser.id)
+              .maybeSingle();
+            if (existingAsReferee) {
+              return res.status(200).json({ valid: false, message: 'You have already used a referral code.' });
+            }
+          }
+        } catch (e) {
+          // ignore auth errors for public validate
+        }
+      }
+
       return res.status(200).json({
-        valid: !!data,
+        valid: true,
         code,
-        discount: data ? REFEREE_DISCOUNT : 0,
+        discount: REFEREE_DISCOUNT,
       });
     }
 
@@ -155,115 +183,8 @@ export default async function handler(req, res) {
       });
     }
 
-    // Apply / complete a referral when new user joins with a code
+    // Handle other POST actions if necessary (removed apply action)
     if (req.method === 'POST') {
-      const { action, code, referee_name } = req.body || {};
-
-      if (action === 'apply') {
-        const refCode = String(code || '').trim().toUpperCase();
-        if (!refCode) {
-          return res.status(200).json({ ok: false, message: 'No referral code provided' });
-        }
-
-        let wallet = null;
-        try {
-          wallet = await ensureWallet(user);
-        } catch {}
-
-        // already used a code?
-        const { data: existingAsReferee } = await supabase
-          .from('referrals')
-          .select('id')
-          .eq('referee_id', user.id)
-          .maybeSingle();
-        if (existingAsReferee) {
-          return res.status(200).json({ ok: false, message: 'Referral code already applied previously' });
-        }
-
-        const { data: referrerWallet } = await supabase
-          .from('wallets')
-          .select('*')
-          .eq('referral_code', refCode)
-          .maybeSingle();
-        if (!referrerWallet) return res.status(404).json({ error: 'Invalid referral code' });
-        if (referrerWallet.user_id === user.id) {
-          return res.status(400).json({ error: 'You cannot use your own code' });
-        }
-
-        // Create completed referral + rewards
-        const now = new Date().toISOString();
-        const { data: refRow, error: rErr } = await supabase
-          .from('referrals')
-          .insert({
-            referrer_id: referrerWallet.user_id,
-            referee_id: user.id,
-            referee_email: user.email || '',
-            referee_name:
-              referee_name ||
-              user.user_metadata?.full_name ||
-              user.email?.split('@')[0] ||
-              'Friend',
-            referral_code: refCode,
-            status: 'completed',
-            referrer_reward: REFERRER_REWARD,
-            referee_discount: REFEREE_DISCOUNT,
-            created_at: now,
-            completed_at: now,
-          })
-          .select()
-          .single();
-        if (rErr) throw rErr;
-
-        // Credit referrer wallet ₹500
-        await ensureWallet({ id: referrerWallet.user_id });
-        await creditWallet(
-          referrerWallet.user_id,
-          REFERRER_REWARD,
-          'referral_reward',
-          `Referral reward — ${user.email || 'new user'} joined`,
-          { referral_id: refRow.id, referee_id: user.id }
-        );
-
-        // Issue ₹500 coupon for referee
-        const couponCode = `SAVE${REFEREE_DISCOUNT}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
-        const exp = new Date();
-        exp.setMonth(exp.getMonth() + 6);
-        await supabase.from('coupons').insert({
-          user_id: user.id,
-          code: couponCode,
-          title: 'Referral Welcome Discount',
-          description: `₹${REFEREE_DISCOUNT} off counselling package — thanks to referral ${refCode}`,
-          discount_amount: REFEREE_DISCOUNT,
-          status: 'active',
-          source: 'referral',
-          expires_at: exp.toISOString(),
-          created_at: now,
-        });
-
-        // Also log a zero-amount txn note for referee
-        await ensureWallet(user);
-        await supabase.from('wallet_transactions').insert({
-          user_id: user.id,
-          type: 'coupon_issued',
-          amount: 0,
-          balance_after: wallet.balance || 0,
-          description: `Received ₹${REFEREE_DISCOUNT} counselling coupon ${couponCode}`,
-          meta: { coupon_code: couponCode, referral_code: refCode },
-          created_at: now,
-        });
-
-        await tryAwardBadges(referrerWallet.user_id);
-        await bumpChallenges(referrerWallet.user_id);
-
-        return res.status(201).json({
-          ok: true,
-          message: `Code applied! You got ₹${REFEREE_DISCOUNT} counselling discount. Your friend earned ₹${REFERRER_REWARD}.`,
-          coupon_code: couponCode,
-          discount: REFEREE_DISCOUNT,
-          referral: refRow,
-        });
-      }
-
       return res.status(400).json({ error: 'Unknown action' });
     }
 

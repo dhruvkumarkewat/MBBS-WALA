@@ -329,9 +329,9 @@ export function ReferEarnPage() {
           <ol className="space-y-5">
             {[
               'Share your unique code or link with friends preparing for NEET / MBBS.',
-              'They sign up and apply your code on this page (or at registration).',
-              `They unlock ₹${data?.rewards.referee ?? 500} counselling discount coupon.`,
-              `You instantly receive ₹${data?.rewards.referrer ?? 500} in your MBBSWala wallet.`,
+              'They select a premium plan and apply your code at checkout.',
+              `They unlock ₹500 discount instantly on their purchase.`,
+              `You receive ₹500 in your MBBSWala wallet after their successful payment.`,
             ].map((t, i) => (
               <li key={t} className="flex gap-3.5">
                 <span className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-orange-700 text-white text-[12px] font-bold grid place-items-center shrink-0 shadow-sm shadow-orange-500/20">
@@ -343,35 +343,9 @@ export function ReferEarnPage() {
           </ol>
         </div>
 
-        {/* Apply code */}
+        {/* Referrals List */}
         <div className={`lg:col-span-3 rounded-2xl border p-6 ${s.card}`}>
-          <h4 className="refer-section-title mb-1.5">Have a friend&apos;s code?</h4>
-          <p className={`refer-body mb-5 ${s.muted}`}>
-            Apply once to unlock <span className="refer-em">₹500 off</span> your counselling package.
-          </p>
-          <form onSubmit={apply} className="flex flex-col sm:flex-row gap-2.5">
-            <input
-              value={applyCode}
-              onChange={(e) => setApplyCode(e.target.value.toUpperCase())}
-              placeholder="Enter code e.g. MBWUSERA1B2"
-              className={`refer-input flex-1 rounded-xl border px-4 py-3.5 ${s.input}`}
-            />
-            <button
-              type="submit"
-              disabled={applying}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-foreground text-background font-semibold text-[13px] tracking-wide hover:opacity-90 disabled:opacity-60"
-            >
-              {applying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ticket className="w-4 h-4" />}
-              Apply code
-            </button>
-          </form>
-          {applyMsg && (
-            <p className="mt-3.5 text-sm font-semibold leading-relaxed text-emerald-600 bg-emerald-500/10 rounded-xl px-3.5 py-2.5">
-              {applyMsg}
-            </p>
-          )}
-
-          <div className="mt-7">
+          <div>
             <div className="flex items-center justify-between mb-4">
               <h4 className="refer-section-title">Your referrals</h4>
               <Link

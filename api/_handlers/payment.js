@@ -46,8 +46,37 @@ export default async function handler(req, res) {
 
     // ── 2. POST action=create-order ──────────────────────────────────────────
     if (req.method === 'POST' && (action === 'create-order' || !action)) {
-      const { plan_slug = 'premium', plan_name = 'Premium Plan', amount = 4999 } = req.body || {};
+      const { plan_slug = 'premium', plan_name = 'Premium Plan', amount = 4999, referral_code } = req.body || {};
       
+      let finalAmount = Number(amount);
+      let appliedReferralCode = null;
+      let referrerId = null;
+
+      // Validate referral code if provided
+      if (referral_code) {
+        const refCode = String(referral_code).trim().toUpperCase();
+        const { data: referrerWallet } = await supabase
+          .from('wallets')
+          .select('user_id')
+          .eq('referral_code', refCode)
+          .maybeSingle();
+
+        if (referrerWallet && referrerWallet.user_id !== user.id) {
+          // Check if already used a code?
+          const { data: existingAsReferee } = await supabase
+            .from('referrals')
+            .select('id')
+            .eq('referee_id', user.id)
+            .maybeSingle();
+            
+          if (!existingAsReferee) {
+            finalAmount = Math.max(0, finalAmount - 500);
+            appliedReferralCode = refCode;
+            referrerId = referrerWallet.user_id;
+          }
+        }
+      }
+
       const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_TGKNxC2HkMEptZ';
       const keySecret = process.env.RAZORPAY_KEY_SECRET || 'VJk0E7jhcJFwuOFz303O5aGJ';
       const receipt = `rcpt_${user.id.slice(0, 6)}_${Date.now()}`;
@@ -64,7 +93,7 @@ export default async function handler(req, res) {
             'Authorization': `Basic ${auth}`
           },
           body: JSON.stringify({
-            amount: Number(amount) * 100, // Razorpay expects amount in paise
+            amount: finalAmount * 100, // Razorpay expects amount in paise
             currency: 'INR',
             receipt: receipt
           })
@@ -87,13 +116,17 @@ export default async function handler(req, res) {
       await supabase.from('payments').insert({
         user_id: user.id,
         order_id: orderId,
-        amount: Number(amount),
+        amount: finalAmount,
         currency: 'INR',
         status: 'created',
         gateway: 'razorpay',
         plan_slug,
         receipt,
-        meta: { plan_name },
+        meta: { 
+          plan_name, 
+          referral_code: appliedReferralCode,
+          referrer_id: referrerId
+        },
         created_at: new Date().toISOString(),
       });
 
@@ -101,7 +134,8 @@ export default async function handler(req, res) {
         ok: true,
         orderId,
         keyId,
-        amount: Number(amount) * 100, // Send paise to frontend
+        amount: finalAmount * 100, // Send paise to frontend
+        original_amount: Number(amount) * 100,
         currency: 'INR',
         plan_slug,
         plan_name,
@@ -173,8 +207,19 @@ export default async function handler(req, res) {
         updated_at: now.toISOString(),
       });
 
-      // 3. Update or Insert Payments Table
+      // 3. Extract referral details before updating Payments Table
+      let appliedReferralCode = null;
+      let referrerId = null;
       if (order_id) {
+        const { data: paymentRecord } = await supabase
+          .from('payments')
+          .select('meta')
+          .eq('order_id', order_id)
+          .maybeSingle();
+        
+        appliedReferralCode = paymentRecord?.meta?.referral_code;
+        referrerId = paymentRecord?.meta?.referrer_id;
+        
         await supabase
           .from('payments')
           .update({
@@ -197,6 +242,47 @@ export default async function handler(req, res) {
           signature,
           created_at: now.toISOString(),
         });
+      }
+
+      // 4. Process Referral Reward if applicable
+      if (appliedReferralCode && referrerId) {
+        const { data: existingAsReferee } = await supabase
+          .from('referrals')
+          .select('id')
+          .eq('referee_id', user.id)
+          .maybeSingle();
+          
+        if (!existingAsReferee) {
+          // Record successful referral
+          const { data: refRow, error: rErr } = await supabase
+            .from('referrals')
+            .insert({
+              referrer_id: referrerId,
+              referee_id: user.id,
+              referee_email: user.email || '',
+              referee_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Friend',
+              referral_code: appliedReferralCode,
+              status: 'completed',
+              referrer_reward: REFERRAL_REWARD_AMOUNT,
+              referee_discount: 500, // Applied at checkout
+              created_at: now.toISOString(),
+              completed_at: now.toISOString(),
+            })
+            .select()
+            .single();
+
+          if (!rErr && refRow) {
+            // Credit referrer wallet ₹500
+            await ensureWallet({ id: referrerId });
+            await creditWallet(
+              referrerId,
+              REFERRAL_REWARD_AMOUNT,
+              'referral_reward',
+              `Referral reward — ${user.email || 'new user'} purchased a plan`,
+              { referral_id: refRow.id, referee_id: user.id }
+            );
+          }
+        }
       }
 
       // 4. Ensure permanent unique Referral Code for this new Premium User
