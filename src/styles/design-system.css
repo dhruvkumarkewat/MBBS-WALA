@@ -107,7 +107,7 @@
   --ds-duration-slow: 400ms;
 
   /* Typography */
-  --ds-font-sans: 'Manrope', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --ds-font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --ds-font-display: 'Cormorant Garamond', Georgia, serif;
   --ds-font-mono: 'SF Mono', ui-monospace, 'Cascadia Code', Menlo, monospace;
 

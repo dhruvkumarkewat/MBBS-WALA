@@ -254,7 +254,7 @@ export default function DesignSystem() {
               <p className="ds-display text-3xl opacity-80">Aa Bb Cc 123</p>
             </Card>
             <Card staticHover className="p-6 space-y-4">
-              <p className="ds-label">Sans · Manrope</p>
+              <p className="ds-label">Sans · Inter</p>
               <p className="ds-title text-3xl">Product UI at every density</p>
               <p className="ds-body">
                 Perfect for dashboards, forms, tables, and dense counselling workflows. Tracking tight on titles, relaxed on body.
