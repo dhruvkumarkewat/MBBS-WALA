@@ -201,7 +201,8 @@ export abstract class BaseScraper {
 
           // Auto-create college entry from cutoff data
           const collegeName = mapped.college_name || record.college_name || record.name;
-          if (collegeName && !seenColleges.has(collegeName)) {
+          const isStopWord = /^(there|minimum|in|the|and|for|with|from|this|that|not|round|final|ug|pg)$/i.test(collegeName?.trim() || '');
+          if (collegeName && collegeName.length > 5 && !isStopWord && !seenColleges.has(collegeName)) {
             seenColleges.add(collegeName);
             const collegeRecord = this.mapToCollegeSchema({
               name: collegeName,
@@ -220,7 +221,8 @@ export abstract class BaseScraper {
 
           // Auto-create college entry from seat matrix data
           const collegeName = mapped.college_name || record.college_name || record.name;
-          if (collegeName && !seenColleges.has(collegeName)) {
+          const isStopWord = /^(there|minimum|in|the|and|for|with|from|this|that|not|round|final|ug|pg)$/i.test(collegeName?.trim() || '');
+          if (collegeName && collegeName.length > 5 && !isStopWord && !seenColleges.has(collegeName)) {
             seenColleges.add(collegeName);
             const collegeRecord = this.mapToCollegeSchema({
               name: collegeName,
@@ -296,7 +298,7 @@ export abstract class BaseScraper {
    * Map extracted record to the colleges table schema.
    */
   private mapToCollegeSchema(record: Record<string, any>): Record<string, any> {
-    const name = record.name || record.college_name || record.institute_name || '';
+    const name = (record.name || record.college_name || record.institute_name || '').trim();
     const hash = crypto.randomUUID().replace(/-/g, '').slice(0, 10);
     const colType = record.type || record.college_type || 'Government';
     return {
@@ -309,6 +311,9 @@ export abstract class BaseScraper {
       type: colType,
       college_type: colType,
       course: record.course || record.course_name || 'MBBS',
+      seats: record.seats || record.total_seats || 100,
+      fee: record.fee || 'Government Norms',
+      established: record.established || '2000',
       source: `scraper:${this.bodyCode}`,
     };
   }
