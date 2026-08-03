@@ -185,6 +185,8 @@ export function PredictorPage() {
       aiq_rank: number;
       state_rank_range: string;
       total_seats: number | null;
+      nirf?: number;
+      opening_rank?: number;
     }>
   >([]);
   const [summary, setSummary] = useState<{
