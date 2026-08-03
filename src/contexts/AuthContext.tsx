@@ -95,13 +95,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
 
-  const fetchProfile = useCallback(async (currUser: User | null): Promise<UserProfile | null> => {
+  const fetchProfile = useCallback(async (currUser: User | null, skipLoadingState = false): Promise<UserProfile | null> => {
     if (!currUser) {
       setProfile(null);
       setProfileLoading(false);
       return null;
     }
-    setProfileLoading(true);
+    // Only show loading spinner on first load, not on background token refreshes
+    if (!skipLoadingState) setProfileLoading(true);
     try {
       const data = await apiJson<UserProfile>('/api/profile', {}, true);
       setProfile(data);
@@ -157,11 +158,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, s) => {
+    } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       const u = s?.user ?? null;
       setUser(u);
       setLoading(false);
+      // Skip profile re-fetch on token refresh (tab focus) to prevent dashboard reload
+      if (event === 'TOKEN_REFRESHED') return;
       if (u) {
         fetchProfile(u);
       } else {

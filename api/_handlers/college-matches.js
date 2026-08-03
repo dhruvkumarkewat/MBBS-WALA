@@ -69,8 +69,14 @@ export default async function handler(req, res) {
       cutoffQuery = cutoffQuery.in('college_name', courseNames);
     }
 
-    const { data: cutoffs, error } = await cutoffQuery;
+    const { data: rawCutoffs, error } = await cutoffQuery;
     if (error) throw error;
+
+    // Filter out junk rows from bad scraper (year 2026 entries are all garbage,
+    // and real college names always contain a space e.g. "Medical College")
+    const cutoffs = (rawCutoffs || []).filter(
+      (c) => c.college_name && c.college_name.includes(' ') && c.year !== 2026
+    );
 
     let seatQuery = supabase.from('seat_matrix').select('*');
     if (courseNames && courseNames.length && course !== 'MBBS') {
