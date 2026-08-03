@@ -85,10 +85,10 @@ app.use((_req, res) => {
 app.use(errorHandler);
 
 // ── Start server ─────────────────────────────────────────────────────────────
-app.listen(env.PORT, () => {
+app.listen(env.PORT, '0.0.0.0', () => {
   logger.info(`🚀 MBBS Wala API running on port ${env.PORT} [${env.NODE_ENV}]`);
-  logger.info(`📡 Health: http://localhost:${env.PORT}/health`);
-  logger.info(`📚 API:    http://localhost:${env.PORT}/api/v1`);
+  logger.info(`📡 Health: http://0.0.0.0:${env.PORT}/health`);
+  logger.info(`📚 API:    http://0.0.0.0:${env.PORT}/api/v1`);
 
   // Start automated scraper cron jobs
   if (env.NODE_ENV !== 'test') {
