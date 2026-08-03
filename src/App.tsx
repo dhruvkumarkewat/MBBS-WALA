@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ComponentType } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -198,6 +198,9 @@ export default function App() {
           <Route path="applications" element={<L><ApplicationsPage /></L>} />
           <Route path="notifications" element={<L><NotificationsPage /></L>} />
           <Route path="refer" element={<L><ReferEarnPage /></L>} />
+          <Route path="referrals" element={<L><ReferEarnPage /></L>} />
+          <Route path="referral" element={<L><ReferEarnPage /></L>} />
+          <Route path="rewards" element={<L><ReferEarnPage /></L>} />
           <Route path="wallet" element={<L><WalletPage /></L>} />
           <Route path="leaderboard" element={<L><LeaderboardPage /></L>} />
           <Route path="badges" element={<L><BadgesPage /></L>} />
@@ -206,10 +209,21 @@ export default function App() {
           <Route path="earnings" element={<L><EarningsAnalyticsPage /></L>} />
           <Route path="withdrawals" element={<L><WithdrawalsPage /></L>} />
           <Route path="subscription" element={<L><SubscriptionPage /></L>} />
+          <Route path="plans" element={<L><SubscriptionPage /></L>} />
+          <Route path="pricing" element={<L><SubscriptionPage /></L>} />
+          <Route path="billing" element={<L><SubscriptionPage /></L>} />
+          <Route path="membership" element={<L><SubscriptionPage /></L>} />
+          <Route path="premium" element={<L><SubscriptionPage /></L>} />
+          <Route path="packages" element={<L><SubscriptionPage /></L>} />
+          <Route path="courses" element={<L><CounsellingPage /></L>} />
           <Route path="profile" element={<L><ProfilePage /></L>} />
           <Route path="settings" element={<L><SettingsPage /></L>} />
           <Route path="support" element={<L><SupportPage /></L>} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
+
+        {/* Global 404 Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

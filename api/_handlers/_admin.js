@@ -2,13 +2,21 @@ import supabase from './db-client.js';
 import { requireUser } from './_auth.js';
 
 export async function getStaffProfile(userId) {
-  const { data, error } = await supabase
-    .from('staff_profiles')
-    .select('*')
-    .eq('user_id', userId)
-    .maybeSingle();
-  if (error) throw error;
-  return data;
+  try {
+    if (!userId) return null;
+    const { data, error } = await supabase
+      .from('staff_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error) {
+      // Table may not exist or user is not staff
+      return null;
+    }
+    return data || null;
+  } catch {
+    return null;
+  }
 }
 
 export async function requireStaff(req, res, { roles = ['super_admin', 'sub_admin'] } = {}) {
