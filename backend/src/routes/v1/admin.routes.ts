@@ -64,60 +64,91 @@ adminRoutes.get('/scraper/authorities', async (_req: Request, res: Response) => 
 
 /**
  * GET & POST /api/v1/admin/scraper/run-now
- * Execute live scraping immediately on the Render cloud server and return full results.
+ * Execute live scraping on the Render cloud server without hitting HTTP timeouts.
  */
 adminRoutes.all('/scraper/run-now', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const target = String(req.query.target || req.body?.target || 'ALL').toUpperCase();
     const isDryRun = req.query.dry_run === 'true' || req.body?.dry_run === true;
+    const shouldWait = req.query.wait === 'true' || req.body?.wait === true;
 
-    log.info({ target, isDryRun }, 'Online live scraping initiated via API');
+    log.info({ target, isDryRun, shouldWait }, 'Online live scraping requested via API');
 
-    const results: any[] = [];
-    const { MCCScraper } = await import('../../scrapers/mcc.scraper.js');
-    const { AACCCScraper } = await import('../../scrapers/aaccc.scraper.js');
-    const { StateScraper } = await import('../../scrapers/state.scraper.js');
-    const { getHighPriorityStateAuthorities } = await import('../../scrapers/state-registry.js');
+    const executeScraping = async () => {
+      const results: any[] = [];
+      const { MCCScraper } = await import('../../scrapers/mcc.scraper.js');
+      const { AACCCScraper } = await import('../../scrapers/aaccc.scraper.js');
+      const { StateScraper } = await import('../../scrapers/state.scraper.js');
+      const { getHighPriorityStateAuthorities } = await import('../../scrapers/state-registry.js');
 
-    if (target === 'ALL' || target === 'MCC') {
-      const mcc = new MCCScraper();
-      const resMcc = await mcc.run(isDryRun);
-      results.push({ authority: 'MCC', ...resMcc });
-    }
+      if (target === 'ALL' || target === 'MCC') {
+        const mcc = new MCCScraper();
+        const resMcc = await mcc.run(isDryRun);
+        results.push({ authority: 'MCC', ...resMcc });
+      }
 
-    if (target === 'ALL' || target === 'AACCC') {
-      const aaccc = new AACCCScraper();
-      const resAaccc = await aaccc.run(isDryRun);
-      results.push({ authority: 'AACCC', ...resAaccc });
-    }
+      if (target === 'ALL' || target === 'AACCC') {
+        const aaccc = new AACCCScraper();
+        const resAaccc = await aaccc.run(isDryRun);
+        results.push({ authority: 'AACCC', ...resAaccc });
+      }
 
-    if (target === 'ALL' || target === 'STATES') {
-      const states = getHighPriorityStateAuthorities();
-      for (const st of states.slice(0, 5)) {
-        try {
-          const sc = new StateScraper(st);
-          const resSt = await sc.run(isDryRun);
-          results.push({ authority: st.code, state: st.state, ...resSt });
-        } catch (e: any) {
-          results.push({ authority: st.code, state: st.state, error: e.message });
+      if (target === 'ALL' || target === 'STATES') {
+        const states = getHighPriorityStateAuthorities();
+        for (const st of states.slice(0, 5)) {
+          try {
+            const sc = new StateScraper(st);
+            const resSt = await sc.run(isDryRun);
+            results.push({ authority: st.code, state: st.state, ...resSt });
+          } catch (e: any) {
+            results.push({ authority: st.code, state: st.state, error: e.message });
+          }
         }
       }
+
+      return results;
+    };
+
+    if (shouldWait) {
+      const results = await executeScraping();
+      return res.json({
+        status: 'completed',
+        target,
+        timestamp: new Date().toISOString(),
+        summary: {
+          totalAuthoritiesChecked: results.length,
+          totalNewNotices: results.reduce((a, b) => a + (b.newNotices || 0), 0),
+          totalRecordsCreated: results.reduce((a, b) => a + (b.recordsCreated || 0), 0),
+          totalRecordsUpdated: results.reduce((a, b) => a + (b.recordsUpdated || 0), 0),
+        },
+        results,
+      });
     }
 
-    res.json({
-      status: 'completed',
+    // Default: Respond immediately so Render proxy doesn't time out (502)
+    // Run execution in the background
+    executeScraping()
+      .then((resArr) => {
+        log.info(
+          { target, authoritiesProcessed: resArr.length },
+          'Background cloud scraping execution completed'
+        );
+      })
+      .catch((err) => {
+        log.error({ target, err: err.message }, 'Background cloud scraping execution failed');
+      });
+
+    return res.status(200).json({
+      status: 'initiated',
+      message: `🚀 Scraping for [${target}] successfully launched in the background on Render.`,
       target,
+      isDryRun,
+      track_status_url: '/api/v1/admin/scraper/status',
+      hint: 'Check /api/v1/admin/scraper/status or your Render Logs tab to see live PDF parsing and Supabase records.',
       timestamp: new Date().toISOString(),
-      summary: {
-        totalAuthoritiesChecked: results.length,
-        totalNewNotices: results.reduce((a, b) => a + (b.newNotices || 0), 0),
-        totalRecordsCreated: results.reduce((a, b) => a + (b.recordsCreated || 0), 0),
-        totalRecordsUpdated: results.reduce((a, b) => a + (b.recordsUpdated || 0), 0),
-      },
-      results,
     });
   } catch (err) {
-    log.error({ err }, 'Failed to execute online live scraping');
+    log.error({ err }, 'Failed to initiate online live scraping');
     next(err);
   }
 });
