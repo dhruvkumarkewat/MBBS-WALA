@@ -299,22 +299,17 @@ export abstract class BaseScraper {
    */
   private mapToCollegeSchema(record: Record<string, any>): Record<string, any> {
     const name = (record.name || record.college_name || record.institute_name || '').trim();
-    const hash = crypto.randomUUID().replace(/-/g, '').slice(0, 10);
     const colType = record.type || record.college_type || 'Government';
     return {
-      id: record.id || hash,
       name,
-      short: record.short || name.slice(0, 12),
+      short_name: record.short_name || record.short || name.slice(0, 12),
       city: record.city || 'Unknown',
       state: record.state || 'Unknown',
       country: record.country || 'INDIA',
-      type: colType,
       college_type: colType,
       course: record.course || record.course_name || 'MBBS',
-      seats: record.seats || record.total_seats || 100,
-      fee: record.fee || 'Government Norms',
-      established: record.established || '2000',
       source: `scraper:${this.bodyCode}`,
+      is_active: true,
     };
   }
 
@@ -421,31 +416,63 @@ export abstract class BaseScraper {
   }
 
   /**
+   * Resolve counselling body UUID from code (auto-creating if missing).
+   */
+  protected async getBodyUuid(): Promise<string | null> {
+    try {
+      const { data: body } = await this.db
+        .from('counselling_bodies')
+        .select('id')
+        .eq('code', this.bodyCode)
+        .maybeSingle();
+
+      if (body?.id) return body.id;
+
+      const { data: created } = await this.db
+        .from('counselling_bodies')
+        .insert({
+          code: this.bodyCode,
+          name: this.bodyCode,
+          full_name: this.bodyCode,
+          type: this.bodyCode === 'MCC' ? 'Central' : this.bodyCode === 'AACCC' ? 'AYUSH' : 'State',
+          is_active: true,
+          source: 'scraper',
+        })
+        .select('id')
+        .maybeSingle();
+
+      return created?.id || null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Record a notice (safe — won't crash if counselling_notices table missing).
    */
   protected async safeRecordNotice(item: DetectedItem): Promise<void> {
-    // Try counselling_notices (v2 table)
-    const inserted = await this.safeInsert('counselling_notices', {
-      body_id: this.bodyCode,
-      title: item.title,
-      description: item.description,
-      notice_type: item.noticeType,
-      notice_date: item.date,
-      pdf_url: item.fileUrl,
-      page_url: item.pageUrl,
-      priority: item.priority || 'normal',
-      source: 'scraper',
-    });
-
-    if (!inserted) {
-      // Fallback: log to notifications table (existing)
-      await this.safeInsert('notifications', {
-        title: `[${this.bodyCode}] ${item.title}`,
-        body: item.description || item.title,
-        read: false,
-        created_at: new Date().toISOString(),
+    const bodyUuid = await this.getBodyUuid();
+    if (bodyUuid) {
+      await this.safeInsert('counselling_notices', {
+        body_id: bodyUuid,
+        title: item.title,
+        description: item.description,
+        notice_type: item.noticeType,
+        notice_date: item.date || new Date().toISOString().split('T')[0],
+        pdf_url: item.fileUrl,
+        page_url: item.pageUrl,
+        priority: item.priority || 'normal',
+        source: 'scraper',
       });
     }
+
+    // Also record to notifications table for real-time notification feed
+    await this.safeInsert('notifications', {
+      title: `[${this.bodyCode}] ${item.title}`,
+      body: item.description || item.title,
+      read: false,
+      created_at: new Date().toISOString(),
+    });
   }
 
   /**
