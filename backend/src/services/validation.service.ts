@@ -5,59 +5,56 @@ const log = createChildLogger('validation');
 
 // ── Cutoff Record Validation ──────────────────────────────────────────────────
 export const cutoffRecordSchema = z.object({
-  college_name: z.string().min(3, 'College name must be at least 3 characters'),
-  course_name: z.string().optional().default('MBBS'),
+  college_name: z.string().min(2, 'College name must be at least 2 characters'),
+  course_name: z.enum(['MBBS', 'BDS', 'BAMS', 'BHMS', 'BUMS', 'BSMS', 'BNYS']).optional().default('MBBS'),
   category_code: z.string().min(1),
-  quota_code: z.string().optional().default('AI'),
-  year: z.number().int().min(2015).max(2030),
+  quota_code: z.string().optional().default('AIQ'),
+  year: z.number().int().min(2015).max(2035),
   round_name: z.string().optional(),
-  opening_rank: z.number().int().min(1).max(1500000).optional().nullable(),
-  closing_rank: z.number().int().min(1).max(1500000).optional().nullable(),
+  opening_rank: z.number().int().min(1).max(2500000).optional().nullable(),
+  closing_rank: z.number().int().min(1).max(2500000).optional().nullable(),
   opening_score: z.number().min(0).max(720).optional().nullable(),
   closing_score: z.number().min(0).max(720).optional().nullable(),
-  body_code: z.string().min(1),
+  body_code: z.string().optional(),
 }).refine(
-  (data) => data.closing_rank != null || data.closing_score != null,
-  { message: 'Either closing_rank or closing_score must be provided' }
+  (data) => data.closing_rank != null || data.closing_score != null || data.opening_rank != null,
+  { message: 'Either closing_rank, opening_rank, or score must be provided' }
 );
 
 // ── Seat Matrix Record Validation ─────────────────────────────────────────────
 export const seatMatrixRecordSchema = z.object({
-  college_name: z.string().min(3),
-  course_name: z.string().optional().default('MBBS'),
-  year: z.number().int().min(2015).max(2030),
-  quota_code: z.string().optional().default('AI'),
-  category_code: z.string().optional().default('UR'),
+  college_name: z.string().min(2),
+  course_name: z.enum(['MBBS', 'BDS', 'BAMS', 'BHMS', 'BUMS', 'BSMS', 'BNYS']).optional().default('MBBS'),
+  year: z.number().int().min(2015).max(2035),
+  quota_code: z.string().optional().default('AIQ'),
+  category_code: z.string().optional().default('General'),
   total_seats: z.number().int().min(0).max(5000),
   filled_seats: z.number().int().min(0).optional(),
   vacant_seats: z.number().int().min(0).optional(),
-  body_code: z.string().min(1),
+  body_code: z.string().optional(),
 });
 
 // ── College Record Validation ─────────────────────────────────────────────────
 export const collegeRecordSchema = z.object({
-  name: z.string().min(3),
+  name: z.string().min(2),
   state: z.string().min(2),
-  city: z.string().optional(),
-  college_type: z.enum([
-    'Government', 'Government (Central)', 'Private', 'Private (Deemed)',
-    'Private (Minority)', 'Central Government', 'ESIC', 'AFMC', 'Municipal'
-  ]),
-  college_code: z.string().optional(),
-  established: z.number().int().min(1800).max(2030).optional().nullable(),
-  website: z.string().url().optional().nullable(),
+  city: z.string().optional().nullable(),
+  college_type: z.string().optional().default('Government'),
+  college_code: z.string().optional().nullable(),
+  established: z.number().int().min(1800).max(2035).optional().nullable(),
+  website: z.string().optional().nullable(),
 });
 
 // ── Notice Record Validation ──────────────────────────────────────────────────
 export const noticeRecordSchema = z.object({
-  title: z.string().min(5),
-  body_code: z.string().min(1),
+  title: z.string().min(3),
+  body_code: z.string().optional(),
   notice_type: z.enum([
     'schedule', 'registration', 'choice_filling', 'seat_matrix',
     'result', 'reporting', 'resignation', 'upgrade', 'vacancy',
-    'fee', 'eligibility', 'bulletin', 'general', 'correction'
-  ]),
-  pdf_url: z.string().url().optional().nullable(),
+    'fee', 'eligibility', 'bulletin', 'general', 'correction', 'round'
+  ]).optional().default('general'),
+  pdf_url: z.string().optional().nullable(),
   notice_date: z.string().optional(),
 });
 

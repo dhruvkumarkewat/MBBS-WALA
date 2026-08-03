@@ -1,4 +1,6 @@
+import axios from 'axios';
 import { getAdminClient } from '../config/database.js';
+import { env } from '../config/env.js';
 import { createChildLogger } from '../utils/logger.js';
 import { generateChecksum, hasChanged } from '../utils/checksum.js';
 
@@ -64,15 +66,34 @@ export abstract class BaseScraper {
         'New updates detected'
       );
 
-      // Step 2: Process each new item
+      // Step 2: Process each new item with Smart Change Detection
       for (const item of updates.newItems) {
         try {
           let content: ExtractedData | null = null;
 
           if (item.fileUrl) {
             if (!isDryRun) {
+              // Pre-flight HTTP HEAD check for smart caching
+              const headInfo = await this.checkHttpHead(item.fileUrl);
+              log.debug({ fileUrl: item.fileUrl, headInfo }, 'Pre-flight HEAD check');
+
               const filePath = await this.downloadFile(item.fileUrl, item.fileType);
               result.filesDownloaded++;
+
+              // Verify SHA-256 checksum
+              const checksum = generateChecksum(filePath);
+              const { data: previousNotice } = await this.db
+                .from('counselling_notices')
+                .select('id, description')
+                .eq('pdf_url', item.fileUrl)
+                .maybeSingle();
+
+              if (previousNotice && previousNotice.description?.includes(checksum)) {
+                log.info({ file: filePath }, 'File content unchanged (checksum match) — skipping extraction');
+                result.recordsSkipped++;
+                continue;
+              }
+
               content = await this.extractData(filePath, item.fileType);
             }
           } else if (item.htmlContent) {
@@ -119,6 +140,25 @@ export abstract class BaseScraper {
     }
 
     return result;
+  }
+
+  /**
+   * Pre-flight HTTP HEAD check to inspect headers before downloading.
+   */
+  protected async checkHttpHead(url: string): Promise<{ etag?: string; lastModified?: string; contentLength?: number }> {
+    try {
+      const res = await axios.head(url, {
+        headers: { 'User-Agent': env.SCRAPER_USER_AGENT },
+        timeout: 10000,
+      });
+      return {
+        etag: res.headers['etag'] as string | undefined,
+        lastModified: res.headers['last-modified'] as string | undefined,
+        contentLength: res.headers['content-length'] ? Number(res.headers['content-length']) : undefined,
+      };
+    } catch {
+      return {};
+    }
   }
 
   // ── Abstract methods ────────────────────────────────────────────────────

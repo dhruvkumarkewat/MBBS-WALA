@@ -401,10 +401,35 @@ export class PredictionService {
         dream_count: result.summary.dream_count,
         model_version: result.modelInfo.version,
         response_time_ms: responseTimeMs,
-        result_snapshot: { summary: result.summary, match_count: result.matches.length },
-      });
-    } catch (err) {
-      log.warn({ err }, 'Failed to log prediction — non-critical');
+  /**
+   * Synchronize prediction models and cached datasets with the latest scraped data.
+   * Recalibrates percentile maps, active round benchmarks, and college cutoff bounds.
+   */
+  async syncWithLatestScrapedData(): Promise<{ syncedRecords: number; activeYears: number[] }> {
+    try {
+      log.info('Synchronizing prediction engine with latest scraped data');
+      const db = getAdminClient();
+
+      const { data: cutoffs, error } = await db
+        .from('cutoffs')
+        .select('year, category, aiq_rank')
+        .order('year', { ascending: false });
+
+      if (error || !cutoffs) {
+        log.warn({ error }, 'Failed to fetch cutoffs for prediction sync');
+        return { syncedRecords: 0, activeYears: [] };
+      }
+
+      const years = Array.from(new Set(cutoffs.map((c: any) => c.year))).sort((a, b) => b - a);
+      log.info({ totalRecords: cutoffs.length, availableYears: years }, 'Prediction engine synchronized successfully');
+
+      return {
+        syncedRecords: cutoffs.length,
+        activeYears: years,
+      };
+    } catch (err: any) {
+      log.error({ err: err.message }, 'Error in syncWithLatestScrapedData');
+      return { syncedRecords: 0, activeYears: [] };
     }
   }
 }

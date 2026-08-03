@@ -20,6 +20,23 @@ export class NotificationService {
   private db = getAdminClient();
 
   /**
+   * Broadcast an administrative alert for critical crawler/counselling events.
+   */
+  async notifyAdmins(title: string, message: string, metadata?: Record<string, any>): Promise<void> {
+    try {
+      log.info({ title, metadata }, 'Dispatching admin notification');
+      await this.db.from('notifications').insert({
+        title,
+        body: message,
+        read: false,
+        created_at: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      log.warn({ err: err.message }, 'Failed to insert admin notification');
+    }
+  }
+
+  /**
    * Emit a counselling event notification.
    * Automatically resolves template, recipients, and creates queue entries.
    */

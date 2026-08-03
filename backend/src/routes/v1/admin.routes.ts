@@ -46,6 +46,23 @@ adminRoutes.get('/scraper/status', async (_req: Request, res: Response, next: Ne
 });
 
 /**
+ * GET /api/v1/admin/scraper/authorities
+ * List all supported Central & State Medical Counselling Authorities.
+ */
+adminRoutes.get('/scraper/authorities', async (_req: Request, res: Response) => {
+  const { getAllStateAuthorities } = await import('../../scrapers/state-registry.js');
+  const states = getAllStateAuthorities();
+  res.json({
+    central: [
+      { code: 'MCC', name: 'Medical Counselling Committee (MCC)', baseUrl: 'https://mcc.nic.in', courses: ['MBBS', 'BDS', 'SS'] },
+      { code: 'AACCC', name: 'Ayush Admissions Central Counseling Committee (AACCC)', baseUrl: 'https://aaccc.gov.in', courses: ['BAMS', 'BHMS', 'BUMS', 'BSMS'] }
+    ],
+    states,
+    total: 2 + states.length,
+  });
+});
+
+/**
  * POST /api/v1/admin/scraper/trigger
  * Manually trigger a scraper job.
  */

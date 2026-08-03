@@ -1,41 +1,74 @@
 #!/usr/bin/env tsx
 /**
- * Scraper CLI — Run scrapers manually from the command line.
+ * Scraper CLI — Run automated pipeline manually from the command line.
  *
  * Usage:
- *   npm run scraper:check       — Check MCC + AACCC for new notices (dry run)
- *   npm run scraper:sync        — Full sync: check, download, extract, import
- *   npm run scraper:dry-run     — Full pipeline but skip DB writes
+ *   npm run scraper:check               — Check MCC + AACCC for new notices (dry run)
+ *   npm run scraper:check DME_MP        — Check specific State authority (e.g. DME MP)
+ *   npm run scraper:sync                — Full sync for central MCC + AACCC
+ *   npm run scraper:sync STATES         — Full sync for all Tier-1 State Authorities
+ *   npm run scraper:dry-run             — Full pipeline test without database writes
  */
 
 import { MCCScraper } from './mcc.scraper.js';
 import { AACCCScraper } from './aaccc.scraper.js';
+import { StateScraper } from './state.scraper.js';
+import {
+  getAllStateAuthorities,
+  getStateAuthorityByCode,
+  getHighPriorityStateAuthorities,
+} from './state-registry.js';
 import { createChildLogger } from '../utils/logger.js';
 
 const log = createChildLogger('scraper-cli');
 
 async function main() {
   const command = process.argv[2] || 'check';
-  const source = process.argv[3]?.toUpperCase(); // Optional: 'MCC' or 'AACCC'
+  const target = process.argv[3]?.toUpperCase();
 
-  log.info({ command, source }, 'Scraper CLI started');
+  log.info({ command, target }, 'Automated Medical Counselling Scraper CLI started');
 
-  const scrapers = [];
-  if (!source || source === 'MCC') scrapers.push(new MCCScraper());
-  if (!source || source === 'AACCC') scrapers.push(new AACCCScraper());
+  const scrapers: any[] = [];
+
+  if (!target || target === 'MCC') {
+    scrapers.push(new MCCScraper());
+  }
+  if (!target || target === 'AACCC') {
+    scrapers.push(new AACCCScraper());
+  }
+
+  if (target === 'STATES' || target === 'ALL_STATES') {
+    const states = target === 'ALL_STATES' ? getAllStateAuthorities() : getHighPriorityStateAuthorities();
+    for (const auth of states) {
+      scrapers.push(new StateScraper(auth));
+    }
+  } else if (target && target !== 'MCC' && target !== 'AACCC') {
+    const stateAuth = getStateAuthorityByCode(target);
+    if (stateAuth) {
+      scrapers.push(new StateScraper(stateAuth));
+    } else {
+      console.error(`Unknown authority code: ${target}`);
+      console.log('Available state codes: DME_MP, DGME_UP, CET_MAH, KEA_KAR, RUHS_RAJ, ACPUGMEC_GUJ, DME_TN, etc.');
+      process.exit(1);
+    }
+  }
 
   for (const scraper of scrapers) {
     try {
+      const bodyCode = scraper.bodyCode || (scraper as any).config?.code || 'UNKNOWN';
+
       switch (command) {
         case 'check': {
-          // Just check for updates, don't download or import
-          const updates = await (scraper as any).checkForUpdates();
-          console.log(`\n═══ ${(scraper as any).bodyCode} Check Results ═══`);
+          const updates = await scraper.checkForUpdates();
+          console.log(`\n═══ ${bodyCode} Check Results ═══`);
           console.log(`Pages checked: ${updates.pagesChecked}`);
           console.log(`New items found: ${updates.newItems.length}`);
-          for (const item of updates.newItems) {
+          for (const item of updates.newItems.slice(0, 10)) {
             console.log(`  → [${item.noticeType}] ${item.title}`);
             if (item.fileUrl) console.log(`    File: ${item.fileUrl}`);
+          }
+          if (updates.newItems.length > 10) {
+            console.log(`  ... and ${updates.newItems.length - 10} more items`);
           }
           break;
         }
@@ -69,11 +102,11 @@ async function main() {
 
         default:
           console.error(`Unknown command: ${command}`);
-          console.log('Usage: npm run scraper:check | scraper:sync | scraper:dry-run [MCC|AACCC]');
+          console.log('Usage: npm run scraper:check | scraper:sync | scraper:dry-run [MCC|AACCC|STATES|<STATE_CODE>]');
           process.exit(1);
       }
-    } catch (err) {
-      log.error({ err, scraper: (scraper as any).bodyCode }, 'Scraper CLI error');
+    } catch (err: any) {
+      log.error({ err: err.message, scraper: (scraper as any).bodyCode }, 'Scraper CLI error');
     }
   }
 
