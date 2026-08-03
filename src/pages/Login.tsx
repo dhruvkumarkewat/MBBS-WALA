@@ -107,29 +107,39 @@ export default function Login() {
     let cancelled = false;
     (async () => {
       // Staff accounts go to admin CRM; everyone else to student onboarding/dashboard
-      let staffRes: { isStaff?: boolean; role?: string } | undefined;
+      let isStaff = false;
       try {
-        staffRes = await apiJson<{ isStaff?: boolean; role?: string }>(
+        const staffRes = await apiJson<{ isStaff?: boolean; role?: string }>(
           '/api/admin-auth',
           {},
           true
         );
         if (cancelled) return;
-        if (staffRes?.isStaff) {
-          navigate('/admin', { replace: true });
-          return;
-        }
+        if (staffRes?.isStaff) isStaff = true;
       } catch {
-        /* not staff — continue to student routing */
+        // API unreachable — fallback: check staff_profiles table directly via Supabase
+        try {
+          const { data } = await supabase
+            .from('staff_profiles')
+            .select('role, is_active')
+            .eq('user_id', user.id)
+            .eq('is_active', true)
+            .maybeSingle();
+          if (cancelled) return;
+          if (data?.role) isStaff = true;
+        } catch { /* not staff */ }
       }
-      if (!cancelled) {
-        if (!isProfileComplete) {
-          navigate('/onboarding', { replace: true });
-        } else if (from.startsWith('/admin') && !staffRes?.isStaff) {
-          navigate('/dashboard', { replace: true });
-        } else {
-          navigate(from, { replace: true });
-        }
+      if (cancelled) return;
+      if (isStaff) {
+        navigate('/admin', { replace: true });
+        return;
+      }
+      if (!isProfileComplete) {
+        navigate('/onboarding', { replace: true });
+      } else if (from.startsWith('/admin')) {
+        navigate('/dashboard', { replace: true });
+      } else {
+        navigate(from, { replace: true });
       }
     })();
     return () => {
@@ -209,14 +219,29 @@ export default function Login() {
         /* session still stored by supabase client; remember is UX-only */
       }
       // Prefer admin CRM when this account is staff (same login page)
+      let isStaffAccount = false;
       try {
         const info = await apiJson<{ isStaff?: boolean }>('/api/admin-auth', {}, true);
-        if (info?.isStaff) {
-          navigate('/admin', { replace: true });
-          return;
-        }
+        if (info?.isStaff) isStaffAccount = true;
       } catch {
-        /* student */
+        // API unreachable — fallback: check staff_profiles directly via Supabase
+        try {
+          const { data: session } = await supabase.auth.getSession();
+          const uid = session?.session?.user?.id;
+          if (uid) {
+            const { data: staffRow } = await supabase
+              .from('staff_profiles')
+              .select('role, is_active')
+              .eq('user_id', uid)
+              .eq('is_active', true)
+              .maybeSingle();
+            if (staffRow?.role) isStaffAccount = true;
+          }
+        } catch { /* not staff */ }
+      }
+      if (isStaffAccount) {
+        navigate('/admin', { replace: true });
+        return;
       }
 
       // Check profile completeness

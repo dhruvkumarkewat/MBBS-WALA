@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiJson } from '../../lib/api';
+import supabase from '../../lib/supabase';
 import BrandLogo from '../BrandLogo';
 
 type StaffInfo = {
@@ -118,34 +119,62 @@ export default function AdminLayout() {
 
     let alive = true;
     (async () => {
+      let info: StaffInfo | null = null;
+
+      // Try the API first
       try {
-        const info = await apiJson<StaffInfo>('/api/admin-auth', {}, true);
-        if (!alive) return;
-        if (!info.isStaff) {
-          setError('This account is not staff. Use Super Admin or Counsellor login.');
-          setLoading(false);
-          return;
-        }
-        setStaffInfo(info);
+        info = await apiJson<StaffInfo>('/api/admin-auth', {}, true);
+      } catch {
+        // API unreachable — fallback: query staff_profiles directly via Supabase
+        try {
+          const { data: staffRow } = await supabase
+            .from('staff_profiles')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('is_active', true)
+            .maybeSingle();
+          if (staffRow) {
+            info = {
+              isStaff: true,
+              role: staffRow.role,
+              staff: {
+                full_name: staffRow.name || 'Admin',
+                employee_id: String(staffRow.id),
+                role: staffRow.role,
+              },
+            };
+          }
+        } catch { /* not staff */ }
+      }
+
+      if (!alive) return;
+
+      if (!info?.isStaff) {
+        setError('This account is not staff. Use Super Admin or Counsellor login.');
+        setLoading(false);
+        return;
+      }
+
+      setStaffInfo(info);
+
+      // Try to log the admin session (non-critical)
+      try {
         await apiJson(
           '/api/admin-auth',
           { method: 'POST', body: JSON.stringify({ action: 'login' }) },
           true
         );
-        const hb = setInterval(() => {
-          apiJson(
-            '/api/admin-auth',
-            { method: 'POST', body: JSON.stringify({ action: 'heartbeat' }) },
-            true
-          ).catch(() => {});
-        }, 60000);
-        (window as unknown as { __adminHb?: ReturnType<typeof setInterval> }).__adminHb = hb;
-        setLoading(false);
-      } catch (e: unknown) {
-        if (!alive) return;
-        setError(e instanceof Error ? e.message : 'Failed to load admin session');
-        setLoading(false);
-      }
+      } catch { /* API unavailable, skip session logging */ }
+
+      const hb = setInterval(() => {
+        apiJson(
+          '/api/admin-auth',
+          { method: 'POST', body: JSON.stringify({ action: 'heartbeat' }) },
+          true
+        ).catch(() => {});
+      }, 60000);
+      (window as unknown as { __adminHb?: ReturnType<typeof setInterval> }).__adminHb = hb;
+      setLoading(false);
     })();
 
     return () => {
