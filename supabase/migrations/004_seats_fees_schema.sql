@@ -29,9 +29,12 @@ CREATE TABLE IF NOT EXISTS seat_matrix_v2 (
   checksum        TEXT,
   version         INTEGER DEFAULT 1,
   created_at      TIMESTAMPTZ DEFAULT now(),
-  updated_at      TIMESTAMPTZ DEFAULT now(),
+  updated_at      TIMESTAMPTZ DEFAULT now()
+);
 
-  UNIQUE(college_id, course_id, year, quota_code, category_code, gender, COALESCE(round_name, 'pre'))
+-- Use a unique index instead of an inline constraint for expressions like COALESCE
+CREATE UNIQUE INDEX idx_seat_matrix_v2_unique ON seat_matrix_v2 (
+  college_id, course_id, year, quota_code, category_code, gender, COALESCE(round_name, 'pre')
 );
 
 CREATE INDEX idx_seat_matrix_v2_college ON seat_matrix_v2(college_id);

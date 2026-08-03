@@ -293,7 +293,6 @@ export function PredictorPage() {
       : 'text-orange-600 bg-orange-500/10';
 
   return (
-    <PremiumGate featureName="NEET College Predictor">
     <div className="max-w-3xl">
       <PageHead
         title="College Predictor"
@@ -525,7 +524,6 @@ export function PredictorPage() {
         </div>
       )}
     </div>
-    </PremiumGate>
   );
 }
 
@@ -804,7 +802,6 @@ export function ComparePage() {
   }, [a, b]);
 
   return (
-    <PremiumGate featureName="College Compare">
     <div>
       <PageHead
         title="Compare colleges"
@@ -891,37 +888,75 @@ export function ComparePage() {
                 ))}
               </div>
 
-              <div className={`mt-4 rounded-2xl border overflow-x-auto ${s.card}`}>
-                <table className="w-full text-sm min-w-[640px]">
-                  <thead>
-                    <tr className={s.dark ? 'bg-white/5' : 'bg-grey-bg-light'}>
-                      <th className="text-left p-3 font-bold">Category</th>
-                      <th className="text-left p-3 font-bold">A AIQ</th>
-                      <th className="text-left p-3 font-bold">A State</th>
-                      <th className="text-left p-3 font-bold">B AIQ</th>
-                      <th className="text-left p-3 font-bold">B State</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {payload.category_matrix.map((row) => (
-                      <tr
-                        key={row.category}
-                        className={`border-t ${s.dark ? 'border-white/5' : 'border-primary-dark/5'}`}
-                      >
-                        <td className="p-3 font-bold text-primary">{row.category}</td>
-                        <td className="p-3 font-semibold">
-                          {row.a?.aiq_rank?.toLocaleString() || '—'}
-                        </td>
-                        <td className={`p-3 ${s.muted}`}>{row.a?.state_rank_range || '—'}</td>
-                        <td className="p-3 font-semibold">
-                          {row.b?.aiq_rank?.toLocaleString() || '—'}
-                        </td>
-                        <td className={`p-3 ${s.muted}`}>{row.b?.state_rank_range || '—'}</td>
+              {isPremium ? (
+                <div className={`mt-4 rounded-2xl border overflow-x-auto ${s.card}`}>
+                  <table className="w-full text-sm min-w-[640px]">
+                    <thead>
+                      <tr className={s.dark ? 'bg-white/5' : 'bg-grey-bg-light'}>
+                        <th className="text-left p-3 font-bold">Category</th>
+                        <th className="text-left p-3 font-bold">A AIQ</th>
+                        <th className="text-left p-3 font-bold">A State</th>
+                        <th className="text-left p-3 font-bold">B AIQ</th>
+                        <th className="text-left p-3 font-bold">B State</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {payload.category_matrix.map((row) => (
+                        <tr
+                          key={row.category}
+                          className={`border-t ${s.dark ? 'border-white/5' : 'border-primary-dark/5'}`}
+                        >
+                          <td className="p-3 font-bold text-primary">{row.category}</td>
+                          <td className="p-3 font-semibold">
+                            {row.a?.aiq_rank?.toLocaleString() || '—'}
+                          </td>
+                          <td className={`p-3 ${s.muted}`}>{row.a?.state_rank_range || '—'}</td>
+                          <td className="p-3 font-semibold">
+                            {row.b?.aiq_rank?.toLocaleString() || '—'}
+                          </td>
+                          <td className={`p-3 ${s.muted}`}>{row.b?.state_rank_range || '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="relative mt-4">
+                  <div className={`rounded-2xl border overflow-hidden ${s.card} select-none filter blur-sm pointer-events-none opacity-40`}>
+                    <table className="w-full text-sm min-w-[640px]">
+                      <thead>
+                        <tr className={s.dark ? 'bg-white/5' : 'bg-grey-bg-light'}>
+                          <th className="text-left p-3 font-bold">Category</th>
+                          <th className="text-left p-3 font-bold">A AIQ</th>
+                          <th className="text-left p-3 font-bold">A State</th>
+                          <th className="text-left p-3 font-bold">B AIQ</th>
+                          <th className="text-left p-3 font-bold">B State</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {payload.category_matrix.slice(0, 3).map((row, i) => (
+                          <tr key={i} className={`border-t ${s.dark ? 'border-white/5' : 'border-primary-dark/5'}`}>
+                            <td className="p-3 font-bold text-primary">{row.category}</td>
+                            <td className="p-3 font-semibold">--</td>
+                            <td className={`p-3 ${s.muted}`}>--</td>
+                            <td className="p-3 font-semibold">--</td>
+                            <td className={`p-3 ${s.muted}`}>--</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
+                    <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-orange-500/20">
+                      <UpgradePrompt 
+                        featureName="Compare Cutoffs & Fees" 
+                        title="Content Locked"
+                        description="Please purchase a NEET UG package to view detailed AIQ & State cutoff comparisons, fee structures, and precise insights." 
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <p className={`mt-3 text-xs flex items-center gap-1 ${s.muted}`}>
                 <GitCompareArrows className="w-3.5 h-3.5" /> Enriched from colleges + cutoffs + seat_matrix.
@@ -932,7 +967,6 @@ export function ComparePage() {
         </>
       )}
     </div>
-    </PremiumGate>
   );
 }
 
@@ -1438,6 +1472,7 @@ export function CounsellingPage() {
 
 export function DashSeatMatrixPage() {
   const s = useShell();
+  const { isPremium } = usePremium();
   const [rows, setRows] = useState<Array<Record<string, unknown>>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -1457,11 +1492,13 @@ export function DashSeatMatrixPage() {
       .finally(() => setLoading(false));
   }, [page]);
 
+  const visibleRows = isPremium ? rows : rows.slice(0, 3);
+
   return (
-    <PremiumGate featureName="Seat Matrix">
     <div>
-      <PageHead title="Seat Matrix" sub="GET /api/seat-matrix (paginated)" />
+      <PageHead title="Seat Matrix" sub="Detailed seat breakdown by college, quota, and category" />
       <ErrorBox message={error} />
+      
       <div className={`rounded-2xl border overflow-x-auto ${s.card}`}>
         {loading ? (
           <div className="p-10 text-center">
@@ -1479,7 +1516,7 @@ export function DashSeatMatrixPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
+              {visibleRows.map((r) => (
                 <tr
                   key={String(r.id)}
                   className={`border-t ${s.dark ? 'border-white/5' : 'border-primary-dark/5'}`}
@@ -1500,29 +1537,63 @@ export function DashSeatMatrixPage() {
           </table>
         )}
       </div>
-      <div className="flex justify-center gap-3 mt-4">
-        <button
-          type="button"
-          disabled={page <= 1}
-          onClick={() => setPage((p) => p - 1)}
-          className="zn-cta text-sm py-2 disabled:opacity-40"
-        >
-          Prev
-        </button>
-        <span className={`text-sm font-bold self-center ${s.muted}`}>
-          {page}/{totalPages}
-        </span>
-        <button
-          type="button"
-          disabled={page >= totalPages}
-          onClick={() => setPage((p) => p + 1)}
-          className="zn-cta text-sm py-2 disabled:opacity-40"
-        >
-          Next
-        </button>
-      </div>
+
+      {!isPremium && rows.length > 3 && (
+        <div className="relative mt-2">
+          {/* Blurred teaser rows */}
+          <div className={`rounded-2xl border overflow-hidden ${s.card} select-none filter blur-sm pointer-events-none opacity-40`}>
+            <table className="w-full text-sm min-w-[720px]">
+              <tbody>
+                {rows.slice(3, 6).map((r, i) => (
+                  <tr key={i} className={`border-b ${s.dark ? 'border-white/5' : 'border-primary-dark/5'}`}>
+                    <td className="p-3 font-semibold">{String(r.college_name)}</td>
+                    <td className="p-3"><span className={`text-[10px] font-bold px-2 py-0.5 rounded ${s.chip}`}>{String(r.college_kind)}</span></td>
+                    <td className="p-3 font-black">{String(r.total_seats)}</td>
+                    <td className="p-3">--</td>
+                    <td className="p-3">--</td>
+                    <td className="p-3">--</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
+            <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-orange-500/20">
+              <UpgradePrompt 
+                featureName="Complete Seat Matrix" 
+                title="Content Locked"
+                description="Please purchase a NEET UG package to view the full seat matrix, including category-wise and quota-wise breakdowns." 
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isPremium && (
+        <div className="flex justify-center gap-3 mt-4">
+          <button
+            type="button"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => p - 1)}
+            className="zn-cta text-sm py-2 disabled:opacity-40"
+          >
+            Prev
+          </button>
+          <span className={`text-sm font-bold self-center ${s.muted}`}>
+            {page}/{totalPages}
+          </span>
+          <button
+            type="button"
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => p + 1)}
+            className="zn-cta text-sm py-2 disabled:opacity-40"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
-    </PremiumGate>
   );
 }
 

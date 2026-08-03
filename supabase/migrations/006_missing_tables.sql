@@ -259,24 +259,39 @@ ALTER TABLE state_competition ENABLE ROW LEVEL SECURITY;
 ALTER TABLE packages ENABLE ROW LEVEL SECURITY;
 
 -- Allow public SELECT on reference data tables
+DROP POLICY IF EXISTS "Public read colleges" ON colleges;
 CREATE POLICY "Public read colleges" ON colleges FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Public read cutoffs" ON cutoffs;
 CREATE POLICY "Public read cutoffs" ON cutoffs FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Public read seat_matrix" ON seat_matrix;
 CREATE POLICY "Public read seat_matrix" ON seat_matrix FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Public read state_competition" ON state_competition;
 CREATE POLICY "Public read state_competition" ON state_competition FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Public read packages" ON packages;
 CREATE POLICY "Public read packages" ON packages FOR SELECT USING (true);
 
 -- Allow service role full access on all tables (for scraper and API)
+DROP POLICY IF EXISTS "Service full access colleges" ON colleges;
 CREATE POLICY "Service full access colleges" ON colleges FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Service full access cutoffs" ON cutoffs;
 CREATE POLICY "Service full access cutoffs" ON cutoffs FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Service full access seat_matrix" ON seat_matrix;
 CREATE POLICY "Service full access seat_matrix" ON seat_matrix FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Service full access state_competition" ON state_competition;
 CREATE POLICY "Service full access state_competition" ON state_competition FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Service full access packages" ON packages;
 CREATE POLICY "Service full access packages" ON packages FOR ALL USING (true) WITH CHECK (true);
 
 -- User-specific table policies  
+DROP POLICY IF EXISTS "Users manage own applications" ON applications;
 CREATE POLICY "Users manage own applications" ON applications FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Users manage own saved" ON saved_colleges;
 CREATE POLICY "Users manage own saved" ON saved_colleges FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Users manage own profile" ON profiles;
 CREATE POLICY "Users manage own profile" ON profiles FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Users manage own notifications" ON notifications;
 CREATE POLICY "Users manage own notifications" ON notifications FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Users manage own documents" ON user_documents;
 CREATE POLICY "Users manage own documents" ON user_documents FOR ALL USING (true) WITH CHECK (true);
 
 -- ── Seed default packages ───────────────────────────────────────────────────
