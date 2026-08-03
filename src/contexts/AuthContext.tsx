@@ -166,7 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Skip profile re-fetch on token refresh (tab focus) to prevent dashboard reload
       if (event === 'TOKEN_REFRESHED') return;
       if (u) {
-        fetchProfile(u);
+        fetchProfile(u, true); // true = skipLoadingState so the dashboard doesn't unmount
       } else {
         setProfile(null);
         setProfileLoading(false);
