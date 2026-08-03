@@ -179,7 +179,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    await handlerFn(req, res);
+    await endpoint(req, res);
   } catch (err) {
     console.error(`[API Error] ${req.url}:`, err);
     try {
