@@ -182,9 +182,6 @@ export default async function handler(req, res) {
     await endpoint(req, res);
   } catch (err) {
     console.error(`[API Error] ${req.url}:`, err);
-    try {
-      require('fs').appendFileSync('api-errors.log', `${new Date().toISOString()} [${req.url}] ${err.stack}\n`);
-    } catch {}
     if (typeof res.status === 'function') {
       res.status(500).json({ error: 'Internal Server Error', details: err.message });
     } else {

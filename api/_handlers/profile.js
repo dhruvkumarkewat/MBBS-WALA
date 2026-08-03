@@ -77,7 +77,6 @@ export default async function handler(req, res) {
           avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
           category: 'General',
           domicile: 'Madhya Pradesh',
-          domicile_state: 'Madhya Pradesh',
           exam: 'NEET UG',
           role: 'student',
           is_premium: false,
@@ -212,11 +211,32 @@ export default async function handler(req, res) {
 
       Object.keys(patch).forEach((k) => patch[k] === undefined && delete patch[k]);
 
-      const { data, error } = await supabase
+      let upsertPayload = { id: user.id, email: user.email || '', ...patch };
+
+      let { data, error } = await supabase
         .from('profiles')
-        .upsert({ id: user.id, email: user.email || '', ...patch }, { onConflict: 'id' })
+        .upsert(upsertPayload, { onConflict: 'id' })
         .select()
         .single();
+
+      // If upsert fails due to unknown columns, strip them and retry
+      if (error && error.code === 'PGRST204') {
+        const colMatch = error.message?.match(/Could not find the '(\w+)' column/);
+        if (colMatch) {
+          console.warn('Stripping unknown column from profile update:', colMatch[1]);
+          // Remove all potentially missing columns and retry
+          const suspectCols = ['domicile_state', 'rank', 'score', 'marks', 'percentile'];
+          for (const col of suspectCols) delete upsertPayload[col];
+          for (const col of suspectCols) delete patch[col];
+          const retry = await supabase
+            .from('profiles')
+            .upsert(upsertPayload, { onConflict: 'id' })
+            .select()
+            .single();
+          data = retry.data;
+          error = retry.error;
+        }
+      }
 
       if (error) {
         console.error('profile PUT error:', error);
