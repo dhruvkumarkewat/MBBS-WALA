@@ -164,8 +164,8 @@ export function PredictorPage() {
   const [mode, setMode] = useState<'rank' | 'score'>('rank');
   const [exam, setExam] = useState('NEET UG');
   const [course, setCourse] = useState('MBBS');
-  const [rank, setRank] = useState(profile?.neet_rank?.toString() || profile?.rank?.toString() || '15000');
-  const [score, setScore] = useState(profile?.neet_score?.toString() || profile?.score?.toString() || '612');
+  const [rank, setRank] = useState(profile?.neet_rank?.toString() || '15000');
+  const [score, setScore] = useState(profile?.neet_score?.toString() || '612');
   const [category, setCategory] = useState(profile?.category || 'General');
   const [result, setResult] = useState<{
     predicted_rank_min: number;
