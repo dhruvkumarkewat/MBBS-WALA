@@ -32,6 +32,7 @@ import inquiries from './_handlers/inquiries.js';
 import leaderboard from './_handlers/leaderboard.js';
 import notifications from './_handlers/notifications.js';
 import packagesHandler from './_handlers/packages.js';
+import payment from './_handlers/payment.js';
 import profile from './_handlers/profile.js';
 import rankCalculator from './_handlers/rank-calculator.js';
 import referrals from './_handlers/referrals.js';
@@ -77,6 +78,7 @@ const routes = {
   'leaderboard': leaderboard,
   'notifications': notifications,
   'packages': packagesHandler,
+  'payment': payment,
   'profile': profile,
   'rank-calculator': rankCalculator,
   'referrals': referrals,

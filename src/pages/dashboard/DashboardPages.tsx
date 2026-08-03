@@ -27,6 +27,10 @@ import {
 import { useDashboard } from '../../contexts/DashboardContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiJson } from '../../lib/api';
+import { usePremium, UpgradePrompt } from '../../lib/premium';
+
+export { ProfilePage } from './ProfilePage';
+export { SubscriptionPage } from './SubscriptionPage';
 
 function useShell() {
   const { dark } = useDashboard();
@@ -155,6 +159,7 @@ const DASH_COURSES = ['All', 'MBBS', 'BDS', 'BAMS', 'BHMS', 'BUMS', 'BSMS', 'BNY
 /* ---------------- Predictor → rank + college matches ---------------- */
 export function PredictorPage() {
   const s = useShell();
+  const { isPremium } = usePremium();
   const [mode, setMode] = useState<'rank' | 'score'>('rank');
   const [exam, setExam] = useState('NEET UG');
   const [course, setCourse] = useState('MBBS');
@@ -438,10 +443,23 @@ export function PredictorPage() {
         </div>
       )}
       {matches.length > 0 && (
-        <div className="mt-4 space-y-2">
-          <p className="font-bold text-sm">Recommended college shortlist</p>
-          {matches.map((m) => (
-            <div key={m.college_name + m.chance} className={`rounded-xl border p-3 ${s.card}`}>
+        <div className="mt-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="font-bold text-sm">Recommended college shortlist</p>
+            {isPremium ? (
+              <span className="text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                👑 Premium Access ({matches.length} matches)
+              </span>
+            ) : (
+              <span className="text-[10px] font-semibold text-muted-foreground">
+                Showing top {Math.min(matches.length, 3)} of {matches.length} predictions
+              </span>
+            )}
+          </div>
+
+          {/* Visible matches (top 3 for free, all for premium) */}
+          {(isPremium ? matches : matches.slice(0, 3)).map((m) => (
+            <div key={m.college_name + m.chance} className={`rounded-xl border p-3.5 ${s.card}`}>
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${tone(m.chance_tone)}`}>
@@ -457,6 +475,36 @@ export function PredictorPage() {
               </div>
             </div>
           ))}
+
+          {/* Upgrade prompt and blurred preview for Free users */}
+          {!isPremium && matches.length > 3 && (
+            <div className="space-y-3 pt-2">
+              <UpgradePrompt
+                title="Unlock All College Predictions & Cutoff Analysis"
+                description={`Get full access to all ${matches.length} matching medical colleges, round-wise cutoff trends, and closing rank insights.`}
+                featureName="College Predictions"
+              />
+
+              {/* Blurred teaser cards */}
+              <div className="select-none filter blur-sm pointer-events-none opacity-40 space-y-2">
+                {matches.slice(3, 5).map((m, i) => (
+                  <div key={i} className={`rounded-xl border p-3 ${s.card}`}>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-400">
+                          {m.chance} · {m.best_path}
+                        </span>
+                        <p className="font-bold text-sm mt-1">{m.college_name}</p>
+                        <p className="text-xs text-muted-foreground">{m.state} · Top Medical Institute</p>
+                      </div>
+                      <span className="text-lg font-black text-amber-500">🔒 PRO</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-2 pt-2">
             <Link to="/dashboard/compare" className="zn-cta text-sm py-2">
               Compare
@@ -1963,222 +2011,6 @@ export function NotificationsPage() {
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-export function SubscriptionPage() {
-  const s = useShell();
-  const [plans, setPlans] = useState<
-    Array<{ id: number; name: string; price: number; price_label: string; slug: string }>
-  >([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    apiJson<Array<{ id: number; name: string; price: number; price_label: string; slug: string }>>(
-      '/api/packages'
-    )
-      .then(setPlans)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
-
-  return (
-    <div>
-      <PageHead title="Subscription" sub="GET /api/packages — real package catalogue" />
-      <ErrorBox message={error} />
-      {loading ? (
-        <div className="grid md:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className={`h-48 rounded-2xl animate-pulse ${s.chip}`} />
-          ))}
-        </div>
-      ) : (
-        <div className="grid md:grid-cols-3 gap-4">
-          {plans.map((p, i) => (
-            <div
-              key={p.id}
-              className={`rounded-2xl border p-5 flex flex-col ${s.card} ${i === 1 ? 'ring-2 ring-primary' : ''}`}
-            >
-              {i === 1 && (
-                <span className="text-[10px] font-black uppercase text-primary mb-2">Popular</span>
-              )}
-              <h3 className="font-bold text-lg">{p.name}</h3>
-              <p className="text-3xl font-black my-2">
-                {p.price === 0 ? 'Free' : `₹${p.price_label || p.price}`}
-              </p>
-              <Link to={`/${p.slug}`} className={`zn-cta w-full justify-center mt-auto ${i === 1 ? 'zn-cta-primary' : ''}`}>
-                <CreditCard className="w-4 h-4" /> View package
-              </Link>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-export function ProfilePage() {
-  const s = useShell();
-  const { user } = useAuth();
-  const [form, setForm] = useState({
-    full_name: '',
-    phone: '',
-    category: 'General',
-    domicile: 'Madhya Pradesh',
-    exam: 'NEET UG',
-    score: '',
-    predicted_rank_min: '',
-    predicted_rank_max: '',
-    email: '',
-  });
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [ok, setOk] = useState('');
-
-  useEffect(() => {
-    apiJson<{
-      full_name?: string;
-      phone?: string;
-      category?: string;
-      domicile?: string;
-      exam?: string;
-      score?: number;
-      predicted_rank_min?: number;
-      predicted_rank_max?: number;
-      email?: string;
-    }>('/api/profile', {}, true)
-      .then((p) => {
-        setForm({
-          full_name: p.full_name || user?.user_metadata?.full_name || '',
-          phone: p.phone || '',
-          category: p.category || 'General',
-          domicile: p.domicile || 'Madhya Pradesh',
-          exam: p.exam || 'NEET UG',
-          score: p.score != null ? String(p.score) : '',
-          predicted_rank_min: p.predicted_rank_min != null ? String(p.predicted_rank_min) : '',
-          predicted_rank_max: p.predicted_rank_max != null ? String(p.predicted_rank_max) : '',
-          email: p.email || user?.email || '',
-        });
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [user]);
-
-  const save = async (e: FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setError('');
-    setOk('');
-    try {
-      await apiJson(
-        '/api/profile',
-        {
-          method: 'PUT',
-          body: JSON.stringify({
-            full_name: form.full_name,
-            phone: form.phone,
-            category: form.category,
-            domicile: form.domicile,
-            exam: form.exam,
-            score: form.score ? Number(form.score) : null,
-            predicted_rank_min: form.predicted_rank_min ? Number(form.predicted_rank_min) : null,
-            predicted_rank_max: form.predicted_rank_max ? Number(form.predicted_rank_max) : null,
-          }),
-        },
-        true
-      );
-      setOk('Profile saved');
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Save failed');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const initials = useMemo(() => {
-    const n = form.full_name || form.email || 'U';
-    return n
-      .split(' ')
-      .map((p) => p[0])
-      .join('')
-      .slice(0, 2)
-      .toUpperCase();
-  }, [form.full_name, form.email]);
-
-  if (loading) {
-    return <div className={`max-w-xl h-64 rounded-2xl animate-pulse ${s.chip}`} />;
-  }
-
-  return (
-    <div className="max-w-xl">
-      <PageHead title="Profile" sub="GET/PUT /api/profile" />
-      <ErrorBox message={error} />
-      {ok && (
-        <p className="mb-4 text-sm font-semibold text-emerald-600 bg-emerald-500/10 rounded-xl px-3 py-2">
-          {ok}
-        </p>
-      )}
-      <form onSubmit={save} className={`rounded-2xl border p-6 space-y-4 ${s.card}`}>
-        <div className="flex items-center gap-4 mb-2">
-          <span className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary-dark text-white grid place-items-center text-xl font-black">
-            {initials}
-          </span>
-          <div>
-            <p className="font-bold text-lg">{form.full_name || 'Student'}</p>
-            <p className={`text-sm ${s.muted}`}>{form.email}</p>
-          </div>
-        </div>
-        {(
-          [
-            ['full_name', 'Full name'],
-            ['phone', 'Phone'],
-            ['domicile', 'Domicile'],
-            ['score', 'Score'],
-            ['predicted_rank_min', 'Pred. rank min'],
-            ['predicted_rank_max', 'Pred. rank max'],
-          ] as const
-        ).map(([key, label]) => (
-          <label key={key} className="block">
-            <span className={`text-xs font-bold uppercase ${s.muted}`}>{label}</span>
-            <input
-              value={form[key]}
-              onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-              className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
-            />
-          </label>
-        ))}
-        <label className="block">
-          <span className={`text-xs font-bold uppercase ${s.muted}`}>Category</span>
-          <select
-            value={form.category}
-            onChange={(e) => setForm({ ...form, category: e.target.value })}
-            className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
-          >
-            {['General', 'OBC', 'EWS', 'SC', 'ST'].map((c) => (
-              <option key={c}>{c}</option>
-            ))}
-          </select>
-        </label>
-        <label className="block">
-          <span className={`text-xs font-bold uppercase ${s.muted}`}>Exam</span>
-          <select
-            value={form.exam}
-            onChange={(e) => setForm({ ...form, exam: e.target.value })}
-            className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
-          >
-            {['NEET UG', 'NEET PG', 'NEET MDS', 'INICET'].map((c) => (
-              <option key={c}>{c}</option>
-            ))}
-          </select>
-        </label>
-        <button type="submit" disabled={saving} className="zn-cta zn-cta-primary w-full justify-center">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <User className="w-4 h-4" />}
-          Save profile
-        </button>
-      </form>
     </div>
   );
 }

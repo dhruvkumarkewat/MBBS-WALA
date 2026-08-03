@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Sparkles,
   CheckCircle2,
+  Gift,
 } from 'lucide-react';
 import supabase from '../lib/supabase';
 import { signInWithGoogle } from '../lib/googleAuth';
@@ -70,6 +71,9 @@ export default function Login() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [referralCode, setReferralCode] = useState(() => {
+    return new URLSearchParams(window.location.search).get('ref') || '';
+  });
   const [showPass, setShowPass] = useState(false);
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -149,7 +153,11 @@ export default function Login() {
           email: email.trim(),
           password,
           options: {
-            data: { full_name: name.trim(), phone: phone.trim() },
+            data: {
+              full_name: name.trim(),
+              phone: phone.trim(),
+              referred_by_code: referralCode.trim() || undefined,
+            },
           },
         });
         if (signErr) throw signErr;
@@ -162,6 +170,7 @@ export default function Login() {
                 body: JSON.stringify({
                   full_name: name.trim(),
                   phone: phone.trim(),
+                  referred_by_code: referralCode.trim() || undefined,
                 }),
               },
               true
@@ -170,7 +179,9 @@ export default function Login() {
             /* profile seeds on first GET */
           }
         }
-        setMsg('Account created. Redirecting…');
+        setMsg('Account created successfully. Welcome aboard!');
+        navigate('/dashboard/profile?onboarding=true', { replace: true });
+        return;
       } else {
         const { error: signErr } = await supabase.auth.signInWithPassword({
           email: email.trim(),
@@ -410,6 +421,21 @@ export default function Login() {
                           placeholder="+91 98765 43210"
                           autoComplete="tel"
                           type="tel"
+                        />
+                      </Field>
+                      <Field
+                        label="Referral Code (Optional)"
+                        icon={<Gift className="h-4 w-4 text-emerald-500" />}
+                        focused={focused === 'referral'}
+                      >
+                        <input
+                          value={referralCode}
+                          onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                          onFocus={() => setFocused('referral')}
+                          onBlur={() => setFocused(null)}
+                          className="login-input uppercase tracking-wider font-mono font-bold"
+                          placeholder="e.g. MBW-7880"
+                          autoComplete="off"
                         />
                       </Field>
                     </motion.div>

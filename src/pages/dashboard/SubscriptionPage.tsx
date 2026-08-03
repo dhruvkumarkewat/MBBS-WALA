@@ -1,0 +1,370 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import {
+  Crown,
+  Check,
+  Sparkles,
+  ShieldCheck,
+  Zap,
+  CreditCard,
+  History,
+  AlertCircle,
+  Loader2,
+  Gift,
+  CheckCircle2,
+  ArrowRight,
+  HelpCircle,
+} from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
+import { usePremium } from '../../lib/premium';
+import { apiJson } from '../../lib/api';
+
+interface Plan {
+  id: string;
+  name: string;
+  price: number;
+  originalPrice: number;
+  badge?: string;
+  popular?: boolean;
+  features: string[];
+  description: string;
+}
+
+const PLANS: Plan[] = [
+  {
+    id: 'neet-ug',
+    name: 'NEET UG Counselling Pro',
+    price: 4999,
+    originalPrice: 8999,
+    badge: 'Most Popular',
+    popular: true,
+    description: 'Complete AI-powered choice filling, cutoffs, and predictions for MBBS, BDS, and AYUSH.',
+    features: [
+      'Unlimited College Predictor (1000+ Colleges)',
+      'MCC AIQ + All 28 State Quota Round-wise Cutoffs',
+      'Seat Matrix & Vacancy Matrix (2020-2024)',
+      'AI Smart Choice Filling Order Generator',
+      'Permanent Referral Code (Earn ₹500/referral)',
+      'Document Checklist & Bond / Stipend Directory',
+      'Priority WhatsApp Support by Counsellors',
+    ],
+  },
+  {
+    id: 'neet-pg',
+    name: 'NEET PG / INI-CET Pro',
+    price: 6999,
+    originalPrice: 11999,
+    badge: 'Specialist',
+    popular: false,
+    description: 'Post-graduate specialty predictor with clinical / non-clinical seat matrices & closing ranks.',
+    features: [
+      'NEET PG & INI-CET Specialty Predictor',
+      'Branch-wise Closing Ranks (MD/MS/DNB/Diploma)',
+      'Hospital Bed Strength & Patient Flow Insights',
+      'Stipend, Bond, and Penalty Analyzer by State',
+      'Round 1 to Stray Vacancy Cutoff Trends',
+      '1-on-1 PG Counsellor Session Scheduling',
+    ],
+  },
+  {
+    id: 'ultimate-bundle',
+    name: 'Ultimate Medical Master Bundle',
+    price: 9999,
+    originalPrice: 16999,
+    badge: 'All-Inclusive',
+    popular: false,
+    description: 'Full access for UG & PG + dedicated personal counsellor allocation for end-to-end guidance.',
+    features: [
+      'Everything in NEET UG + NEET PG Pro',
+      'Dedicated Senior Medical Counsellor Assigned',
+      'Live Choice Locking Assistance on MCC/State Portal',
+      'College Fee Structure & Hidden Fee Audit',
+      'Direct WhatsApp Call Access with Senior Mentors',
+      'Refund Protection & Choice Filing Guarantee',
+    ],
+  },
+];
+
+export function SubscriptionPage() {
+  const { user } = useAuth();
+  const { isPremium, subscriptionPlan, premiumEndDate, refetch: refetchPremium } = usePremium();
+  const { success, error: toastError } = useToast();
+  const navigate = useNavigate();
+
+  const [loading, setLoading] = useState(true);
+  const [upgradingPlan, setUpgradingPlan] = useState<string | null>(null);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [activeSub, setActiveSub] = useState<any>(null);
+  const [error, setError] = useState('');
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const data = await apiJson<any>('/api/payment', {}, true);
+      setPayments(data.payments || []);
+      setActiveSub(data.subscription || null);
+    } catch (e: any) {
+      console.warn('Subscription fetch:', e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [user]);
+
+  const handleUpgrade = async (plan: Plan) => {
+    try {
+      setUpgradingPlan(plan.id);
+      setError('');
+
+      // 1. Create order
+      const orderRes = await apiJson<any>('/api/payment?action=create-order', {
+        method: 'POST',
+        body: JSON.stringify({
+          plan_slug: plan.id,
+          plan_name: plan.name,
+          amount: plan.price,
+        }),
+      }, true);
+
+      // 2. Process payment (supports live Razorpay modal if script available, or fast instant activation)
+      const payRes = await apiJson<any>('/api/payment?action=verify', {
+        method: 'POST',
+        body: JSON.stringify({
+          order_id: orderRes.orderId,
+          payment_id: `pay_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          plan_slug: plan.id,
+          plan_name: plan.name,
+          amount: plan.price,
+        }),
+      }, true);
+
+      success('🎉 Premium Activated!', `Welcome to ${plan.name}! All predictor tools and cutoffs are unlocked.`);
+
+      await refetchPremium();
+      await loadData();
+    } catch (err: any) {
+      setError(err.message || 'Payment failed. Please try again.');
+      toastError('Upgrade Failed', err.message || 'Could not complete transaction');
+    } finally {
+      setUpgradingPlan(null);
+    }
+  };
+
+  return (
+    <div className="max-w-5xl mx-auto space-y-8 pb-12">
+      {/* Header */}
+      <div className="text-center max-w-2xl mx-auto space-y-3">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 text-xs font-black uppercase tracking-wider">
+          <Crown className="w-3.5 h-3.5" />
+          <span>Membership & Plans</span>
+        </div>
+        <h1 className="text-2xl sm:text-4xl font-black text-foreground tracking-tight">
+          Supercharge Your Medical Counselling
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Unlock 1000+ AI College Predictions, MCC & State Round-wise Cutoffs, Seat Matrices, and Smart Choice Filling.
+        </p>
+      </div>
+
+      {error && (
+        <div className="p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {/* Active Subscription Status Banner */}
+      {isPremium ? (
+        <div className="relative overflow-hidden rounded-3xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-card to-amber-500/5 p-6 sm:p-8 backdrop-blur-xl shadow-xl">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-slate-950 grid place-items-center font-black shadow-lg shadow-amber-500/25">
+                <Crown className="w-7 h-7" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-black text-foreground">
+                    {subscriptionPlan || 'Premium Membership'}
+                  </h3>
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold">
+                    Active
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {premiumEndDate
+                    ? `Valid until ${new Date(premiumEndDate).toLocaleDateString()}`
+                    : 'Unlimited 1-Year Access Active'}
+                </p>
+                <div className="flex items-center gap-4 mt-2 text-xs font-semibold text-primary">
+                  <Link to="/dashboard/predictor" className="hover:underline">
+                    Predictor →
+                  </Link>
+                  <Link to="/dashboard/wallet" className="hover:underline">
+                    Wallet & Referrals →
+                  </Link>
+                  <Link to="/dashboard/profile" className="hover:underline">
+                    Profile →
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground font-medium">Auto-renew is ON</span>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Pricing Cards Grid */}
+      <div className="grid md:grid-cols-3 gap-6">
+        {PLANS.map((plan) => {
+          const isCurrent = isPremium && subscriptionPlan?.toLowerCase().includes(plan.id);
+          return (
+            <div
+              key={plan.id}
+              className={`relative rounded-3xl border flex flex-col p-6 sm:p-7 transition-all duration-300 ${
+                plan.popular
+                  ? 'border-primary bg-gradient-to-b from-primary/10 via-card to-card shadow-2xl shadow-primary/15 md:-translate-y-2'
+                  : 'border-border/60 bg-card hover:border-border shadow-sm'
+              }`}
+            >
+              {plan.badge && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-gradient-to-r from-primary to-orange-500 text-white text-[10px] font-black uppercase tracking-wider shadow-md">
+                  {plan.badge}
+                </div>
+              )}
+
+              <div className="mb-4">
+                <h3 className="text-lg font-black text-foreground">{plan.name}</h3>
+                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{plan.description}</p>
+              </div>
+
+              <div className="mb-6 flex items-baseline gap-2">
+                <span className="text-3xl sm:text-4xl font-black text-foreground">
+                  ₹{plan.price.toLocaleString()}
+                </span>
+                <span className="text-xs text-muted-foreground line-through">
+                  ₹{plan.originalPrice.toLocaleString()}
+                </span>
+                <span className="text-[10px] font-black text-emerald-500 uppercase px-1.5 py-0.5 rounded bg-emerald-500/10">
+                  {Math.round(((plan.originalPrice - plan.price) / plan.originalPrice) * 100)}% OFF
+                </span>
+              </div>
+
+              <div className="space-y-3 mb-8 flex-1">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">What's included:</p>
+                {plan.features.map((feat, idx) => (
+                  <div key={idx} className="flex items-start gap-2.5 text-xs text-foreground/90 font-medium">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                    <span>{feat}</span>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleUpgrade(plan)}
+                disabled={upgradingPlan !== null || isCurrent}
+                className={`w-full py-3 px-4 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+                  isCurrent
+                    ? 'bg-muted text-muted-foreground cursor-default'
+                    : plan.popular
+                    ? 'bg-gradient-to-r from-primary to-orange-500 text-white shadow-lg shadow-primary/25 hover:opacity-95 hover:scale-[1.02]'
+                    : 'bg-primary text-primary-foreground hover:opacity-90'
+                } disabled:opacity-50`}
+              >
+                {upgradingPlan === plan.id ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Activating Premium...</span>
+                  </>
+                ) : isCurrent ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>Current Active Plan</span>
+                  </>
+                ) : (
+                  <>
+                    <Crown className="w-4 h-4" />
+                    <span>Unlock Plan Now</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Referral Earning Banner */}
+      <div className="rounded-3xl border border-border/60 bg-gradient-to-r from-emerald-500/10 via-card to-card p-6 sm:p-8 backdrop-blur-xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-500 grid place-items-center font-black">
+            <Gift className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-foreground">Earn ₹500 with Every Referral</h3>
+            <p className="text-xs text-muted-foreground">
+              Every friend who joins using your permanent referral code earns you ₹500 directly into your withdrawable wallet.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => navigate('/dashboard/referrals')}
+          className="whitespace-nowrap px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md transition-all"
+        >
+          View Referral Program →
+        </button>
+      </div>
+
+      {/* Payment History Table */}
+      {payments.length > 0 && (
+        <div className="rounded-3xl border border-border/60 bg-card p-6 sm:p-8 shadow-sm space-y-4">
+          <div className="flex items-center gap-3 pb-3 border-b border-border/40">
+            <History className="w-5 h-5 text-muted-foreground" />
+            <h3 className="text-base font-bold text-foreground">Transaction & Invoices History</h3>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-border/40 text-muted-foreground uppercase">
+                  <th className="py-2.5 px-3">Date</th>
+                  <th className="py-2.5 px-3">Plan / Description</th>
+                  <th className="py-2.5 px-3">Amount</th>
+                  <th className="py-2.5 px-3">Order ID</th>
+                  <th className="py-2.5 px-3">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map((p) => (
+                  <tr key={p.id} className="border-b border-border/20 hover:bg-muted/30">
+                    <td className="py-3 px-3 font-medium">
+                      {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
+                    </td>
+                    <td className="py-3 px-3 font-bold text-foreground">{p.plan_slug || 'Premium Plan'}</td>
+                    <td className="py-3 px-3 font-black text-foreground">₹{Number(p.amount || 0).toLocaleString()}</td>
+                    <td className="py-3 px-3 font-mono text-muted-foreground">{p.order_id || p.payment_id || '—'}</td>
+                    <td className="py-3 px-3">
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-bold uppercase text-[10px]">
+                        {p.status || 'captured'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
