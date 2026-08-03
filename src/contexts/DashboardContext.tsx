@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { useTheme } from './ThemeContext';
 
 interface DashboardContextValue {
   dark: boolean;
@@ -14,21 +15,14 @@ interface DashboardContextValue {
 const DashboardContext = createContext<DashboardContextValue | null>(null);
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
-  const [dark, setDark] = useState(false);
+  const { theme, toggleTheme } = useTheme();
+  const dark = theme === 'dark';
+  
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [rightPanelOpen, setRightPanelOpen] = useState(
     typeof window !== 'undefined' ? window.innerWidth >= 1280 : true
   );
-
-  useEffect(() => {
-    const stored = localStorage.getItem('mb-dash-dark');
-    if (stored === '1') setDark(true);
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('mb-dash-dark', dark ? '1' : '0');
-  }, [dark]);
 
   useEffect(() => {
     const onResize = () => {
@@ -53,7 +47,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     <DashboardContext.Provider
       value={{
         dark,
-        toggleDark: () => setDark((d) => !d),
+        toggleDark: toggleTheme,
         sidebarOpen,
         setSidebarOpen,
         sidebarCollapsed,

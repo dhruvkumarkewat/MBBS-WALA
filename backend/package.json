@@ -10,6 +10,7 @@
     "scraper:check": "tsx src/scrapers/cli.ts check",
     "scraper:sync": "tsx src/scrapers/cli.ts sync",
     "scraper:dry-run": "tsx src/scrapers/cli.ts dry-run",
+    "db:seed-colleges": "tsx src/scrapers/seed-historical.ts",
     "worker": "tsx src/jobs/worker-runner.ts",
     "test": "vitest",
     "test:integration": "vitest --config vitest.integration.config.ts",
