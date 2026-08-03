@@ -4,12 +4,30 @@ import { requireUser } from './_auth.js';
 export async function getStaffProfile(userId) {
   try {
     if (!userId) return null;
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('staff_profiles')
       .select('*')
       .eq('user_id', userId)
       .maybeSingle();
-    if (error) {
+
+    // Fallback: If no staff profile found but user is the super admin by email, 
+    // fetch their email from profiles and grant access or just grant directly if email matches.
+    if (!data) {
+      const { data: prof } = await supabase.from('profiles').select('email').eq('id', userId).maybeSingle();
+      if (prof?.email === 'admin@gmail.com') {
+        // Auto-upsert staff profile for the hardcoded admin email
+        const { data: newStaff } = await supabase.from('staff_profiles').upsert({
+          user_id: userId,
+          email: 'admin@gmail.com',
+          name: 'Super Admin',
+          role: 'super_admin',
+          is_active: true
+        }).select().single();
+        if (newStaff) return newStaff;
+      }
+    }
+
+    if (error && !data) {
       // Table may not exist or user is not staff
       return null;
     }
