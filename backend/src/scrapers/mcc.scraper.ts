@@ -195,35 +195,31 @@ export class MCCScraper extends BaseScraper {
     // MCC result PDFs follow a pattern: Institute | Program | Category | Quota | Opening | Closing
     for (const line of lines) {
       const parts = line.split(/\s{2,}|\t/); // Split on multiple spaces or tabs
-      if (parts.length < 4) continue;
+      if (parts.length < 2) continue;
 
-      // Try to identify rank-like numbers
-      const numbers = parts
-        .map((p: string) => p.replace(/,/g, ''))
-        .filter((p: string) => /^\d+$/.test(p))
-        .map(Number);
+      // Extract all potential rank-like integers (between 1 and 2,500,000)
+      const rankCandidates = line.match(/\b\d{1,7}\b/g)?.map(Number).filter(n => n >= 1 && n <= 2500000) || [];
+      if (rankCandidates.length === 0) continue;
 
-      if (numbers.length >= 2) {
-        // Assume last two numbers are opening and closing ranks
-        const openingRank = numbers[numbers.length - 2];
-        const closingRank = numbers[numbers.length - 1];
+      const closingRank = rankCandidates[rankCandidates.length - 1];
+      const openingRank = rankCandidates.length > 1 ? rankCandidates[rankCandidates.length - 2] : closingRank;
 
-        if (openingRank > 0 && closingRank > 0 && closingRank <= 1500000) {
-          // First non-numeric part is likely the college name
-          const textParts = parts.filter((p: string) => !/^\d/.test(p.replace(/,/g, '')));
+      // Extract text parts that look like college / course
+      const textParts = parts.filter((p: string) => !/^\d+$/.test(p.replace(/,/g, '').trim()));
+      const collegeCandidate = textParts.find(p => p.length >= 8 && !/^(allotment|result|merit|counselling|round|notice|page|neet)/i.test(p));
 
-          records.push({
-            college_name: textParts[0] || 'Unknown',
-            course_name: textParts[1] || 'MBBS',
-            category_code: this.detectCategory(line),
-            quota_code: this.detectQuota(line),
-            opening_rank: openingRank,
-            closing_rank: closingRank,
-            year: new Date().getFullYear(),
-            round_name: this.detectRound(filePath),
-            body_code: 'MCC',
-          });
-        }
+      if (collegeCandidate && closingRank > 0) {
+        records.push({
+          college_name: collegeCandidate.trim(),
+          course_name: textParts[1] || 'MBBS',
+          category_code: this.detectCategory(line),
+          quota_code: this.detectQuota(line),
+          opening_rank: openingRank,
+          closing_rank: closingRank,
+          year: new Date().getFullYear(),
+          round_name: this.detectRound(filePath),
+          body_code: 'MCC',
+        });
       }
     }
 

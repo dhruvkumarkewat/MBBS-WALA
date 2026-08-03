@@ -77,9 +77,9 @@ export function startCronJobs(): void {
     }
   });
 
-  // 3. State Authorities Batch Job (Every 30 min)
-  const stateJob = new CronJob(`*/30 * * * *`, async () => {
-    log.info('Running automated State Authorities batch check');
+// 3. State Authorities Batch Job (Every 15 min, staggered at minute 5)
+  const stateJob = new CronJob(`5,20,35,50 * * * *`, async () => {
+    log.info('Running automated State Authorities batch check (15m interval)');
     const authorities = getHighPriorityStateAuthorities();
 
     for (const auth of authorities) {
@@ -92,8 +92,8 @@ export function startCronJobs(): void {
           await predictionService.syncWithLatestScrapedData();
           await notificationService.notifyAdmins(
             `${auth.state} Updates Ingested`,
-            `Automated pipeline ingested ${result.newNotices} new notices from ${auth.name}.`,
-            { bodyCode: auth.code, state: auth.state }
+            `Automated pipeline ingested ${result.newNotices} new notices and ${result.recordsCreated} records from ${auth.name}.`,
+            { bodyCode: auth.code, state: auth.state, recordsCreated: result.recordsCreated }
           );
         }
       } catch (err: any) {
@@ -108,6 +108,20 @@ export function startCronJobs(): void {
   stateJob.start();
 
   log.info(
-    `Continuous Automated Data Pipeline active: MCC & AACCC (every ${interval}m), State Authorities (every 30m).`
+    `Continuous Automated Data Pipeline active: All Authorities (MCC, AACCC, & 36 States) synchronizing every 15 minutes.`
   );
+
+  // Trigger initial synchronization on startup in background
+  setTimeout(async () => {
+    log.info('Executing startup data synchronization check...');
+    try {
+      const mcc = new MCCScraper();
+      const aaccc = new AACCCScraper();
+      await Promise.allSettled([mcc.run(), aaccc.run()]);
+      await predictionService.syncWithLatestScrapedData();
+      log.info('Startup data synchronization complete.');
+    } catch (e: any) {
+      log.warn({ error: e.message }, 'Startup synchronization error (non-fatal)');
+    }
+  }, 3000);
 }
