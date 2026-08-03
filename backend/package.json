@@ -9,6 +9,7 @@
     "start": "node dist/index.js",
     "scraper:check": "tsx src/scrapers/cli.ts check",
     "scraper:sync": "tsx src/scrapers/cli.ts sync",
+    "scraper:status": "tsx src/scrapers/cli.ts status",
     "scraper:dry-run": "tsx src/scrapers/cli.ts dry-run",
     "db:seed-colleges": "tsx src/scrapers/seed-historical.ts",
     "worker": "tsx src/jobs/worker-runner.ts",
