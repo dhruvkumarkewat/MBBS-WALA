@@ -56,7 +56,11 @@ export default async function handler(req, res) {
       .order('aiq_rank', { ascending: true });
 
     if (category && category !== 'All') {
-      cutoffQuery = cutoffQuery.eq('category', category);
+      if (category === 'General') {
+        cutoffQuery = cutoffQuery.in('category', ['General', 'UR', 'Unreserved']);
+      } else {
+        cutoffQuery = cutoffQuery.eq('category', category);
+      }
     }
     if (state && state !== 'All') {
       cutoffQuery = cutoffQuery.eq('state', state);

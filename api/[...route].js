@@ -179,10 +179,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    return await endpoint(req, res);
+    await handlerFn(req, res);
   } catch (err) {
-    console.error(`Error in /api/${routeName}:`, err);
-    return res.status(500).json({ error: err.message || 'Internal Server Error' });
+    console.error(`[API Error] ${req.url}:`, err);
+    try {
+      require('fs').appendFileSync('api-errors.log', `${new Date().toISOString()} [${req.url}] ${err.stack}\n`);
+    } catch {}
+    if (typeof res.status === 'function') {
+      res.status(500).json({ error: 'Internal Server Error', details: err.message });
+    } else {
+      res.statusCode = 500;
+      res.end(JSON.stringify({ error: 'Internal Server Error', details: err.message }));
+    }
   }
 }
-

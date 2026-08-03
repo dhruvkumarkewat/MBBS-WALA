@@ -13,11 +13,13 @@ import {
 } from 'lucide-react';
 import { useDashboard } from '../../contexts/DashboardContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePremium } from '../../lib/premium';
 import { apiJson } from '../../lib/api';
 
 export default function DashboardTopbar({ title }: { title?: string }) {
   const { dark, toggleDark, setSidebarOpen } = useDashboard();
   const { user } = useAuth();
+  const { isPremium } = usePremium();
   const [q, setQ] = useState('');
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifs, setNotifs] = useState<Array<{ id: number; title: string; read: boolean }>>([]);
@@ -105,9 +107,11 @@ export default function DashboardTopbar({ title }: { title?: string }) {
             <Map className="w-3.5 h-3.5" /> Map
           </Link>
 
-          <button type="button" className={`w-10 h-10 rounded-full grid place-items-center ${dark ? 'hover:bg-white/8 text-amber-300' : 'hover:bg-orange-50 text-amber-500'}`} title="Premium">
-            <Crown className="w-[18px] h-[18px]" />
-          </button>
+          {!isPremium && (
+            <Link to="/dashboard/subscription" className={`w-10 h-10 rounded-full grid place-items-center transition-colors ${dark ? 'hover:bg-white/8 text-amber-300' : 'hover:bg-orange-50 text-amber-500'}`} title="Upgrade to Premium">
+              <Crown className="w-[18px] h-[18px]" />
+            </Link>
+          )}
 
           <button
             type="button"

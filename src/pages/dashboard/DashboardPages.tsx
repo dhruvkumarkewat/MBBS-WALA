@@ -27,7 +27,7 @@ import {
 import { useDashboard } from '../../contexts/DashboardContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiJson } from '../../lib/api';
-import { usePremium, UpgradePrompt } from '../../lib/premium';
+import { usePremium, UpgradePrompt, PremiumGate } from '../../lib/premium';
 
 export { ProfilePage } from './ProfilePage';
 export { SubscriptionPage } from './SubscriptionPage';
@@ -251,8 +251,9 @@ export function PredictorPage() {
         });
         setMatches(m.matches || []);
         setSummary(m.summary || null);
-      } catch {
-        /* cutoffs optional */
+      } catch (err: any) {
+        console.error('college-matches fetch failed:', err);
+        setError(err.message || 'Failed to fetch college matches');
       }
       try {
         await apiJson(
@@ -289,6 +290,7 @@ export function PredictorPage() {
       : 'text-orange-600 bg-orange-500/10';
 
   return (
+    <PremiumGate featureName="NEET College Predictor">
     <div className="max-w-3xl">
       <PageHead
         title="College Predictor"
@@ -516,6 +518,7 @@ export function PredictorPage() {
         </div>
       )}
     </div>
+    </PremiumGate>
   );
 }
 
@@ -780,6 +783,7 @@ export function ComparePage() {
   }, [a, b]);
 
   return (
+    <PremiumGate featureName="College Compare">
     <div>
       <PageHead
         title="Compare colleges"
@@ -907,6 +911,7 @@ export function ComparePage() {
         </>
       )}
     </div>
+    </PremiumGate>
   );
 }
 
@@ -1432,6 +1437,7 @@ export function DashSeatMatrixPage() {
   }, [page]);
 
   return (
+    <PremiumGate featureName="Seat Matrix">
     <div>
       <PageHead title="Seat Matrix" sub="GET /api/seat-matrix (paginated)" />
       <ErrorBox message={error} />
@@ -1495,6 +1501,7 @@ export function DashSeatMatrixPage() {
         </button>
       </div>
     </div>
+    </PremiumGate>
   );
 }
 

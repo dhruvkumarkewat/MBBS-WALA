@@ -85,7 +85,7 @@ export default function DashboardSidebar() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
-  const { sidebarOpen, setSidebarOpen, sidebarCollapsed: collapsed, setSidebarCollapsed } =
+  const { sidebarOpen, setSidebarOpen, sidebarCollapsed: collapsed, setSidebarCollapsed, dark } =
     useDashboard();
 
   const setCollapsed = (v: boolean | ((c: boolean) => boolean)) => {
@@ -109,7 +109,7 @@ export default function DashboardSidebar() {
       <>
         {/* Clean brand header — no photo clutter */}
         <div
-          className={`shrink-0 border-b border-white/[0.07] ${
+          className={`shrink-0 border-b ${dark ? 'border-white/[0.07]' : 'border-slate-200'} ${
             showLabels ? 'px-4 py-4' : 'px-2 py-4'
           }`}
         >
@@ -131,7 +131,7 @@ export default function DashboardSidebar() {
               <button
                 type="button"
                 onClick={() => setSidebarOpen(false)}
-                className="ml-auto w-9 h-9 rounded-xl bg-white/8 grid place-items-center text-white/70"
+                className={`ml-auto w-9 h-9 rounded-xl grid place-items-center ${dark ? 'bg-white/8 text-white/70' : 'bg-slate-100 text-slate-500'}`}
                 aria-label="Close"
               >
                 <PanelLeftClose className="w-4 h-4" />
@@ -139,11 +139,11 @@ export default function DashboardSidebar() {
             )}
           </div>
           {showLabels && (
-            <div className="mt-3 rounded-2xl bg-white/[0.04] border border-white/[0.06] px-3 py-2.5">
+            <div className={`mt-3 rounded-2xl border px-3 py-2.5 ${dark ? 'bg-white/[0.04] border-white/[0.06]' : 'bg-slate-50 border-slate-200'}`}>
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-orange-400/90">
                 Student portal
               </p>
-              <p className="text-[13px] font-semibold text-white/90 truncate mt-0.5">{displayName}</p>
+              <p className={`text-[13px] font-semibold truncate mt-0.5 ${dark ? 'text-white/90' : 'text-slate-900'}`}>{displayName}</p>
             </div>
           )}
         </div>
@@ -152,7 +152,7 @@ export default function DashboardSidebar() {
           {sections.map((sec) => (
             <div key={sec.title}>
               {showLabels && (
-                <p className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-white/28">
+                <p className={`px-3 mb-1.5 text-[10px] font-bold uppercase tracking-[0.16em] ${dark ? 'text-white/28' : 'text-slate-400'}`}>
                   {sec.title}
                 </p>
               )}
@@ -171,7 +171,7 @@ export default function DashboardSidebar() {
                       } ${
                         active
                           ? 'bg-[#ff7a1a] text-white shadow-[0_8px_24px_rgba(255,122,26,0.35)]'
-                          : 'text-white/55 hover:text-white hover:bg-white/[0.06]'
+                          : dark ? 'text-white/55 hover:text-white hover:bg-white/[0.06]' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
                       }`}
                     >
                       <Icon className="w-[18px] h-[18px] shrink-0" strokeWidth={active ? 2.4 : 1.9} />
@@ -185,7 +185,7 @@ export default function DashboardSidebar() {
                               className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
                                 active
                                   ? 'bg-white/20 text-white'
-                                  : 'bg-orange-500/15 text-orange-300'
+                                  : dark ? 'bg-orange-500/15 text-orange-300' : 'bg-orange-50 text-orange-600'
                               }`}
                             >
                               {item.badge}
@@ -204,11 +204,11 @@ export default function DashboardSidebar() {
           ))}
         </nav>
 
-        <div className="border-t border-white/[0.07] p-2.5 space-y-0.5 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className={`border-t p-2.5 space-y-0.5 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))] ${dark ? 'border-white/[0.07]' : 'border-slate-200'}`}>
           <button
             type="button"
             onClick={logout}
-            className={`w-full flex items-center gap-3 rounded-xl text-rose-300/85 hover:bg-rose-500/10 hover:text-rose-200 transition-colors ${
+            className={`w-full flex items-center gap-3 rounded-xl transition-colors ${dark ? 'text-rose-300/85 hover:bg-rose-500/10 hover:text-rose-200' : 'text-rose-600 hover:bg-rose-50 hover:text-rose-700'} ${
               showLabels ? 'px-3 py-2.5' : 'justify-center py-3'
             }`}
           >
@@ -219,7 +219,7 @@ export default function DashboardSidebar() {
             <button
               type="button"
               onClick={() => setCollapsed((c) => !c)}
-              className={`w-full flex items-center gap-3 rounded-xl text-white/35 hover:text-white hover:bg-white/[0.06] transition-colors ${
+              className={`w-full flex items-center gap-3 rounded-xl transition-colors ${dark ? 'text-white/35 hover:text-white hover:bg-white/[0.06]' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'} ${
                 collapsed ? 'justify-center py-3' : 'px-3 py-2.5'
               }`}
             >
@@ -248,7 +248,7 @@ export default function DashboardSidebar() {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-[min(280px,88vw)] flex flex-col md:hidden transition-transform duration-300 ease-out pt-[env(safe-area-inset-top)] bg-[#0b0d12] border-r border-white/[0.06] ${
+        className={`fixed inset-y-0 left-0 z-50 w-[min(280px,88vw)] flex flex-col md:hidden transition-transform duration-300 ease-out pt-[env(safe-area-inset-top)] border-r ${dark ? 'bg-[#0b0d12] border-white/[0.06]' : 'bg-white shadow-sm border-slate-200'} ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -256,7 +256,7 @@ export default function DashboardSidebar() {
       </aside>
 
       <aside
-        className={`hidden md:flex fixed inset-y-0 left-0 z-40 flex-col transition-all duration-300 ${width} bg-[#0b0d12] border-r border-white/[0.06]`}
+        className={`hidden md:flex fixed inset-y-0 left-0 z-40 flex-col transition-all duration-300 ${width} border-r ${dark ? 'bg-[#0b0d12] border-white/[0.06]' : 'bg-white shadow-sm border-slate-200'}`}
         data-collapsed={collapsed ? 'true' : 'false'}
       >
         {NavBody({ mobile: false })}

@@ -131,26 +131,81 @@ export function SubscriptionPage() {
         }),
       }, true);
 
-      // 2. Process payment (supports live Razorpay modal if script available, or fast instant activation)
-      const payRes = await apiJson<any>('/api/payment?action=verify', {
-        method: 'POST',
-        body: JSON.stringify({
-          order_id: orderRes.orderId,
-          payment_id: `pay_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-          plan_slug: plan.id,
-          plan_name: plan.name,
-          amount: plan.price,
-        }),
-      }, true);
+      // Load Razorpay SDK dynamically
+      const loadRazorpay = () => {
+        return new Promise((resolve) => {
+          if ((window as any).Razorpay) {
+            resolve(true);
+            return;
+          }
+          const script = document.createElement('script');
+          script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+          script.onload = () => resolve(true);
+          script.onerror = () => resolve(false);
+          document.body.appendChild(script);
+        });
+      };
 
-      success('🎉 Premium Activated!', `Welcome to ${plan.name}! All predictor tools and cutoffs are unlocked.`);
+      const isLoaded = await loadRazorpay();
+      if (!isLoaded) {
+        throw new Error('Razorpay SDK failed to load. Please check your connection.');
+      }
 
-      await refetchPremium();
-      await loadData();
+      const options = {
+        key: orderRes.keyId,
+        amount: orderRes.amount,
+        currency: orderRes.currency,
+        name: 'MBBSWala Premium',
+        description: plan.name,
+        order_id: orderRes.orderId,
+        handler: async function (response: any) {
+          try {
+            setUpgradingPlan(plan.id);
+            await apiJson<any>('/api/payment?action=verify', {
+              method: 'POST',
+              body: JSON.stringify({
+                order_id: response.razorpay_order_id || orderRes.orderId,
+                payment_id: response.razorpay_payment_id || `pay_${Date.now()}_mock`,
+                signature: response.razorpay_signature,
+                plan_slug: plan.id,
+                plan_name: plan.name,
+                amount: plan.price,
+              }),
+            }, true);
+
+            success('🎉 Premium Activated!', `Welcome to ${plan.name}! All predictor tools and cutoffs are unlocked.`);
+            await refetchPremium();
+            await loadData();
+          } catch (err: any) {
+            toastError('Verification Failed', err.message || 'Could not verify payment');
+          } finally {
+            setUpgradingPlan(null);
+          }
+        },
+        prefill: {
+          name: user?.user_metadata?.full_name || '',
+          email: user?.email || '',
+        },
+        theme: {
+          color: '#f97316',
+        },
+        modal: {
+          ondismiss: function () {
+            setUpgradingPlan(null);
+          },
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on('payment.failed', function (response: any) {
+        toastError('Payment Failed', response.error.description);
+        setUpgradingPlan(null);
+      });
+      rzp.open();
+
     } catch (err: any) {
       setError(err.message || 'Payment failed. Please try again.');
       toastError('Upgrade Failed', err.message || 'Could not complete transaction');
-    } finally {
       setUpgradingPlan(null);
     }
   };

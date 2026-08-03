@@ -77,7 +77,7 @@ export default function DashboardRightPanel() {
           <span className="w-8 h-8 rounded-xl bg-orange-500 text-white grid place-items-center">
             <Sparkles className="w-4 h-4" />
           </span>
-          <p className="text-sm font-bold">AI tip of the day</p>
+          <p className={`text-sm font-bold ${dark ? 'text-white' : 'text-[#0f172a]'}`}>AI tip of the day</p>
         </div>
         <p className={`text-[13px] font-semibold leading-relaxed mb-3 ${dark ? 'text-white/80' : 'text-[#1f2937]'}`}>
           With AIR ~15,000 General, prioritise MP govt newer colleges + strong private backups before Round 1 choice lock.
@@ -93,7 +93,7 @@ export default function DashboardRightPanel() {
       <div className={`rounded-[22px] p-4 border ${dark ? 'bg-[#161922] border-white/[0.06]' : 'bg-white border-[#eceff3] shadow-sm'}`}>
         <div className="flex items-center gap-2 mb-3">
           <Clock3 className="w-4 h-4 text-orange-500" />
-          <p className="text-sm font-bold">Upcoming</p>
+          <p className={`text-sm font-bold ${dark ? 'text-white' : 'text-[#0f172a]'}`}>Upcoming</p>
         </div>
         <ul className="space-y-3">
           {[

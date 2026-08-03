@@ -98,54 +98,7 @@ body,
   background: #ffffff;
 }
 
-/* Admin sidebar always keeps white labels on dark drawer */
-.admin-shell .admin-drawer,
-.admin-shell .admin-drawer * {
-  /* don't let marketing light-mode text-white overrides leak in */
-}
-.admin-shell .admin-drawer {
-  color: #ffffff;
-}
-.admin-shell .admin-drawer .text-white\/90,
-.admin-shell .admin-drawer .text-white\/55,
-.admin-shell .admin-drawer .text-white\/70,
-.admin-shell .admin-drawer .text-white\/40,
-.admin-shell .admin-drawer .text-white\/28 {
-  /* preserve intentional opacity via color-mix */
-}
-aside,
-.admin-shell aside,
-.admin-shell .admin-drawer {
-  color: #fff !important;
-}
-aside .font-semibold,
-aside .font-bold,
-aside nav a,
-aside nav span {
-  /* ensure menu labels stay readable */
-  color: inherit;
-}
-aside nav a:not(.bg-\[\#ff7a1a\]) {
-  color: rgba(255, 255, 255, 0.55) !important;
-}
-aside nav a:hover {
-  color: rgba(255, 255, 255, 1) !important;
-}
-aside nav a.bg-\[\#ff7a1a\] {
-  color: #ffffff !important;
-}
-aside nav p {
-  color: rgba(255, 255, 255, 0.35) !important;
-}
-aside button {
-  color: rgba(255, 255, 255, 0.55) !important;
-}
-aside button:hover {
-  color: rgba(255, 255, 255, 1) !important;
-}
-aside button.text-rose-300\/85 {
-  color: rgba(253, 164, 175, 0.85) !important;
-}
+/* Removed legacy hardcoded admin-shell sidebars */
 .brand-logo-lg {
   height: 4.25rem !important;
   max-width: 280px !important;
