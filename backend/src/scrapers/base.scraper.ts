@@ -211,15 +211,20 @@ export abstract class BaseScraper {
    * Map extracted record to the cutoffs table schema.
    */
   private mapToCutoffSchema(record: Record<string, any>): Record<string, any> {
+    const yr = record.year || new Date().getFullYear();
+    const nextYrShort = String((yr + 1) % 100).padStart(2, '0');
     return {
       college_name: record.college_name || record.institute_name || record.name || '',
+      academic_year: record.academic_year || `${yr}-${nextYrShort}`,
+      round_name: record.round_name || 'Final',
       state: record.state || null,
       category: record.category || record.category_code || 'General',
       aiq_rank: record.closing_rank || record.aiq_rank || null,
       aiq_score: record.closing_score || record.aiq_score || null,
       state_rank_range: record.state_rank_range || null,
       state_score_range: record.state_score_range || null,
-      year: record.year || new Date().getFullYear(),
+      year: yr,
+      course_name: record.course_name || record.course || 'MBBS',
       source: `scraper:${this.bodyCode}`,
     };
   }
@@ -251,12 +256,18 @@ export abstract class BaseScraper {
    * Map extracted record to the colleges table schema.
    */
   private mapToCollegeSchema(record: Record<string, any>): Record<string, any> {
+    const name = record.name || record.college_name || record.institute_name || '';
+    const hash = crypto.randomUUID().replace(/-/g, '').slice(0, 10);
+    const colType = record.type || record.college_type || 'Government';
     return {
-      name: record.name || record.college_name || record.institute_name || '',
-      city: record.city || null,
-      state: record.state || null,
+      id: record.id || hash,
+      name,
+      short: record.short || name.slice(0, 12),
+      city: record.city || 'Unknown',
+      state: record.state || 'Unknown',
       country: record.country || 'INDIA',
-      college_type: record.college_type || 'Government',
+      type: colType,
+      college_type: colType,
       course: record.course || record.course_name || 'MBBS',
       source: `scraper:${this.bodyCode}`,
     };
