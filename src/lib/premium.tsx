@@ -137,7 +137,7 @@ export function UpgradePrompt({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-b from-amber-500/10 via-slate-900/40 to-slate-900/80 p-6 sm:p-8 backdrop-blur-xl shadow-2xl ${className}`}
+      className={`relative overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-b from-amber-500/10 via-card to-card/90 p-6 sm:p-8 backdrop-blur-xl shadow-2xl ${className}`}
     >
       {/* Decorative gradient glow */}
       <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />

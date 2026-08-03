@@ -948,7 +948,7 @@ export function ComparePage() {
                     </table>
                   </div>
                   <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
-                    <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-orange-500/20">
+                    <div className="w-full max-w-2xl bg-card rounded-2xl shadow-2xl border border-orange-500/20 overflow-hidden">
                       <UpgradePrompt 
                         featureName="Compare Cutoffs & Fees" 
                         title="Content Locked"

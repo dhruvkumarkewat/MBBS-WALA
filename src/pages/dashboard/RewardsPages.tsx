@@ -267,7 +267,7 @@ export function ReferEarnPage() {
                 <button
                   type="button"
                   onClick={() => data && copy(data.referral_code, 'code')}
-                  className="h-11 w-11 rounded-xl bg-white text-ink grid place-items-center hover:scale-105 transition-transform shrink-0"
+                  className="h-11 w-11 rounded-xl bg-white text-slate-900 grid place-items-center hover:scale-105 transition-transform shrink-0"
                   aria-label="Copy code"
                 >
                   {copied === 'code' ? (
@@ -359,7 +359,7 @@ export function ReferEarnPage() {
             <button
               type="submit"
               disabled={applying}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-ink text-white font-semibold text-[13px] tracking-wide hover:opacity-90 disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-foreground text-background font-semibold text-[13px] tracking-wide hover:opacity-90 disabled:opacity-60"
             >
               {applying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ticket className="w-4 h-4" />}
               Apply code
