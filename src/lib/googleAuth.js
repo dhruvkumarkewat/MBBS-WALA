@@ -4,7 +4,7 @@ import supabase from './supabase';
  * Initiates Google OAuth Sign-In directly via Supabase Auth.
  * Works seamlessly across both desktop and mobile without requiring manual popup listeners.
  */
-export async function signInWithGoogle() {
+export async function signInWithGoogle(_appName = 'MBBSWala') {
   try {
     const redirectTo = `${window.location.origin}/login`;
     const { data, error } = await supabase.auth.signInWithOAuth({
