@@ -100,7 +100,8 @@ export default function StateDetailPanel({ state, onClose, dark }: Props) {
             <li>• Track {state.aiq_seats > 0 ? 'AIQ + state dual paths' : 'state notifications'} each counselling round.</li>
             <li>• Re-validate bonds/fees before locking private options.</li>
           </ul>
-        </se        {/* Premium Data and Charts */}
+        </section>
+        {/* Premium Data and Charts */}
         {!isPremium ? (
           <div className="relative mt-2">
             <div className={`rounded-2xl border p-4 select-none filter blur-sm pointer-events-none opacity-40 ${dark ? 'border-white/8 bg-white/5' : 'border-primary-dark/8 bg-grey-bg-light/50'}`}>
@@ -295,7 +296,6 @@ export default function StateDetailPanel({ state, onClose, dark }: Props) {
             )}
           </>
         )}
-      </div>    )}
       </div>
     </motion.aside>
   );
