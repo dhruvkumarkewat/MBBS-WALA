@@ -147,6 +147,9 @@ export abstract class BaseScraper {
     let updated = 0;
     let skipped = 0;
 
+    // Track college names we've already tried to upsert this run (avoid duplicates)
+    const seenColleges = new Set<string>();
+
     for (const record of data.records) {
       try {
         if (data.targetTable === 'cutoffs') {
@@ -155,12 +158,38 @@ export abstract class BaseScraper {
           if (result === 'created') created++;
           else if (result === 'updated') updated++;
           else skipped++;
+
+          // Auto-create college entry from cutoff data
+          const collegeName = mapped.college_name || record.college_name || record.name;
+          if (collegeName && !seenColleges.has(collegeName)) {
+            seenColleges.add(collegeName);
+            const collegeRecord = this.mapToCollegeSchema({
+              name: collegeName,
+              state: mapped.state || record.state,
+              college_type: record.college_type || record.college_kind,
+              course: record.course_name || record.course,
+            });
+            await this.upsertCollege(collegeRecord);
+          }
         } else if (data.targetTable === 'seat_matrix') {
           const mapped = this.mapToSeatMatrixSchema(record);
           const result = await this.upsertSeatMatrix(mapped);
           if (result === 'created') created++;
           else if (result === 'updated') updated++;
           else skipped++;
+
+          // Auto-create college entry from seat matrix data
+          const collegeName = mapped.college_name || record.college_name || record.name;
+          if (collegeName && !seenColleges.has(collegeName)) {
+            seenColleges.add(collegeName);
+            const collegeRecord = this.mapToCollegeSchema({
+              name: collegeName,
+              state: mapped.state || record.state,
+              college_type: record.college_type || mapped.college_kind,
+              course: record.course_name || record.course,
+            });
+            await this.upsertCollege(collegeRecord);
+          }
         } else if (data.targetTable === 'colleges') {
           const mapped = this.mapToCollegeSchema(record);
           const result = await this.upsertCollege(mapped);
@@ -174,6 +203,7 @@ export abstract class BaseScraper {
       }
     }
 
+    log.info({ seenColleges: seenColleges.size }, 'Auto-created college entries from scraped data');
     return { created, updated, skipped };
   }
 
