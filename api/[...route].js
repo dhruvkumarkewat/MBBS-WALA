@@ -91,9 +91,18 @@ const routes = {
   'debug-db': async (req, res) => {
     const { default: supabase } = await import('./_handlers/db-client.js');
     const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'FALLBACK';
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'NONE';
     const { count } = await supabase.from('cutoffs').select('*', { count: 'exact', head: true });
     const { data: sample } = await supabase.from('cutoffs').select('college_name, aiq_rank, year, category').limit(5);
-    res.status(200).json({ db_url: url.replace(/\/\/(.{8}).*(@)/, '//$1...$2'), cutoffs_count: count, sample });
+    const { count: colCount } = await supabase.from('colleges').select('*', { count: 'exact', head: true });
+    res.status(200).json({ 
+      db_url: url,
+      anon_key: key,
+      cutoffs_count: count, 
+      colleges_count: colCount,
+      sample,
+      env_keys: Object.keys(process.env).filter(k => k.includes('SUPABASE') || k.includes('NEXT_PUBLIC'))
+    });
   },
 };
 
