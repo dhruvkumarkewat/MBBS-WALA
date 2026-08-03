@@ -115,15 +115,19 @@ export default async function handler(req, res) {
       }
 
       // Attach wallet summary & saved colleges count
-      const { count: savedCount } = await supabase
+      const savedCount = await supabase
         .from('saved_colleges')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .then((r) => r.count || 0)
+        .catch(() => 0);
 
-      const { count: bookmarksCount } = await supabase
+      const bookmarksCount = await supabase
         .from('bookmarks')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .then((r) => r.count || 0)
+        .catch(() => 0);
 
       const completion = computeProfileCompletion(data);
 

@@ -43,6 +43,7 @@ const Contact = lazy(() => import('./pages/Contact'));
 const Compare = lazy(() => import('./pages/Compare'));
 const DesignSystem = lazy(() => import('./pages/DesignSystem'));
 const ComponentLibrary = lazy(() => import('./pages/ComponentLibrary'));
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
 
 /* Dashboard shell + pages — only when /dashboard is hit */
 const DashboardLayout = lazy(() => import('./components/dashboard/DashboardLayout'));
@@ -139,6 +140,17 @@ export default function App() {
           <Route path="cookie-policy" element={<L><Policy /></L>} />
           <Route path="influencer-program" element={<L><Policy /></L>} />
         </Route>
+
+        <Route
+          path="onboarding"
+          element={
+            <ProtectedRoute checkOnboarding={false}>
+              <L>
+                <OnboardingPage />
+              </L>
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="admin"

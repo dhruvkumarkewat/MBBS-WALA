@@ -79,7 +79,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, isProfileComplete, profileLoading } = useAuth();
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
   const [focused, setFocused] = useState<string | null>(null);
@@ -91,10 +91,10 @@ export default function Login() {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || profileLoading) return;
     let cancelled = false;
     (async () => {
-      // Staff accounts go to admin CRM; everyone else to student dashboard / intended route
+      // Staff accounts go to admin CRM; everyone else to student onboarding/dashboard
       let res: { isStaff?: boolean; role?: string } | undefined;
       try {
         res = await apiJson<{ isStaff?: boolean; role?: string }>(
@@ -111,7 +111,9 @@ export default function Login() {
         /* not staff */
       }
       if (!cancelled) {
-        if (from.startsWith('/admin') && !res?.isStaff) {
+        if (!isProfileComplete) {
+          navigate('/onboarding', { replace: true });
+        } else if (from.startsWith('/admin') && !res?.isStaff) {
           navigate('/dashboard', { replace: true });
         } else {
           navigate(from, { replace: true });
@@ -121,7 +123,7 @@ export default function Login() {
     return () => {
       cancelled = true;
     };
-  }, [user, navigate, from]);
+  }, [user, profileLoading, isProfileComplete, navigate, from]);
 
   const title = useMemo(
     () => (mode === 'login' ? 'Welcome back' : 'Create your account'),
@@ -180,7 +182,7 @@ export default function Login() {
           }
         }
         setMsg('Account created successfully. Welcome aboard!');
-        navigate('/dashboard/profile?onboarding=true', { replace: true });
+        navigate('/onboarding', { replace: true });
         return;
       } else {
         const { error: signErr } = await supabase.auth.signInWithPassword({
@@ -203,6 +205,22 @@ export default function Login() {
       } catch {
         /* student */
       }
+
+      // Check profile completeness
+      try {
+        const prof = await apiJson<any>('/api/profile', {}, true);
+        const isComplete =
+          prof?.profile_completed ||
+          prof?.onboarding_done ||
+          (Boolean(prof?.phone) && Boolean(prof?.category) && (prof?.neet_score != null || prof?.neet_rank != null));
+        if (!isComplete) {
+          navigate('/onboarding', { replace: true });
+          return;
+        }
+      } catch {
+        /* proceed */
+      }
+
       navigate(from, { replace: true });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Authentication failed');
