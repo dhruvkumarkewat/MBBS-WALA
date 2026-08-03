@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -90,30 +90,40 @@ export default function Login() {
     return window.location.hash.includes('access_token=') || window.location.hash.includes('type=recovery');
   }, []);
 
+  // Ref prevents the routing effect from being cancelled and re-run
+  // when isProfileComplete changes mid-flight (which killed the admin-auth call)
+  const routingDone = useRef(false);
+
   useEffect(() => {
-    if (!user || profileLoading) return;
+    // Reset when user changes (logout → login)
+    routingDone.current = false;
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || profileLoading || routingDone.current) return;
+    routingDone.current = true; // run only once per login
     let cancelled = false;
     (async () => {
       // Staff accounts go to admin CRM; everyone else to student onboarding/dashboard
-      let res: { isStaff?: boolean; role?: string } | undefined;
+      let staffRes: { isStaff?: boolean; role?: string } | undefined;
       try {
-        res = await apiJson<{ isStaff?: boolean; role?: string }>(
+        staffRes = await apiJson<{ isStaff?: boolean; role?: string }>(
           '/api/admin-auth',
           {},
           true
         );
         if (cancelled) return;
-        if (res?.isStaff) {
+        if (staffRes?.isStaff) {
           navigate('/admin', { replace: true });
           return;
         }
       } catch {
-        /* not staff */
+        /* not staff — continue to student routing */
       }
       if (!cancelled) {
         if (!isProfileComplete) {
           navigate('/onboarding', { replace: true });
-        } else if (from.startsWith('/admin') && !res?.isStaff) {
+        } else if (from.startsWith('/admin') && !staffRes?.isStaff) {
           navigate('/dashboard', { replace: true });
         } else {
           navigate(from, { replace: true });
@@ -123,7 +133,8 @@ export default function Login() {
     return () => {
       cancelled = true;
     };
-  }, [user, profileLoading, isProfileComplete, navigate, from]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, profileLoading]);
 
   const title = useMemo(
     () => (mode === 'login' ? 'Welcome back' : 'Create your account'),
