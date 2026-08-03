@@ -55,6 +55,17 @@ app.use('/api/', apiLimiter);
 // ── Request logging ──────────────────────────────────────────────────────────
 app.use(requestLogger);
 
+// ── Root route ──────────────────────────────────────────────────────────────
+app.all('/', (_req, res) => {
+  res.status(200).json({
+    name: 'MBBS Wala Automated Counselling Intelligence Platform API',
+    status: 'online',
+    version: '1.0.0',
+    health: '/health',
+    api: '/api/v1',
+  });
+});
+
 // ── Routes ───────────────────────────────────────────────────────────────────
 app.use('/health', healthRoutes);
 app.use('/api/v1/colleges', collegesRoutes);
