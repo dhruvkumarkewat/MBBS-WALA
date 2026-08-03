@@ -197,12 +197,9 @@ export abstract class BaseScraper {
           const result = await this.upsertCutoff(mapped);
           if (result === 'created') created++;
           else if (result === 'updated') updated++;
-          else skipped++;
-
           // Auto-create college entry from cutoff data
-          const collegeName = mapped.college_name || record.college_name || record.name;
-          const isStopWord = /^(there|minimum|in|the|and|for|with|from|this|that|not|round|final|ug|pg)$/i.test(collegeName?.trim() || '');
-          if (collegeName && collegeName.length > 5 && !isStopWord && !seenColleges.has(collegeName)) {
+          const collegeName = (mapped.college_name || record.college_name || record.name || '').trim();
+          if (this.isLikelyCollegeName(collegeName) && !seenColleges.has(collegeName)) {
             seenColleges.add(collegeName);
             const collegeRecord = this.mapToCollegeSchema({
               name: collegeName,
@@ -220,9 +217,8 @@ export abstract class BaseScraper {
           else skipped++;
 
           // Auto-create college entry from seat matrix data
-          const collegeName = mapped.college_name || record.college_name || record.name;
-          const isStopWord = /^(there|minimum|in|the|and|for|with|from|this|that|not|round|final|ug|pg)$/i.test(collegeName?.trim() || '');
-          if (collegeName && collegeName.length > 5 && !isStopWord && !seenColleges.has(collegeName)) {
+          const collegeName = (mapped.college_name || record.college_name || record.name || '').trim();
+          if (this.isLikelyCollegeName(collegeName) && !seenColleges.has(collegeName)) {
             seenColleges.add(collegeName);
             const collegeRecord = this.mapToCollegeSchema({
               name: collegeName,
@@ -234,10 +230,14 @@ export abstract class BaseScraper {
           }
         } else if (data.targetTable === 'colleges') {
           const mapped = this.mapToCollegeSchema(record);
-          const result = await this.upsertCollege(mapped);
-          if (result === 'created') created++;
-          else if (result === 'updated') updated++;
-          else skipped++;
+          if (this.isLikelyCollegeName(mapped.name)) {
+            const result = await this.upsertCollege(mapped);
+            if (result === 'created') created++;
+            else if (result === 'updated') updated++;
+            else skipped++;
+          } else {
+            skipped++;
+          }
         }
       } catch (err: any) {
         log.warn({ err, record: record.college_name || record.name }, 'Upsert error — skipping');
@@ -292,6 +292,34 @@ export abstract class BaseScraper {
       year: record.year || new Date().getFullYear(),
       source: `scraper:${this.bodyCode}`,
     };
+  }
+
+  /**
+   * Validate that a candidate string is genuinely a medical college/institution name.
+   */
+  protected isLikelyCollegeName(name: string): boolean {
+    if (!name || name.trim().length < 8) return false;
+    const lower = name.toLowerCase().trim();
+
+    // Reject obvious document phrases, applicant rules, and checklists
+    const invalidPhrases = [
+      'passport', 'candidate', 'certificate', 'undertaking', 'affidavit', 'eligibility',
+      'annexure', 'proforma', 'allotment letter', 'instruction', 'admit card', 'score card',
+      'domicile', 'caste', 'signature', 'thumb', 'photograph', 'stipend', 'bond', 'penalty',
+      'verification', 'reporting', 'counselling schedule', 'registration', 'payment', 'fee structure',
+      'valid id', 'original document', 'category certificate', 'seat allotment', 'result of',
+      'notice regarding', 'information bulletin', 'stray vacancy', 'mop up', 'round 1', 'round 2',
+      'applicable to', 'submission of', 'declaration', 'authority', 'directorate'
+    ];
+    if (invalidPhrases.some((phrase) => lower.includes(phrase))) return false;
+
+    // Accept if contains college/medical institution indicators
+    const medicalKeywords = [
+      'medical', 'college', 'hospital', 'institute', 'aiims', 'university', 'faculty',
+      'academy', 'vidyapeeth', 'ayurved', 'dental', 'homoeo', 'unani', 'siddha', 'nursing',
+      'gmc', 'rims', 'ims', 'vmmc', 'ucms', 'kgmu', 'pgims', 'mamc', 'bhumc', 'esic'
+    ];
+    return medicalKeywords.some((kw) => lower.includes(kw));
   }
 
   /**
