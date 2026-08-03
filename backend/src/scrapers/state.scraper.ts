@@ -282,4 +282,24 @@ export class StateScraper extends BaseScraper {
     if (lower.includes('stray')) return 'Stray Vacancy';
     return 'Final';
   }
+
+  private classifyNotice(text: string): string {
+    const lower = text.toLowerCase();
+    if (lower.includes('allotment') || lower.includes('result') || lower.includes('merit')) return 'result';
+    if (lower.includes('seat') || lower.includes('matrix') || lower.includes('vacancy')) return 'seat_matrix';
+    if (lower.includes('schedule') || lower.includes('time table') || lower.includes('dates')) return 'schedule';
+    if (lower.includes('registration') || lower.includes('application') || lower.includes('apply')) return 'registration';
+    if (lower.includes('choice') || lower.includes('option') || lower.includes('locking')) return 'choice_filling';
+    if (lower.includes('reporting') || lower.includes('admission')) return 'reporting';
+    if (lower.includes('fee') || lower.includes('bond')) return 'fee';
+    if (lower.includes('corrigendum') || lower.includes('correction')) return 'correction';
+    return 'general';
+  }
+
+  private getPriority(noticeType: string): string {
+    const urgentTypes = ['result', 'registration', 'choice_filling', 'seat_matrix'];
+    if (urgentTypes.includes(noticeType)) return 'urgent';
+    if (noticeType === 'schedule') return 'high';
+    return 'normal';
+  }
 }
