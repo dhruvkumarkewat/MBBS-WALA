@@ -5,10 +5,10 @@ dotenv.config();
 
 const envSchema = z.object({
   // Server
-  PORT: z.string().default('4000').transform(Number),
+  PORT: z.union([z.string(), z.number()]).default('4000').transform(Number),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   API_VERSION: z.string().default('v1'),
-  CORS_ORIGINS: z.string().default('http://localhost:5173,http://localhost:3000'),
+  CORS_ORIGINS: z.string().default('*'),
 
   // Supabase
   SUPABASE_URL: z.string().url(),
