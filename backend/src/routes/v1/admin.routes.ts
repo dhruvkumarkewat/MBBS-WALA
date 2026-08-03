@@ -63,8 +63,68 @@ adminRoutes.get('/scraper/authorities', async (_req: Request, res: Response) => 
 });
 
 /**
+ * GET & POST /api/v1/admin/scraper/run-now
+ * Execute live scraping immediately on the Render cloud server and return full results.
+ */
+adminRoutes.all('/scraper/run-now', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const target = String(req.query.target || req.body?.target || 'ALL').toUpperCase();
+    const isDryRun = req.query.dry_run === 'true' || req.body?.dry_run === true;
+
+    log.info({ target, isDryRun }, 'Online live scraping initiated via API');
+
+    const results: any[] = [];
+    const { MCCScraper } = await import('../../scrapers/mcc.scraper.js');
+    const { AACCCScraper } = await import('../../scrapers/aaccc.scraper.js');
+    const { StateScraper } = await import('../../scrapers/state.scraper.js');
+    const { getHighPriorityStateAuthorities } = await import('../../scrapers/state-registry.js');
+
+    if (target === 'ALL' || target === 'MCC') {
+      const mcc = new MCCScraper();
+      const resMcc = await mcc.run(isDryRun);
+      results.push({ authority: 'MCC', ...resMcc });
+    }
+
+    if (target === 'ALL' || target === 'AACCC') {
+      const aaccc = new AACCCScraper();
+      const resAaccc = await aaccc.run(isDryRun);
+      results.push({ authority: 'AACCC', ...resAaccc });
+    }
+
+    if (target === 'ALL' || target === 'STATES') {
+      const states = getHighPriorityStateAuthorities();
+      for (const st of states.slice(0, 5)) {
+        try {
+          const sc = new StateScraper(st);
+          const resSt = await sc.run(isDryRun);
+          results.push({ authority: st.code, state: st.state, ...resSt });
+        } catch (e: any) {
+          results.push({ authority: st.code, state: st.state, error: e.message });
+        }
+      }
+    }
+
+    res.json({
+      status: 'completed',
+      target,
+      timestamp: new Date().toISOString(),
+      summary: {
+        totalAuthoritiesChecked: results.length,
+        totalNewNotices: results.reduce((a, b) => a + (b.newNotices || 0), 0),
+        totalRecordsCreated: results.reduce((a, b) => a + (b.recordsCreated || 0), 0),
+        totalRecordsUpdated: results.reduce((a, b) => a + (b.recordsUpdated || 0), 0),
+      },
+      results,
+    });
+  } catch (err) {
+    log.error({ err }, 'Failed to execute online live scraping');
+    next(err);
+  }
+});
+
+/**
  * POST /api/v1/admin/scraper/trigger
- * Manually trigger a scraper job.
+ * Manually queue a scraper job.
  */
 adminRoutes.post('/scraper/trigger', async (req: Request, res: Response, next: NextFunction) => {
   try {
