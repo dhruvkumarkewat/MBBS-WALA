@@ -756,6 +756,7 @@ export function FinderPage() {
 /* ---------------- Compare → enriched seats + cutoffs ---------------- */
 export function ComparePage() {
   const s = useShell();
+  const { isPremium } = usePremium();
   const [colleges, setColleges] = useState<College[]>([]);
   const [a, setA] = useState('');
   const [b, setB] = useState('');
