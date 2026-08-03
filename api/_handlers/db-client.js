@@ -5,14 +5,14 @@ const supabaseUrl =
   process.env.SUPABASE_URL ||
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
   process.env.VITE_SUPABASE_URL ||
-  'https://ytzodhhrclcsgelddain.supabase.co';
+  'https://hbzzamezfhzsdupdhcin.supabase.co';
 
 const supabaseKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.SUPABASE_ANON_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   process.env.VITE_SUPABASE_ANON_KEY ||
-  'sb_publishable_8XvVWeN8oeLRMvkTuuFPKg_vI3jOcqg';
+  'sb_publishable_5D517PLNdF92v3Q1s6Dp_w_WaZtsrPo';
 
 const supabase = createClient(
   supabaseUrl,
