@@ -14,7 +14,7 @@ export interface StateAuthorityConfig {
   courses: ('MBBS' | 'BDS' | 'BAMS' | 'BHMS' | 'BUMS' | 'BSMS' | 'BNYS')[];
   enabled: boolean;
   priority: number; // 1 (highest) to 5 (lowest)
-  counsellingBodyType: 'DME' | 'CET_CELL' | 'UNIVERSITY' | 'BOARD';
+  counsellingBodyType: 'DME' | 'CET_CELL' | 'UNIVERSITY' | 'BOARD' | 'DGME' | 'DIRECTORATE' | 'COMMISSION' | 'COMMITTEE';
 }
 
 export const STATE_AUTHORITIES: StateAuthorityConfig[] = [

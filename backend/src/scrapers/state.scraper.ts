@@ -162,6 +162,14 @@ export class StateScraper extends BaseScraper {
   /**
    * Extract data from downloaded file.
    */
+  async extractFromHtml(html: string): Promise<ExtractedData> {
+    return {
+      targetTable: 'cutoffs',
+      matchKeys: ['college_name', 'category', 'year'],
+      records: [],
+    };
+  }
+
   async extractData(filePath: string, fileType: string): Promise<ExtractedData> {
     if (fileType === 'pdf') {
       return this.extractFromPdf(filePath);
@@ -217,13 +225,8 @@ export class StateScraper extends BaseScraper {
 
     return {
       targetTable: 'cutoffs',
+      matchKeys: ['college_name', 'category', 'year'],
       records,
-      metadata: {
-        totalPages: pdf.numpages,
-        extractedAt: new Date().toISOString(),
-        bodyCode: this.config.code,
-        state: this.config.state,
-      },
     };
   }
 
@@ -250,15 +253,19 @@ export class StateScraper extends BaseScraper {
 
     return {
       targetTable: 'cutoffs',
+      matchKeys: ['college_name', 'category', 'year'],
       records,
-      metadata: {
-        sheetName,
-        totalRows: rawRecords.length,
-        extractedAt: new Date().toISOString(),
-        bodyCode: this.config.code,
-        state: this.config.state,
-      },
     };
+  }
+
+  private detectCategory(text: string): string {
+    const upper = text.toUpperCase();
+    if (upper.includes('OBC')) return 'OBC';
+    if (upper.includes('EWS')) return 'EWS';
+    if (upper.includes('SC')) return 'SC';
+    if (upper.includes('ST')) return 'ST';
+    if (upper.includes('UR') || upper.includes('GEN') || upper.includes('OPEN')) return 'General';
+    return 'General';
   }
 
   private detectCourse(text: string): string {

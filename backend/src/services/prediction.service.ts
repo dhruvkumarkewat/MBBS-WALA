@@ -401,6 +401,12 @@ export class PredictionService {
         dream_count: result.summary.dream_count,
         model_version: result.modelInfo.version,
         response_time_ms: responseTimeMs,
+      });
+    } catch (err: any) {
+      log.warn({ err: err.message }, 'Failed to log prediction (non-critical)');
+    }
+  }
+
   /**
    * Synchronize prediction models and cached datasets with the latest scraped data.
    * Recalibrates percentile maps, active round benchmarks, and college cutoff bounds.
