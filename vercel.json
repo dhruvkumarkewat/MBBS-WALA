@@ -1,22 +1,11 @@
 {
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
   "rewrites": [
     {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
-    },
-    {
-      "source": "/(.*)",
-      "destination": {
-        "type": "service",
-        "service": "mbbswala-backend-api"
-      }
     }
-  ],
-  "services": {
-    "mbbswala-backend-api": {
-      "root": "backend",
-      "entrypoint": "src/index.ts",
-      "buildCommand": "npm install && npm run build"
-    }
-  }
+  ]
 }
