@@ -18,7 +18,7 @@ const supabaseAnonKey =
   process.env.SUPABASE_ANON_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   process.env.VITE_SUPABASE_ANON_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhienphbWV6Zmh6c2R1cGRoY2luIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NDU3NDcsImV4cCI6MjA2NDAyMTc0N30.placeholder';
+  'sb_publishable_5D517PLNdF92v3Q1s6Dp_w_WaZtsrPo';
 
 const supabaseKey = supabaseServiceKey || supabaseAnonKey;
 

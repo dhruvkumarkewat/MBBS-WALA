@@ -11,7 +11,7 @@ const supabaseKey =
   process.env.SUPABASE_ANON_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   process.env.VITE_SUPABASE_ANON_KEY ||
-  '';
+  'sb_publishable_5D517PLNdF92v3Q1s6Dp_w_WaZtsrPo';
 
 // Create a client specifically to verify user JWTs.
 // We use the user's own Bearer token as the apikey so Supabase validates it.
