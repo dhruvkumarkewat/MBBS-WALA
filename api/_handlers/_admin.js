@@ -14,11 +14,11 @@ export async function getStaffProfile(userId) {
     // fetch their email from profiles and grant access or just grant directly if email matches.
     if (!data) {
       const { data: prof } = await supabase.from('profiles').select('email').eq('id', userId).maybeSingle();
-      if (prof?.email === 'admin@gmail.com') {
+      if (prof?.email === 'admin@mbbswala.in') {
         // Auto-upsert staff profile for the hardcoded admin email
         const { data: newStaff } = await supabase.from('staff_profiles').upsert({
           user_id: userId,
-          email: 'admin@gmail.com',
+          email: 'admin@mbbswala.in',
           name: 'Super Admin',
           role: 'super_admin',
           is_active: true
