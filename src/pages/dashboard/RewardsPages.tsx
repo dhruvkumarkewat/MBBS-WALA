@@ -36,12 +36,14 @@ function useShell() {
   const { dark } = useDashboard();
   return {
     dark,
-    card: dark ? 'bg-[#0f1f2c] border-white/8' : 'bg-white border-primary-dark/8',
-    muted: dark ? 'text-white/50' : 'text-text-grey',
+    card: dark
+      ? 'bg-[#121820] border-white/10 shadow-[0_8px_40px_rgba(0,0,0,0.35)]'
+      : 'bg-white border-black/5 shadow-[0_10px_40px_rgba(14,17,23,0.05)]',
+    muted: dark ? 'text-white/50' : 'text-muted',
     input: dark
       ? 'bg-[#1e293b] border-white/10 text-white placeholder:text-white/30 [color-scheme:dark] [&_option]:text-black [&_option]:bg-white'
-      : 'bg-grey-bg-light border-primary-dark/10 text-primary-dark',
-    chip: dark ? 'bg-white/10' : 'bg-grey-bg-light',
+      : 'bg-[#f6f7f9] border-black/8 text-ink',
+    soft: dark ? 'bg-white/5' : 'bg-[#f6f7f9]',
   };
 }
 
