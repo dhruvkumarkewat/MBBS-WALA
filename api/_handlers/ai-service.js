@@ -308,8 +308,8 @@ export function buildFallbackResponse(query, context, resolved) {
   const rank = query.score_or_rank?.value || 0;
   const qualifies = !floor || (query.score_or_rank?.kind === 'marks' ? rank >= floor.cutoff_score : true);
 
-  // Score colleges
-  const colleges = (context.closing_ranks || []).slice(0, 25).map((cr) => {
+  // Score colleges and ensure a balanced distribution of High, Moderate, and Reach
+  const scoredColleges = (context.closing_ranks || []).map((cr) => {
     const closingRank = cr.aiq_rank || cr.closing_rank;
     let chance_tier = 'Unlikely';
     if (closingRank && rank > 0) {
@@ -319,18 +319,29 @@ export function buildFallbackResponse(query, context, resolved) {
       else if (ratio <= 1.40) chance_tier = 'Reach';
     }
 
+    const feeAmount = cr.fee_amount || (cr.type && cr.type.toLowerCase().includes('govt') ? 50000 : 1200000);
+
     return {
       college_name: cr.college_name,
       state: cr.state || 'Unknown',
-      course: cr.course_name || query.exam_track === 'AYUSH' ? 'BAMS' : 'MBBS',
-      quota: cr.quota_code || 'AIQ',
+      course: cr.course_name || (query.exam_track === 'AYUSH' ? 'BAMS' : 'MBBS'),
+      quota: cr.quota_code || (cr.type && cr.type.toLowerCase().includes('govt') ? 'AIQ' : 'Management'),
       category: cr.category || query.category,
       chance_tier,
-      closing_rank_reference: [{ year: cr.year, round: cr.round_name || 'Round 1', rank: closingRank }],
-      fee: null,
+      closing_rank_reference: [{ year: cr.year || year, round: cr.round_name || 'Round 1', rank: closingRank }],
+      fee: feeAmount ? {
+        tuition_annual: feeAmount,
+        currency: 'INR',
+        formatted: `₹${(feeAmount / 100000).toFixed(1)}L/yr`
+      } : null,
       source_ids: [],
     };
-  }).filter((c) => c.chance_tier !== 'Unlikely').slice(0, 15);
+  }).filter((c) => c.chance_tier !== 'Unlikely');
+
+  const highTier = scoredColleges.filter((c) => c.chance_tier === 'High').slice(0, 10);
+  const modTier = scoredColleges.filter((c) => c.chance_tier === 'Moderate').slice(0, 10);
+  const reachTier = scoredColleges.filter((c) => c.chance_tier === 'Reach').slice(0, 8);
+  const colleges = [...highTier, ...modTier, ...reachTier];
 
   // Match scholarships
   const scholarships = (context.scholarships || []).map((s) => ({

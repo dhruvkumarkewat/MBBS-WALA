@@ -22,18 +22,28 @@ function isDomicileRestricted(quota) {
 
 // ── Retrieval Layer ─────────────────────────────────────────────────────────
 
+function getCategoryClosing(cutoff, category) {
+  if (!cutoff) return null;
+  const cat = (category || 'General').toUpperCase();
+  if (cat.includes('OBC')) return cutoff.OBC_closing || cutoff.OBC || cutoff.closing_rank || cutoff.closing;
+  if (cat.includes('SC')) return cutoff.SC_closing || cutoff.SC || cutoff.closing_rank || cutoff.closing;
+  if (cat.includes('ST')) return cutoff.ST_closing || cutoff.ST || cutoff.closing_rank || cutoff.closing;
+  if (cat.includes('EWS')) return cutoff.EWS_closing || cutoff.EWS || cutoff.closing_rank || cutoff.closing;
+  return cutoff.GEN_closing || cutoff.GEN || cutoff.closing_rank || cutoff.closing;
+}
+
 async function retrieveContext(query) {
   const year = query.score_or_rank?.neet_year || new Date().getFullYear();
   const category = query.category || 'General';
   const examTrack = query.exam_track || 'MBBS_BDS';
   const quotas = query.quotas || ['AIQ'];
   const domicileState = query.domicile_state || null;
+  const candidateRank = query.score_or_rank?.value || 30000;
 
   // 1. Qualifying cutoffs
   const { data: qualifyingCutoffs } = await supabase
     .from('qualifying_cutoffs')
     .select('*')
-    .eq('neet_year', year)
     .eq('exam_track', examTrack);
 
   // 2. Counselling calendar (available rounds)
@@ -42,51 +52,114 @@ async function retrieveContext(query) {
     .from('counselling_calendar')
     .select('*')
     .eq('authority', primaryAuthority)
-    .eq('neet_year', year)
     .order('round_number');
 
-  // 3. Closing ranks (cutoffs) — filtered by category, limit to recent years
+  // 3. Closing ranks (cutoffs) from cutoffs table
   let cutoffQuery = supabase
     .from('cutoffs')
     .select('*')
     .eq('category', category)
-    .gte('year', year - 2)
-    .order('aiq_rank', { ascending: true })
     .limit(500);
 
-  // Apply state filter for State quota only
   if (quotas.includes('State') && domicileState && !quotas.includes('AIQ')) {
-    cutoffQuery = cutoffQuery.eq('state', domicileState);
+    cutoffQuery = cutoffQuery.ilike('state', `%${domicileState}%`);
   }
 
-  const { data: closingRanks } = await cutoffQuery;
+  const { data: directCutoffs } = await cutoffQuery;
 
-  // 4. Fee structures
+  // 4. Also fetch from colleges table to ensure full 1,000 college database coverage
+  const { data: allColleges } = await supabase
+    .from('colleges')
+    .select('id, name, state, type, feeGovt, feePvt, seats, cutoff, hospital_beds, established, bond, counselling')
+    .limit(1000);
+
+  // Map colleges into structured closing ranks
+  const collegeCutoffs = (allColleges || []).map((col) => {
+    const closing = getCategoryClosing(col.cutoff, category);
+    if (!closing) return null;
+
+    const isGovt = (col.type || '').toLowerCase().includes('govt') || (col.type || '').toLowerCase().includes('central');
+    const feeVal = isGovt ? (col.feeGovt || 50000) : (col.feePvt || col.feeGovt || 1200000);
+    const stateMatch = domicileState && (col.state || '').toLowerCase().includes(domicileState.toLowerCase());
+
+    return {
+      id: col.id,
+      college_name: col.name,
+      state: col.state || 'India',
+      aiq_rank: closing,
+      closing_rank: closing,
+      category: category,
+      round_name: 'Round 1',
+      year: year,
+      course_name: examTrack === 'AYUSH' ? 'BAMS' : 'MBBS',
+      quota_code: col.counselling || (isGovt ? 'AIQ' : 'Management'),
+      fee_amount: feeVal,
+      seats: col.seats || 100,
+      _state_match: stateMatch,
+    };
+  }).filter(Boolean);
+
+  // Combine directCutoffs and collegeCutoffs
+  const combined = [
+    ...(directCutoffs || []),
+    ...collegeCutoffs,
+  ];
+
+  // Deduplicate by college_name + category
+  const seen = new Set();
+  const deduplicated = [];
+  for (const item of combined) {
+    const key = `${(item.college_name || '').trim().toLowerCase()}_${item.category}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      deduplicated.push(item);
+    }
+  }
+
+  // Rank relevance scoring for candidate's rank: High, Moderate, Reach
+  const scored = deduplicated.map((c) => {
+    const closing = c.aiq_rank || c.closing_rank || 0;
+    const ratio = candidateRank / (closing || 1);
+    let tier = 'Unlikely';
+    if (ratio <= 0.85) tier = 'High';
+    else if (ratio <= 1.15) tier = 'Moderate';
+    else if (ratio <= 1.40) tier = 'Reach';
+
+    return {
+      ...c,
+      _ratio: ratio,
+      _tier: tier,
+      _diff: Math.abs(closing - candidateRank),
+    };
+  });
+
+  // Filter to eligible tiers and prioritize state matches + closest ranks
+  const eligible = scored.filter((c) => c._tier !== 'Unlikely');
+  const highTier = eligible.filter((c) => c._tier === 'High').sort((a, b) => (b._state_match ? 1 : 0) - (a._state_match ? 1 : 0) || a._diff - b._diff).slice(0, 30);
+  const modTier = eligible.filter((c) => c._tier === 'Moderate').sort((a, b) => (b._state_match ? 1 : 0) - (a._state_match ? 1 : 0) || a._diff - b._diff).slice(0, 30);
+  const reachTier = eligible.filter((c) => c._tier === 'Reach').sort((a, b) => (b._state_match ? 1 : 0) - (a._state_match ? 1 : 0) || a._diff - b._diff).slice(0, 20);
+
+  const finalClosingRanks = [...modTier, ...highTier, ...reachTier];
+
+  // 5. Fee structures
   const { data: fees } = await supabase
     .from('fee_structures')
     .select('*')
-    .eq('year', year)
     .limit(200);
 
-  // 5. Scholarships — match by category scope
-  let scholarshipQuery = supabase
+  // 6. Scholarships — match by category scope
+  const { data: scholarships } = await supabase
     .from('scholarships')
     .select('*')
     .eq('is_active', true);
 
-  const { data: scholarships } = await scholarshipQuery;
-
-  // Filter scholarships in JS (ARRAY containment queries are finicky)
   const matchedScholarships = (scholarships || []).filter((s) => {
-    // Category scope: null = all categories
     if (s.category_scope && s.category_scope.length > 0) {
       if (!s.category_scope.includes(category)) return false;
     }
-    // State scope: null = all states
     if (s.state_scope && s.state_scope.length > 0 && domicileState) {
       if (!s.state_scope.includes(domicileState)) return false;
     }
-    // Course scope
     if (s.course_scope && s.course_scope.length > 0) {
       const course = examTrack === 'AYUSH' ? 'BAMS' : 'MBBS';
       if (!s.course_scope.includes(course)) return false;
@@ -94,7 +167,7 @@ async function retrieveContext(query) {
     return true;
   });
 
-  // 6. Seat matrix enrichment
+  // 7. Seat matrix
   const { data: seatMatrix } = await supabase
     .from('seat_matrix')
     .select('*')
@@ -102,7 +175,7 @@ async function retrieveContext(query) {
 
   return {
     qualifying_cutoffs: qualifyingCutoffs || [],
-    closing_ranks: closingRanks || [],
+    closing_ranks: finalClosingRanks.length > 0 ? finalClosingRanks : deduplicated.slice(0, 50),
     fees: fees || [],
     scholarships: matchedScholarships,
     seat_matrix: seatMatrix || [],
