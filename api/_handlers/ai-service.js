@@ -24,7 +24,19 @@ You are the expert NEET-UG & AYUSH Medical College Predictor & Admissions Adviso
      - Colleges in \`domicile_state\` should use \`quota: "State"\` with State Quota cutoffs.
      - Colleges outside \`domicile_state\` MUST ONLY use \`quota: "AIQ"\` (15% All India Quota) with MCC AIQ cutoffs.
 
-2. **RANK PROXIMITY & CHANCE ORDERING (TOP COLLEGES FIRST)**:
+2. **STRICT QUOTA ISOLATION (AIQ vs DEEMED vs MANAGEMENT vs NRI)**:
+   - **AIQ (15% All India Quota)**:
+     - Return ONLY 100% authentic Government Medical Colleges & Central Universities (AIIMS, JIPMER, State GMCs, VMMC, IMS-BHU).
+     - NEVER return Deemed Universities or Private Management/Paid seats when user selected 'AIQ' only!
+   - **Deemed-Central (MCC Deemed University Counselling)**:
+     - Return Deemed Universities (e.g. Dr. D. Y. Patil Medical College Hospital & Research Centre Pune/Navi Mumbai, KMC Manipal, Hamdard, JSS Mysore, Bharati Vidyapeeth, MGM, Amrita, Kalinga/KIIT).
+     - Use authentic MCC Deemed closing ranks (e.g. Dr. D.Y. Patil Round 1: 419,526, Round 2: 457,967, Stray: 548,164) and realistic Deemed fees (₹20L–₹26L/yr).
+   - **Management (Private Paid Seats)**:
+     - Return Private Medical Colleges under Management / Paid seats with realistic private fees (₹12L–₹18L/yr).
+   - **NRI Quota**:
+     - Return NRI Quota seats (e.g. Dr. D.Y. Patil NRI Round 1: 1,241,642) with NRI fee tiers.
+
+3. **RANK PROXIMITY & CHANCE ORDERING (TOP COLLEGES FIRST)**:
    For any candidate Rank R:
    - **1. HIGH CHANCE (SAFE / BEST REALISTIC SEATS) — DISPLAY FIRST (7-12 colleges)**:
      - Premier colleges whose selected-quota closing cutoff is comfortably safe for candidate rank R (closing cutoff is between R * 1.05 and R * 2.5).
@@ -36,7 +48,7 @@ You are the expert NEET-UG & AYUSH Medical College Predictor & Admissions Adviso
      - Top aspirational institutions whose selected-quota closing cutoff is above candidate rank R (closing cutoff between R * 0.35 and R * 0.85).
      - Order ASCENDING by closing rank.
 
-3. **EACH COLLEGE OBJECT MUST INCLUDE**:
+4. **EACH COLLEGE OBJECT MUST INCLUDE**:
    - college_name: Full official name
    - state: State name
    - course: 'MBBS' | 'BDS' | 'BAMS' | 'BHMS'
@@ -254,10 +266,10 @@ export async function callAI(payload) {
       if (parsed.colleges && Array.isArray(parsed.colleges)) {
         // 1. Quota & Domicile State sanitization:
         parsed.colleges = parsed.colleges.map((c) => {
-          const isHomeState = domicileState && (c.state || '').toLowerCase().includes(domicileState.toLowerCase());
+          const isHomeState = Boolean(domicileState && (c.state || '').toLowerCase().includes(domicileState.toLowerCase()));
           
           let quota = c.quota || 'AIQ';
-          if (quota === 'State' && domicileState && !isHomeState) {
+          if (quota === 'State' && (!domicileState || !isHomeState)) {
             quota = 'AIQ';
           }
           return {
@@ -267,12 +279,28 @@ export async function callAI(payload) {
           };
         });
 
-        // 2. If user ONLY selected State quota (and has domicile_state), strictly filter to domicile state
+        // 2. Strict Quota Enforcement: Drop any college whose quota is NOT in selected quotas
+        if (selectedQuotas.length > 0) {
+          parsed.colleges = parsed.colleges.filter((c) => {
+            if (selectedQuotas.includes(c.quota)) return true;
+            // Never allow Management quota if not selected
+            if (c.quota === 'Management' && !selectedQuotas.includes('Management')) return false;
+            // Never allow Deemed-Central quota if not selected
+            if (c.quota === 'Deemed-Central' && !selectedQuotas.includes('Deemed-Central')) return false;
+            // Never allow NRI quota if not selected
+            if (c.quota === 'NRI' && !selectedQuotas.includes('NRI')) return false;
+            // Never allow State quota if not selected
+            if (c.quota === 'State' && !selectedQuotas.includes('State')) return false;
+            return false;
+          });
+        }
+
+        // 3. If user ONLY selected State quota (and has domicile_state), strictly filter to domicile state
         if (selectedQuotas.length === 1 && selectedQuotas.includes('State') && domicileState) {
           parsed.colleges = parsed.colleges.filter((c) => (c.state || '').toLowerCase().includes(domicileState.toLowerCase()));
         }
 
-        // 3. If user selected State quota along with AIQ, boost domicile state colleges to the top of their chance tier
+        // 4. If user selected State quota along with AIQ, boost domicile state colleges to the top of their chance tier
         if (selectedQuotas.includes('State') && domicileState) {
           parsed.colleges.sort((a, b) => {
             const aTierWeight = a.chance_tier === 'High' ? 1 : a.chance_tier === 'Moderate' ? 2 : 3;
@@ -374,6 +402,7 @@ export function buildFallbackResponse(query, context, resolved) {
   }).filter((c) => {
     if (c.chance_tier === 'Unlikely') return false;
     if (onlyStateQuota && domicileState && !c._is_home_state) return false;
+    if (selectedQuotas.length > 0 && !selectedQuotas.includes(c.quota)) return false;
     return true;
   });
 

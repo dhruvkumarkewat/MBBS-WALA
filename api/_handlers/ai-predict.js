@@ -73,30 +73,46 @@ export async function retrieveContext(query) {
     .select('id, name, state, type, feeGovt, feePvt, seats, cutoff, hospital_beds, established, bond, counselling')
     .limit(1000);
 
+const DEEMED_KEYWORDS = [
+  'patil', 'd.y. patil', 'd. y. patil', 'dy patil', 'manipal', 'kasturba', 'kmc',
+  'jss', 'j.s.s', 'hamdard', 'symbiosis', 'kalinga', 'kiit', 'amrita', 
+  'sri ramachandra', 'ramachandra', 'srm', 'saveetha', 'meenakshi', 'chettinad', 
+  'yenepoya', 'ks hegge', 'k.s. hegde', 'jnmc', 'kle', 'bharati vidyapeeth', 
+  'mgm', 'pravara', 'datta meghe', 'krishna institute', 'santosh', 'sharda', 
+  'gitam', 'vinayaka mission', 'aarupadai', 'bharath', 'bhaarath', 
+  'acs medical', 'rajarajeswari', 'sri devaraj', 'siddhartha', 'sumandeep', 'sbks',
+  'dr. m.g.r.', 'drmgr', 'deemed'
+];
+
   // Map colleges into structured closing ranks
   const collegeCutoffs = (allColleges || []).map((col) => {
     const closing = getCategoryClosing(col.cutoff, category);
     if (!closing) return null;
 
-    const isGovt = (col.type || '').toLowerCase().includes('govt') || (col.type || '').toLowerCase().includes('central');
-    const isDeemed = (col.type || '').toLowerCase().includes('deemed') || (col.type || '').toLowerCase().includes('central');
+    const colType = (col.type || '').toLowerCase();
+    const colName = (col.name || '').toLowerCase();
+    const isDeemed = DEEMED_KEYWORDS.some((k) => colName.includes(k)) || colType.includes('deemed');
+    const isGovt = !isDeemed && (colType.includes('govt') || colType.includes('central') || colName.includes('aiims') || colName.includes('jipmer') || colName.includes('government') || colName.includes('gmc') || colName.includes('grant') || colName.includes('king george') || colName.includes('lady hardinge') || colName.includes('vmmc') || colName.includes('safdarjung') || colName.includes('maulana azad'));
     const stateMatch = Boolean(domicileState && (col.state || '').toLowerCase().includes(domicileState.toLowerCase()));
 
-    // CRITICAL: A college can ONLY have quotaCode = 'State' if stateMatch is TRUE (domicile state match)
     let quotaCode = 'AIQ';
-    if (stateMatch && quotas.includes('State')) {
-      quotaCode = 'State';
-    } else if (isDeemed && quotas.includes('Deemed-Central')) {
+    if (isDeemed) {
       quotaCode = 'Deemed-Central';
-    } else if (!isGovt && (quotas.includes('Management') || quotas.includes('NRI'))) {
-      quotaCode = 'Management';
     } else if (isGovt) {
-      quotaCode = 'AIQ';
+      if (stateMatch && quotas.includes('State') && !quotas.includes('AIQ')) {
+        quotaCode = 'State';
+      } else {
+        quotaCode = 'AIQ';
+      }
     } else {
-      quotaCode = 'Management';
+      if (stateMatch && quotas.includes('State') && !quotas.includes('Management')) {
+        quotaCode = 'State';
+      } else {
+        quotaCode = 'Management';
+      }
     }
 
-    const feeVal = isGovt ? (col.feeGovt || 50000) : (col.feePvt || col.feeGovt || 1200000);
+    const feeVal = isGovt ? (col.feeGovt || 50000) : isDeemed ? (col.feePvt || 2200000) : (col.feePvt || 1400000);
 
     return {
       id: col.id,
@@ -143,7 +159,12 @@ export async function retrieveContext(query) {
   const onlyStateQuota = quotas.includes('State') && !quotas.includes('AIQ');
 
   for (const item of combined) {
-    // If only State Quota was selected, drop all colleges outside the domicile state
+    // 1. STRICT QUOTA FILTER: If user specified quotas, NEVER include colleges of unselected quotas
+    if (quotas.length > 0 && !quotas.includes(item.quota_code)) {
+      continue;
+    }
+
+    // 2. DOMICILE STATE FILTER: If only State Quota was selected, drop all colleges outside domicile state
     if (onlyStateQuota && domicileState && !item._state_match) {
       continue;
     }
