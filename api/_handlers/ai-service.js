@@ -248,6 +248,49 @@ export async function callAI(payload) {
 
       console.log(`[AI] ${config.name} succeeded. Colleges: ${parsed.colleges?.length || 0}, Scholarships: ${parsed.scholarships?.length || 0}`);
 
+      const query = payload?.query || {};
+      const domicileState = query.domicile_state || '';
+      const selectedQuotas = query.quotas || [];
+
+      if (parsed.colleges && Array.isArray(parsed.colleges)) {
+        // 1. Quota & Domicile State sanitization:
+        parsed.colleges = parsed.colleges.map((c) => {
+          const isHomeState = domicileState && (c.state || '').toLowerCase().includes(domicileState.toLowerCase());
+          
+          let quota = c.quota || 'AIQ';
+          if (quota === 'State' && domicileState && !isHomeState) {
+            quota = 'AIQ';
+          }
+          return {
+            ...c,
+            quota,
+            _is_home_state: isHomeState,
+          };
+        });
+
+        // 2. If user ONLY selected State quota (and has domicile_state), strictly filter to domicile state
+        if (selectedQuotas.length === 1 && selectedQuotas.includes('State') && domicileState) {
+          parsed.colleges = parsed.colleges.filter((c) => (c.state || '').toLowerCase().includes(domicileState.toLowerCase()));
+        }
+
+        // 3. If user selected State quota along with AIQ, boost domicile state colleges to the top of their chance tier
+        if (selectedQuotas.includes('State') && domicileState) {
+          parsed.colleges.sort((a, b) => {
+            const aTierWeight = a.chance_tier === 'High' ? 1 : a.chance_tier === 'Moderate' ? 2 : 3;
+            const bTierWeight = b.chance_tier === 'High' ? 1 : b.chance_tier === 'Moderate' ? 2 : 3;
+            if (aTierWeight !== bTierWeight) return aTierWeight - bTierWeight;
+            
+            const aIsHomeStateQuota = a._is_home_state && a.quota === 'State' ? 1 : 0;
+            const bIsHomeStateQuota = b._is_home_state && b.quota === 'State' ? 1 : 0;
+            if (bIsHomeStateQuota !== aIsHomeStateQuota) return bIsHomeStateQuota - aIsHomeStateQuota;
+
+            const aRank = a.closing_rank_reference?.[0]?.rank || 999999;
+            const bRank = b.closing_rank_reference?.[0]?.rank || 999999;
+            return aRank - bRank;
+          });
+        }
+      }
+
       return { ...parsed, _provider_used: providerKey };
     } catch (err) {
       console.error(`[AI] ${config.name} failed:`, err.message || err);

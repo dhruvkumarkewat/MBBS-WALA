@@ -267,6 +267,9 @@ export function PredictorPage() {
         throw new Error('Enter a valid NEET score (0–720)');
       }
       if (quotas.length === 0) throw new Error('Select at least one quota');
+      if (quotas.includes('State') && !domicileState) {
+        throw new Error('Please select your Domicile State to predict State Quota (85%) colleges.');
+      }
 
       // Try AI predictor first
       try {
@@ -450,13 +453,15 @@ export function PredictorPage() {
             </select>
           </label>
           <label className="block">
-            <span className={`text-xs font-bold uppercase ${s.muted}`}>Domicile State</span>
+            <span className={`text-xs font-bold uppercase ${quotas.includes('State') ? 'text-primary' : s.muted}`}>
+              Domicile State {quotas.includes('State') ? '(Required for State Quota *)' : ''}
+            </span>
             <select
               value={domicileState}
               onChange={(e) => setDomicileState(e.target.value)}
-              className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
+              className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input} ${quotas.includes('State') && !domicileState ? 'border-primary/60 bg-primary/5 ring-1 ring-primary/30' : ''}`}
             >
-              <option value="">All India / Not Applicable</option>
+              <option value="">Select Domicile State...</option>
               {INDIA_STATES.map((st) => <option key={st}>{st}</option>)}
             </select>
           </label>
