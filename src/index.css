@@ -1612,8 +1612,8 @@ a .pkg-learn-more {
   color-scheme: dark;
 }
 .dash-shell.dash-dark option {
-  background-color: #0f1f2c;
-  color: #ffffff;
+  background-color: #ffffff;
+  color: #000000;
 }
 /* Package learn-more stays dark-on-white even inside light shells */
 .dash-shell .pkg-learn-more {

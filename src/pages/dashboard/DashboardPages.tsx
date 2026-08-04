@@ -39,7 +39,7 @@ function useShell() {
     card: dark ? 'bg-[#0f1f2c] border-white/8' : 'bg-white border-primary-dark/8',
     muted: dark ? 'text-white/50' : 'text-text-grey',
     input: dark
-      ? 'bg-[#1e293b] border-white/10 text-white placeholder:text-white/30 [color-scheme:dark]'
+      ? 'bg-[#1e293b] border-white/10 text-white placeholder:text-white/30 [color-scheme:dark] [&_option]:text-black [&_option]:bg-white'
       : 'bg-grey-bg-light border-primary-dark/10 text-primary-dark',
     chip: dark ? 'bg-white/10' : 'bg-grey-bg-light',
   };
