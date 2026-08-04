@@ -119,27 +119,41 @@ async function retrieveContext(query) {
   // Rank relevance scoring for candidate's rank: High, Moderate, Reach
   const scored = deduplicated.map((c) => {
     const closing = c.aiq_rank || c.closing_rank || 0;
-    const ratio = candidateRank / (closing || 1);
     let tier = 'Unlikely';
-    if (ratio <= 0.85) tier = 'High';
-    else if (ratio <= 1.15) tier = 'Moderate';
-    else if (ratio <= 1.40) tier = 'Reach';
+    if (closing && candidateRank > 0) {
+      if (closing >= candidateRank * 1.05 && closing <= candidateRank * 3.0) {
+        tier = 'High';
+      } else if (closing >= candidateRank * 0.85 && closing < candidateRank * 1.05) {
+        tier = 'Moderate';
+      } else if (closing >= candidateRank * 0.35 && closing < candidateRank * 0.85) {
+        tier = 'Reach';
+      }
+    }
 
     return {
       ...c,
-      _ratio: ratio,
       _tier: tier,
       _diff: Math.abs(closing - candidateRank),
+      _closing: closing,
     };
   });
 
-  // Filter to eligible tiers and prioritize state matches + closest ranks
+  // Filter to eligible tiers and prioritize closest ranks
   const eligible = scored.filter((c) => c._tier !== 'Unlikely');
-  const highTier = eligible.filter((c) => c._tier === 'High').sort((a, b) => (b._state_match ? 1 : 0) - (a._state_match ? 1 : 0) || a._diff - b._diff).slice(0, 30);
-  const modTier = eligible.filter((c) => c._tier === 'Moderate').sort((a, b) => (b._state_match ? 1 : 0) - (a._state_match ? 1 : 0) || a._diff - b._diff).slice(0, 30);
-  const reachTier = eligible.filter((c) => c._tier === 'Reach').sort((a, b) => (b._state_match ? 1 : 0) - (a._state_match ? 1 : 0) || a._diff - b._diff).slice(0, 20);
+  const highTier = eligible
+    .filter((c) => c._tier === 'High')
+    .sort((a, b) => (b._state_match ? 1 : 0) - (a._state_match ? 1 : 0) || a._closing - b._closing)
+    .slice(0, 30);
+  const modTier = eligible
+    .filter((c) => c._tier === 'Moderate')
+    .sort((a, b) => (b._state_match ? 1 : 0) - (a._state_match ? 1 : 0) || a._diff - b._diff)
+    .slice(0, 20);
+  const reachTier = eligible
+    .filter((c) => c._tier === 'Reach')
+    .sort((a, b) => (b._state_match ? 1 : 0) - (a._state_match ? 1 : 0) || b._closing - a._closing)
+    .slice(0, 15);
 
-  const finalClosingRanks = [...modTier, ...highTier, ...reachTier];
+  const finalClosingRanks = [...highTier, ...modTier, ...reachTier];
 
   // 5. Fee structures
   const { data: fees } = await supabase

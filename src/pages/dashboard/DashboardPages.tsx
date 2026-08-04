@@ -243,6 +243,7 @@ export function PredictorPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'colleges' | 'scholarships'>('colleges');
+  const [tierFilter, setTierFilter] = useState<'ALL' | 'High' | 'Moderate' | 'Reach'>('ALL');
 
   // Toggle a quota in the multi-select
   const toggleQuota = (v: string) =>
@@ -356,6 +357,8 @@ export function PredictorPage() {
   const highCount = colleges.filter((c) => c.chance_tier === 'High').length;
   const modCount  = colleges.filter((c) => c.chance_tier === 'Moderate').length;
   const reachCount = colleges.filter((c) => c.chance_tier === 'Reach').length;
+
+  const displayedColleges = colleges.filter((c) => tierFilter === 'ALL' ? true : c.chance_tier === tierFilter);
 
   return (
     <div className="max-w-3xl">
@@ -535,23 +538,30 @@ export function PredictorPage() {
                       </p>
                     )}
                   </div>
-                  <div className="flex gap-3 text-center">
+                  <div className="flex gap-2 text-center">
                     {[
-                      { l: 'High', v: highCount, cls: 'text-emerald-400' },
-                      { l: 'Moderate', v: modCount, cls: 'text-amber-400' },
-                      { l: 'Reach', v: reachCount, cls: 'text-orange-400' },
+                      { l: 'High', v: highCount, t: 'High' as const, cls: 'text-emerald-400', border: 'border-emerald-500/30' },
+                      { l: 'Moderate', v: modCount, t: 'Moderate' as const, cls: 'text-amber-400', border: 'border-amber-500/30' },
+                      { l: 'Reach', v: reachCount, t: 'Reach' as const, cls: 'text-orange-400', border: 'border-orange-500/30' },
                     ].map((x) => (
-                      <div key={x.l}>
+                      <button
+                        key={x.l}
+                        type="button"
+                        onClick={() => setTierFilter(tierFilter === x.t ? 'ALL' : x.t)}
+                        className={`px-3 py-1.5 rounded-xl border transition-all ${
+                          tierFilter === x.t ? `${x.border} bg-white/10 shadow-sm scale-105` : 'border-transparent hover:bg-white/5'
+                        }`}
+                      >
                         <p className={`text-xl font-black ${x.cls}`}>{x.v}</p>
                         <p className={`text-[10px] font-bold uppercase ${s.muted}`}>{x.l}</p>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Scholarship count pill */}
-                {scholarships.length > 0 && (
-                  <div className="mt-3 flex gap-2">
+                {/* Tabs & Tier Filter Pill Row */}
+                <div className="mt-3 flex flex-wrap gap-2 items-center justify-between">
+                  <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={() => setActiveTab('colleges')}
@@ -559,15 +569,39 @@ export function PredictorPage() {
                     >
                       🏥 Colleges ({colleges.length})
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('scholarships')}
-                      className={`text-xs px-3 py-1.5 rounded-full font-bold transition-all ${activeTab === 'scholarships' ? 'bg-emerald-600 text-white' : `${s.muted} border border-white/10`}`}
-                    >
-                      🎓 Scholarships ({scholarships.length})
-                    </button>
+                    {scholarships.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('scholarships')}
+                        className={`text-xs px-3 py-1.5 rounded-full font-bold transition-all ${activeTab === 'scholarships' ? 'bg-emerald-600 text-white' : `${s.muted} border border-white/10`}`}
+                      >
+                        🎓 Scholarships ({scholarships.length})
+                      </button>
+                    )}
                   </div>
-                )}
+
+                  {activeTab === 'colleges' && colleges.length > 0 && (
+                    <div className="flex gap-1.5">
+                      {(['ALL', 'High', 'Moderate', 'Reach'] as const).map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => setTierFilter(t)}
+                          className={`text-[11px] px-2.5 py-1 rounded-lg font-bold transition-all ${
+                            tierFilter === t
+                              ? t === 'High' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                : t === 'Moderate' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                : t === 'Reach' ? 'bg-orange-500/20 text-orange-300 border border-orange-500/40'
+                                : 'bg-white/20 text-white border border-white/30'
+                              : `${s.muted} hover:text-white border border-transparent`
+                          }`}
+                        >
+                          {t === 'ALL' ? 'All' : t}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* ── Fraud Warning ── */}
@@ -579,9 +613,9 @@ export function PredictorPage() {
               )}
 
               {/* ── College Cards ── */}
-              {activeTab === 'colleges' && colleges.length > 0 && (
+              {activeTab === 'colleges' && displayedColleges.length > 0 && (
                 <div className="space-y-3">
-                  {colleges.map((c, i) => {
+                  {displayedColleges.map((c, i) => {
                     const style = TIER_STYLES[c.chance_tier] || TIER_STYLES.Unlikely;
                     const latestRef = c.closing_rank_reference?.[0];
                     return (
