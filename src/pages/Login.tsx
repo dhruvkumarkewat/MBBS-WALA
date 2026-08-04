@@ -252,13 +252,18 @@ export default function Login() {
         const isComplete =
           prof?.profile_completed ||
           prof?.onboarding_done ||
+          localStorage.getItem('onboarding_done_flag') === 'true' ||
           (Boolean(prof?.phone) && Boolean(prof?.category) && (prof?.neet_score != null || prof?.neet_rank != null));
         if (!isComplete) {
           navigate('/onboarding', { replace: true });
           return;
         }
       } catch {
-        /* proceed */
+        // If API fails, check localStorage as fallback
+        if (localStorage.getItem('onboarding_done_flag') !== 'true') {
+          navigate('/onboarding', { replace: true });
+          return;
+        }
       }
 
       navigate(from, { replace: true });
@@ -738,3 +743,4 @@ function Field({
     </label>
   );
 }
+

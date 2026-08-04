@@ -1,5 +1,18 @@
-import supabase from './db-client.js';
+import supabaseGlobal from './db-client.js';
 import { setCors, requireUser } from './_auth.js';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hbzzamezfhzsdupdhcin.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+function getUserClient(token) {
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) return supabaseGlobal;
+  if (!token) return supabaseGlobal;
+  return createClient(supabaseUrl, supabaseKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${token}` } }
+  });
+}
 
 export default async function handler(req, res) {
   setCors(res);
@@ -9,6 +22,10 @@ export default async function handler(req, res) {
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
     const user = await requireUser(req, res);
     if (!user) return;
+
+    const authHeader = req.headers?.authorization || req.headers?.Authorization || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    const supabase = getUserClient(token);
 
     const [colleges, seats, saved, docs, apps, notes, profile, packages] = await Promise.all([
       supabase.from('colleges').select('id', { count: 'exact', head: true }).ilike('country', 'INDIA').then(r => r).catch(() => ({ count: 1200 })),

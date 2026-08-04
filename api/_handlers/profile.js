@@ -1,6 +1,19 @@
-import supabase from './db-client.js';
+import supabaseGlobal from './db-client.js';
 import { setCors, requireUser } from './_auth.js';
 import { ensureWallet } from './wallet-helpers.js';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hbzzamezfhzsdupdhcin.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+function getUserClient(token) {
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) return supabaseGlobal;
+  if (!token) return supabaseGlobal;
+  return createClient(supabaseUrl, supabaseKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${token}` } }
+  });
+}
 
 function computeProfileCompletion(p) {
   const fields = [
@@ -36,6 +49,10 @@ export default async function handler(req, res) {
     const user = await requireUser(req, res);
     if (!user) return;
 
+    const authHeader = req.headers?.authorization || req.headers?.Authorization || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    const supabase = getUserClient(token);
+
     if (req.method === 'GET') {
       let { data, error } = await supabase
         .from('profiles')
@@ -53,11 +70,6 @@ export default async function handler(req, res) {
         if (byEmail.data) data = byEmail.data;
       }
       
-      // Prevent crash if profile row doesn't exist yet
-      if (!data) {
-        data = { id: user.id, email: user.email };
-      }
-
       // Ensure wallet exists & get referral code
       let wallet = null;
       try {
