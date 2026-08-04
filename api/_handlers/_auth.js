@@ -6,18 +6,12 @@ const supabaseUrl =
   process.env.VITE_SUPABASE_URL ||
   'https://hbzzamezfhzsdupdhcin.supabase.co';
 
-// Real anon key (JWT format) hardcoded as last-resort fallback.
-// Vercel env should have SUPABASE_ANON_KEY set to the real JWT key.
-const HARDCODED_ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhienphbWV6Zmh6c2R1cGRoY2luIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NDU3NDcsImV4cCI6MjA2NDAyMTc0N30.SG3oCXEp44VXlJLl0pUmKB_JEfVQ0Nao8qyQjrCKEDI';
-
 const supabaseKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.SUPABASE_ANON_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  // Only use VITE_ key if it looks like a real JWT (not a publishable key)
-  (process.env.VITE_SUPABASE_ANON_KEY?.startsWith('eyJ') ? process.env.VITE_SUPABASE_ANON_KEY : null) ||
-  HARDCODED_ANON_KEY;
+  process.env.VITE_SUPABASE_ANON_KEY ||
+  '';
 
 // Create a client specifically to verify user JWTs.
 // We use the user's own Bearer token as the apikey so Supabase validates it.
