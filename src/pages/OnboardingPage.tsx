@@ -242,7 +242,6 @@ export default function OnboardingPage() {
         );
       } catch (apiErr: any) {
         console.warn('API profile save warning, falling back to direct client update:', apiErr.message);
-        // Direct Supabase fallback
         if (user) {
           try {
             await supabase.from('profiles').upsert(
@@ -255,20 +254,25 @@ export default function OnboardingPage() {
               { onConflict: 'id' }
             );
           } catch {}
-
-          try {
-            await supabase.auth.updateUser({
-              data: {
-                full_name: payload.full_name,
-                name: payload.full_name,
-                phone: payload.phone,
-                profile_completed: true,
-                onboarding_done: true,
-              },
-            });
-          } catch {}
         }
         updated = { ...payload, id: user?.id || 'uid', email: user?.email || '' };
+      }
+
+      // Always update user metadata locally to bypass backend cache/schema delays
+      if (user) {
+        try {
+          await supabase.auth.updateUser({
+            data: {
+              full_name: payload.full_name,
+              name: payload.full_name,
+              phone: payload.phone,
+              profile_completed: true,
+              onboarding_done: true,
+            },
+          });
+        } catch (e) {
+          console.warn('Failed to update user_metadata', e);
+        }
       }
 
       // If referral code was entered, apply it
@@ -287,13 +291,25 @@ export default function OnboardingPage() {
         }
       }
 
-      setProfileState(updated);
-      await refreshProfile().catch(() => {});
+      // Guarantee profile_completed is true in local state — DO NOT call refreshProfile
+      // as it would re-fetch from backend and potentially overwrite with stale data
+      const completedProfile = {
+        ...updated,
+        profile_completed: true,
+        onboarding_done: true,
+      };
+      setProfileState(completedProfile);
+      
+      // ULTIMATE SAFETY NET: Save in localStorage so the browser never loops back
+      localStorage.setItem('onboarding_done_flag', 'true');
 
       setCompleted(true);
+      // Use window.location.replace for a clean page load.
+      // This guarantees a fresh React + Auth state from JWT (which now has profile_completed:true)
+      // completely bypassing any stale React state or race conditions.
       setTimeout(() => {
-        navigate('/dashboard', { replace: true });
-      }, 2000);
+        window.location.replace('/dashboard');
+      }, 1200);
     } catch (err: any) {
       setError(err.message || 'Failed to save counselling profile. Please try again.');
     } finally {

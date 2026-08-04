@@ -13,7 +13,10 @@ export default function ProtectedRoute({
   const { user, loading, profileLoading, isProfileComplete } = useAuth();
   const location = useLocation();
 
-  if (loading || (user && profileLoading && checkOnboarding)) {
+  // Block with loading spinner ONLY if we don't yet know the profile status.
+  // If isProfileComplete is already true, let the user through immediately —
+  // don't block them with a spinner that could cause a race condition redirect.
+  if (loading || (user && profileLoading && checkOnboarding && !isProfileComplete)) {
     return (
       <div className="min-h-screen grid place-items-center bg-[#0e1217] text-white">
         <div className="text-center">
@@ -30,14 +33,17 @@ export default function ProtectedRoute({
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
-  // If profile is not complete and user is trying to access dashboard/crm, redirect to /onboarding
-  if (checkOnboarding && !isProfileComplete && location.pathname !== '/onboarding') {
-    return <Navigate to="/onboarding" replace state={{ from: location.pathname }} />;
-  }
-
   // If user completed profile and tries to visit /onboarding, send to /dashboard
   if (location.pathname === '/onboarding' && isProfileComplete) {
+    console.log('[DEBUG] ProtectedRoute: User is on /onboarding and isProfileComplete=true, redirecting to /dashboard');
     return <Navigate to="/dashboard" replace />;
+  }
+
+  // If profile is not complete and user is trying to access dashboard/crm, redirect to /onboarding
+  // BUT only after profileLoading is done — never redirect while loading (race condition)
+  if (checkOnboarding && !profileLoading && !isProfileComplete && location.pathname !== '/onboarding') {
+    console.log(`[DEBUG] ProtectedRoute: Rejecting access to ${location.pathname}. checkOnboarding=${checkOnboarding}, profileLoading=${profileLoading}, isProfileComplete=${isProfileComplete}`);
+    return <Navigate to="/onboarding" replace state={{ from: location.pathname }} />;
   }
 
   return <>{children}</>;

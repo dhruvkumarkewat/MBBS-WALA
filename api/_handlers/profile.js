@@ -52,6 +52,11 @@ export default async function handler(req, res) {
           .maybeSingle();
         if (byEmail.data) data = byEmail.data;
       }
+      
+      // Prevent crash if profile row doesn't exist yet
+      if (!data) {
+        data = { id: user.id, email: user.email };
+      }
 
       // Ensure wallet exists & get referral code
       let wallet = null;
@@ -148,6 +153,8 @@ export default async function handler(req, res) {
         saved_colleges_count: savedCount || 0,
         bookmarks_count: bookmarksCount || 0,
         completion_percentage: completion,
+        profile_completed: Boolean(data.profile_completed || data.onboarding_done || user.user_metadata?.profile_completed || user.user_metadata?.onboarding_done),
+        onboarding_done: Boolean(data.profile_completed || data.onboarding_done || user.user_metadata?.profile_completed || user.user_metadata?.onboarding_done),
       });
     }
 
@@ -220,14 +227,14 @@ export default async function handler(req, res) {
         .single();
 
       // If upsert fails due to unknown columns, strip them and retry
-      if (error && error.code === 'PGRST204') {
+      let maxRetries = 10;
+      while (error && error.code === 'PGRST204' && maxRetries > 0) {
         const colMatch = error.message?.match(/Could not find the '(\w+)' column/);
-        if (colMatch) {
-          console.warn('Stripping unknown column from profile update:', colMatch[1]);
-          // Remove all potentially missing columns and retry
-          const suspectCols = ['domicile_state', 'rank', 'score', 'marks', 'percentile'];
-          for (const col of suspectCols) delete upsertPayload[col];
-          for (const col of suspectCols) delete patch[col];
+        if (colMatch && colMatch[1]) {
+          const badCol = colMatch[1];
+          console.warn('Stripping unknown column from profile update:', badCol);
+          delete upsertPayload[badCol];
+          delete patch[badCol];
           const retry = await supabase
             .from('profiles')
             .upsert(upsertPayload, { onConflict: 'id' })
@@ -235,6 +242,9 @@ export default async function handler(req, res) {
             .single();
           data = retry.data;
           error = retry.error;
+          maxRetries--;
+        } else {
+          break;
         }
       }
 
@@ -311,7 +321,12 @@ export default async function handler(req, res) {
       }
 
       const completion = computeProfileCompletion(data || {});
-      return res.status(200).json({ ...data, completion_percentage: completion });
+      return res.status(200).json({ 
+        ...data, 
+        completion_percentage: completion,
+        profile_completed: patch.profile_completed ?? data.profile_completed,
+        onboarding_done: patch.onboarding_done ?? data.onboarding_done
+      });
     }
 
     res.status(405).json({ error: 'Method not allowed' });

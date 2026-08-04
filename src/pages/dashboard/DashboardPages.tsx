@@ -157,6 +157,37 @@ export function AiAssistantPage() {
 const DASH_COURSES = ['All', 'MBBS', 'BDS', 'BAMS', 'BHMS', 'BUMS', 'BSMS', 'BNYS'];
 
 /* ---------------- Predictor → rank + college matches ---------------- */
+const INDIAN_STATES = [
+  'Madhya Pradesh',
+  'Maharashtra',
+  'Uttar Pradesh',
+  'Delhi (NCT)',
+  'Rajasthan',
+  'Bihar',
+  'Karnataka',
+  'Tamil Nadu',
+  'Kerala',
+  'Gujarat',
+  'West Bengal',
+  'Haryana',
+  'Punjab',
+  'Odisha',
+  'Telangana',
+  'Andhra Pradesh',
+  'Chhattisgarh',
+  'Jharkhand',
+  'Assam',
+  'Uttarakhand',
+  'Himachal Pradesh',
+  'Jammu and Kashmir',
+  'Goa',
+  'Tripura',
+  'Manipur',
+  'Meghalaya',
+  'Chandigarh',
+  'Puducherry',
+];
+
 export function PredictorPage() {
   const s = useShell();
   const { isPremium } = usePremium();
@@ -167,6 +198,9 @@ export function PredictorPage() {
   const [rank, setRank] = useState(profile?.neet_rank?.toString() || '15000');
   const [score, setScore] = useState(profile?.neet_score?.toString() || '612');
   const [category, setCategory] = useState(profile?.category || 'General');
+  const [targetState, setTargetState] = useState('All India / Any State');
+  const [quota, setQuota] = useState('All India Quota (AIQ)');
+  const [round, setRound] = useState('Round 1');
   const [result, setResult] = useState<{
     predicted_rank_min: number;
     predicted_rank_max: number;
@@ -249,6 +283,9 @@ export function PredictorPage() {
             rank: targetRank,
             category,
             course: exam === 'NEET UG' ? course : 'MBBS',
+            state: targetState === 'All India / Any State' ? null : targetState,
+            quota: quota,
+            round: round,
             limit: 15,
           }),
         });
@@ -405,6 +442,48 @@ export function PredictorPage() {
             ))}
           </select>
         </label>
+
+        {/* New Filters: State, Quota, Round */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <label className="block">
+            <span className={`text-xs font-bold uppercase ${s.muted}`}>Preferred State</span>
+            <select
+              value={targetState}
+              onChange={(e) => setTargetState(e.target.value)}
+              className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
+            >
+              <option>All India / Any State</option>
+              {INDIAN_STATES.map((x) => (
+                <option key={x}>{x}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className={`text-xs font-bold uppercase ${s.muted}`}>Quota</span>
+            <select
+              value={quota}
+              onChange={(e) => setQuota(e.target.value)}
+              className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
+            >
+              {['All India Quota (AIQ)', 'State Quota', 'Both'].map((x) => (
+                <option key={x}>{x}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className={`text-xs font-bold uppercase ${s.muted}`}>Counselling Round</span>
+            <select
+              value={round}
+              onChange={(e) => setRound(e.target.value)}
+              className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
+            >
+              {['All Rounds', 'Round 1', 'Round 2', 'Mop-Up / Round 3', 'Stray Vacancy'].map((x) => (
+                <option key={x}>{x}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+
         <button type="submit" disabled={loading} className="zn-cta zn-cta-primary w-full justify-center">
           {loading ? (
             <Loader2 className="w-4 h-4 animate-spin" />

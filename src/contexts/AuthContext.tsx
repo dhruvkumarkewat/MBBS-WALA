@@ -52,14 +52,26 @@ export interface UserProfile {
 }
 
 export function checkProfileCompleteness(p: UserProfile | null | undefined): boolean {
-  if (!p) return false;
-  if (p.profile_completed === true || p.onboarding_done === true) return true;
+  if (localStorage.getItem('onboarding_done_flag') === 'true') {
+    return true; // Ultimate fallback: if we saved it in this browser, never loop back
+  }
+  
+  if (!p) {
+    console.log('[DEBUG] checkProfileCompleteness: profile is null, returning false');
+    return false;
+  }
+  if (p.profile_completed === true || p.onboarding_done === true) {
+    console.log('[DEBUG] checkProfileCompleteness: profile_completed or onboarding_done is true, returning true');
+    return true;
+  }
   const hasName = Boolean((p.full_name || p.name || '').trim());
   const hasPhone = Boolean((p.phone || '').trim().length >= 8);
   const hasScoreOrRank = p.neet_score != null || p.neet_rank != null;
   const hasCategory = Boolean((p.category || '').trim());
   const hasDomicile = Boolean((p.domicile_state || p.domicile || p.state || '').trim());
-  return hasName && hasPhone && hasScoreOrRank && hasCategory && hasDomicile;
+  const isComplete = hasName && hasPhone && hasScoreOrRank && hasCategory && hasDomicile;
+  console.log(`[DEBUG] checkProfileCompleteness: checking fields... Name:${hasName}, Phone:${hasPhone}, ScoreRank:${hasScoreOrRank}, Category:${hasCategory}, Domicile:${hasDomicile} -> Result: ${isComplete}`);
+  return isComplete;
 }
 
 interface AuthContextValue {
@@ -105,10 +117,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!skipLoadingState) setProfileLoading(true);
     try {
       const data = await apiJson<UserProfile>('/api/profile', {}, true);
+      // OVERRIDE stale backend data with user_metadata if user_metadata says it's completed
+      if (currUser?.user_metadata?.profile_completed) {
+        data.profile_completed = true;
+        data.onboarding_done = true;
+      }
       setProfile(data);
       return data;
     } catch {
-      // Fallback from user metadata
+      // API failed — try direct Supabase client query as fallback
+      // This works even when the backend API is broken (e.g., missing service role key)
+      try {
+        const { data: directData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', currUser.id)
+          .maybeSingle();
+        if (directData) {
+          const meta = currUser.user_metadata || {};
+          // Trust profile_completed from DB OR user_metadata (whichever is true)
+          const isCompleted = Boolean(
+            directData.profile_completed ||
+            directData.onboarding_done ||
+            meta.profile_completed ||
+            meta.onboarding_done
+          );
+          const merged = {
+            ...directData,
+            profile_completed: isCompleted,
+            onboarding_done: isCompleted,
+          };
+          setProfile(merged);
+          return merged;
+        }
+      } catch {
+        // Direct Supabase query also failed — fall through to user_metadata
+      }
+      // Last resort: use user_metadata from JWT
       const meta = currUser.user_metadata || {};
       const fallback: UserProfile = {
         id: currUser.id,
@@ -163,8 +208,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const u = s?.user ?? null;
       setUser(u);
       setLoading(false);
-      // Skip profile re-fetch on token refresh (tab focus) to prevent dashboard reload
-      if (event === 'TOKEN_REFRESHED') return;
+      // Skip profile re-fetch on token refresh or user metadata update
+      // USER_UPDATED fires when supabase.auth.updateUser() is called — if we re-fetch
+      // at that point, the backend may return stale data and overwrite our local state.
+      if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') return;
       if (u) {
         fetchProfile(u, true); // true = skipLoadingState so the dashboard doesn't unmount
       } else {

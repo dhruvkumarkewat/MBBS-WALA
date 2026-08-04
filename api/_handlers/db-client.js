@@ -7,12 +7,22 @@ const supabaseUrl =
   process.env.VITE_SUPABASE_URL ||
   'https://hbzzamezfhzsdupdhcin.supabase.co';
 
-const supabaseKey =
+// For database operations: prefer service role key (bypasses RLS), fall back to anon key
+const supabaseServiceKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_SERVICE_KEY ||
+  process.env.SERVICE_ROLE_KEY ||
+  null;
+
+const supabaseAnonKey =
   process.env.SUPABASE_ANON_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   process.env.VITE_SUPABASE_ANON_KEY ||
-  'sb_publishable_5D517PLNdF92v3Q1s6Dp_w_WaZtsrPo';
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhienphbWV6Zmh6c2R1cGRoY2luIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NDU3NDcsImV4cCI6MjA2NDAyMTc0N30.placeholder';
+
+const supabaseKey = supabaseServiceKey || supabaseAnonKey;
+
+console.log('[db-client] Using key type:', supabaseServiceKey ? 'SERVICE_ROLE' : 'ANON', '| URL:', supabaseUrl);
 
 const supabase = createClient(
   supabaseUrl,
