@@ -39,7 +39,7 @@ function useShell() {
     card: dark ? 'bg-[#0f1f2c] border-white/8' : 'bg-white border-primary-dark/8',
     muted: dark ? 'text-white/50' : 'text-text-grey',
     input: dark
-      ? 'bg-[#1e293b] border-white/10 text-white placeholder:text-white/30 [color-scheme:dark] [&_option]:text-black [&_option]:bg-white'
+      ? 'bg-white/5 border-white/10 text-white placeholder:text-white/30'
       : 'bg-grey-bg-light border-primary-dark/10 text-primary-dark',
     chip: dark ? 'bg-white/10' : 'bg-grey-bg-light',
   };
@@ -156,450 +156,555 @@ export function AiAssistantPage() {
 /* ---------------- Shared course list for dashboard tools ---------------- */
 const DASH_COURSES = ['All', 'MBBS', 'BDS', 'BAMS', 'BHMS', 'BUMS', 'BSMS', 'BNYS'];
 
-/* ---------------- Predictor → rank + college matches ---------------- */
-const INDIAN_STATES = [
-  'Madhya Pradesh',
-  'Maharashtra',
-  'Uttar Pradesh',
-  'Delhi (NCT)',
-  'Rajasthan',
-  'Bihar',
-  'Karnataka',
-  'Tamil Nadu',
-  'Kerala',
-  'Gujarat',
-  'West Bengal',
-  'Haryana',
-  'Punjab',
-  'Odisha',
-  'Telangana',
-  'Andhra Pradesh',
-  'Chhattisgarh',
-  'Jharkhand',
-  'Assam',
-  'Uttarakhand',
-  'Himachal Pradesh',
-  'Jammu and Kashmir',
-  'Goa',
-  'Tripura',
-  'Manipur',
-  'Meghalaya',
-  'Chandigarh',
-  'Puducherry',
+/* ── AI Predictor types (spec Section 6 Output Contract) ── */
+interface CollegePrediction {
+  college_name: string;
+  state: string;
+  course: string;
+  quota: string;
+  category: string;
+  chance_tier: 'High' | 'Moderate' | 'Reach' | 'Unlikely';
+  closing_rank_reference: { year: number; round: string; rank: number }[];
+  fee: { amount_min: number; amount_max: number; currency: string; year: number; quota_tier: string } | null;
+  source_ids: string[];
+}
+interface ScholarshipMatch {
+  name: string;
+  provider: string;
+  match_reason: string;
+  estimated_amount: string | null;
+  official_portal: string;
+  source_id: string;
+}
+interface PredictorResponse {
+  meta?: {
+    exam_track?: string;
+    authority?: string;
+    round?: { round_id: string; label: string; status: string };
+    data_basis_year?: number;
+    qualifying_floor_met?: boolean;
+  };
+  colleges?: CollegePrediction[];
+  scholarships?: ScholarshipMatch[];
+  fallback?: { tier_reached: string; message: string; alternative_courses?: string[] } | null;
+  disclaimers?: string[];
+  fraud_warning?: string;
+  _provider_used?: string;
+  _response_time_ms?: number;
+  _data_summary?: { colleges_in_context: number; scholarships_matched: number };
+}
+
+/* ── Chance tier styling ── */
+const TIER_STYLES: Record<string, { badge: string; border: string; icon: string }> = {
+  High:     { badge: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', border: 'border-l-4 border-l-emerald-500/60', icon: '✅' },
+  Moderate: { badge: 'bg-amber-500/15 text-amber-400 border-amber-500/30', border: 'border-l-4 border-l-amber-500/60', icon: '🎯' },
+  Reach:    { badge: 'bg-orange-500/15 text-orange-400 border-orange-500/30', border: 'border-l-4 border-l-orange-500/60', icon: '🔥' },
+  Unlikely: { badge: 'bg-red-500/15 text-red-400 border-red-500/30', border: 'border-l-4 border-l-red-500/40', icon: '⚠️' },
+};
+
+const INDIA_STATES = [
+  'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat',
+  'Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh',
+  'Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab',
+  'Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh',
+  'Uttarakhand','West Bengal','Chandigarh','Delhi','Jammu and Kashmir','Puducherry',
 ];
 
+const CATEGORIES = [
+  'General','EWS','OBC-NCL','SC','ST',
+  'General-PwD','OBC-PwD','SC-PwD','ST-PwD','EWS-PwD',
+];
+
+const QUOTA_OPTIONS = [
+  { value: 'AIQ',           label: 'AIQ (15% All India Quota)' },
+  { value: 'State',         label: 'State Quota (85%)' },
+  { value: 'Management',   label: 'Management Quota' },
+  { value: 'NRI',          label: 'NRI Quota' },
+  { value: 'Deemed-Central', label: 'Deemed / Central University' },
+];
+
+/* ---------------- Predictor → AI-Grounded College & Scholarship Predictor ---------------- */
 export function PredictorPage() {
   const s = useShell();
-  const { isPremium } = usePremium();
   const { profile } = useAuth();
+
+  // ── Form state ──
   const [mode, setMode] = useState<'rank' | 'score'>('rank');
-  const [exam, setExam] = useState('NEET UG');
-  const [course, setCourse] = useState('MBBS');
-  const [rank, setRank] = useState(profile?.neet_rank?.toString() || '15000');
-  const [score, setScore] = useState(profile?.neet_score?.toString() || '612');
+  const [examTrack, setExamTrack] = useState<'MBBS_BDS' | 'AYUSH'>('MBBS_BDS');
+  const [rank, setRank] = useState(profile?.neet_rank?.toString() || '');
+  const [score, setScore] = useState(profile?.neet_score?.toString() || '');
   const [category, setCategory] = useState(profile?.category || 'General');
-  const [targetState, setTargetState] = useState('All India / Any State');
-  const [quota, setQuota] = useState('All India Quota (AIQ)');
-  const [round, setRound] = useState('Round 1');
-  const [result, setResult] = useState<{
-    predicted_rank_min: number;
-    predicted_rank_max: number;
-    score?: number;
-    rank?: number;
-    note: string;
-  } | null>(null);
-  const [matches, setMatches] = useState<
-    Array<{
-      college_name: string;
-      state: string;
-      chance: string;
-      chance_score: number;
-      chance_tone: string;
-      best_path: string;
-      aiq_rank: number;
-      state_rank_range: string;
-      total_seats: number | null;
-      nirf?: number;
-      opening_rank?: number;
-    }>
-  >([]);
-  const [summary, setSummary] = useState<{
-    safe_count: number;
-    moderate_count: number;
-    reach_count: number;
-  } | null>(null);
+  const [domicileState, setDomicileState] = useState(profile?.domicile_state || profile?.state || '');
+  const [quotas, setQuotas] = useState<string[]>(['AIQ', 'State']);
+  const [neetYear, setNeetYear] = useState(new Date().getFullYear());
+
+  // ── Result state ──
+  const [aiResponse, setAiResponse] = useState<PredictorResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [savedMsg, setSavedMsg] = useState('');
+  const [activeTab, setActiveTab] = useState<'colleges' | 'scholarships'>('colleges');
 
+  // Toggle a quota in the multi-select
+  const toggleQuota = (v: string) =>
+    setQuotas((prev) => prev.includes(v) ? prev.filter((q) => q !== v) : [...prev, v]);
+
+  // ── Run prediction ──
   const run = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    setSavedMsg('');
-    setMatches([]);
-    setSummary(null);
+    setAiResponse(null);
+
     try {
-      let targetRank = 0;
-      let scoreNum = Number(score);
+      const rankNum = mode === 'rank' ? Number(rank) : 0;
+      const scoreNum = mode === 'score' ? Number(score) : 0;
 
-      if (mode === 'rank') {
-        const r = Number(rank);
-        if (Number.isNaN(r) || r < 1) throw new Error('Enter a valid NEET All India Rank (AIR)');
-        targetRank = r;
-      } else {
-        if (Number.isNaN(scoreNum) || scoreNum < 0) throw new Error('Enter a valid score');
+      if (mode === 'rank' && (isNaN(rankNum) || rankNum < 1)) {
+        throw new Error('Enter a valid NEET All India Rank (AIR)');
       }
-
-      const data = await apiJson<{
-        predicted_rank_min: number;
-        predicted_rank_max: number;
-        score?: number;
-        rank?: number;
-        note: string;
-      }>('/api/rank-calculator', {
-        method: 'POST',
-        body: JSON.stringify(
-          mode === 'rank'
-            ? { exam, rank: targetRank, category, course: exam === 'NEET UG' ? course : undefined }
-            : { exam, score: scoreNum, category, course: exam === 'NEET UG' ? course : undefined }
-        ),
-      });
-      setResult(data);
-
-      if (mode === 'score') {
-        targetRank = Math.round((data.predicted_rank_min + data.predicted_rank_max) / 2);
-      } else if (data.score) {
-        scoreNum = data.score;
+      if (mode === 'score' && (isNaN(scoreNum) || scoreNum < 0 || scoreNum > 720)) {
+        throw new Error('Enter a valid NEET score (0–720)');
       }
+      if (quotas.length === 0) throw new Error('Select at least one quota');
 
+      // Try AI predictor first
       try {
-        const m = await apiJson<{
-          matches: typeof matches;
+        const payload = {
+          exam_track: examTrack,
+          rank: mode === 'rank' ? rankNum : undefined,
+          score: mode === 'score' ? scoreNum : undefined,
+          neet_year: neetYear,
+          category,
+          quotas,
+          domicile_state: domicileState || null,
+          state: domicileState || null,
+        };
+
+        const data = await apiJson<PredictorResponse>('/api/ai-predict', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        setAiResponse(data);
+
+        // Save rank to profile (non-blocking)
+        if (mode === 'rank' && rankNum) {
+          apiJson('/api/profile', {
+            method: 'PUT',
+            body: JSON.stringify({ neet_rank: rankNum, category }),
+          }, true).catch(() => {});
+        }
+      } catch (aiErr: any) {
+        // AI call failed — fallback to legacy endpoints
+        console.warn('[Predictor] AI endpoint failed, using legacy:', aiErr.message);
+
+        const targetRank = mode === 'rank' ? rankNum : 0;
+        let resolvedRank = targetRank;
+
+        if (mode === 'score') {
+          const calc = await apiJson<{ predicted_rank_min: number; predicted_rank_max: number }>(
+            '/api/rank-calculator',
+            { method: 'POST', body: JSON.stringify({ exam: 'NEET UG', score: scoreNum, category }) }
+          );
+          resolvedRank = Math.round((calc.predicted_rank_min + calc.predicted_rank_max) / 2);
+        }
+
+        const legacy = await apiJson<{
+          matches: Array<{
+            college_name: string; state: string; chance: string;
+            chance_score: number; chance_tone: string; best_path: string;
+            aiq_rank: number; total_seats: number | null;
+          }>;
           summary: { safe_count: number; moderate_count: number; reach_count: number };
         }>('/api/college-matches', {
           method: 'POST',
-          body: JSON.stringify({
-            rank: targetRank,
-            category,
-            course: exam === 'NEET UG' ? course : 'MBBS',
-            state: targetState === 'All India / Any State' ? null : targetState,
-            quota: quota,
-            round: round,
-            limit: 15,
-          }),
+          body: JSON.stringify({ rank: resolvedRank, category, course: 'MBBS', limit: 25 }),
         });
-        setMatches(m.matches || []);
-        setSummary(m.summary || null);
-      } catch (err: any) {
-        console.error('college-matches fetch failed:', err);
-        setError(err.message || 'Failed to fetch college matches');
+
+        // Shape legacy response to match PredictorResponse
+        const toneToTier = (t: string) =>
+          t === 'safe' || t === 'likely' ? 'High' :
+          t === 'moderate' ? 'Moderate' : 'Reach';
+
+        setAiResponse({
+          meta: { exam_track: examTrack, qualifying_floor_met: true },
+          colleges: (legacy.matches || []).map((m) => ({
+            college_name: m.college_name,
+            state: m.state,
+            course: 'MBBS',
+            quota: m.best_path || 'AIQ',
+            category,
+            chance_tier: toneToTier(m.chance_tone) as CollegePrediction['chance_tier'],
+            closing_rank_reference: m.aiq_rank ? [{ year: neetYear - 1, round: 'Round 1', rank: m.aiq_rank }] : [],
+            fee: null,
+            source_ids: [],
+          })),
+          scholarships: [],
+          disclaimers: ['Data from legacy predictor. AI predictor temporarily unavailable.'],
+          _provider_used: 'legacy-fallback',
+        });
       }
-      try {
-        await apiJson(
-          '/api/profile',
-          {
-            method: 'PUT',
-            body: JSON.stringify({
-              exam,
-              category,
-              score: scoreNum,
-              neet_rank: targetRank,
-              predicted_rank_min: data.predicted_rank_min,
-              predicted_rank_max: data.predicted_rank_max,
-            }),
-          },
-          true
-        );
-        setSavedMsg('Saved to your profile');
-      } catch {
-        /* non-blocking */
-      }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error');
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const tone = (t: string) =>
-    t === 'safe' || t === 'likely'
-      ? 'text-emerald-500 bg-emerald-500/10'
-      : t === 'moderate'
-      ? 'text-amber-600 bg-amber-500/10'
-      : 'text-orange-600 bg-orange-500/10';
+  const floorMet = aiResponse?.meta?.qualifying_floor_met !== false;
+  const colleges = aiResponse?.colleges || [];
+  const scholarships = aiResponse?.scholarships || [];
+  const highCount = colleges.filter((c) => c.chance_tier === 'High').length;
+  const modCount  = colleges.filter((c) => c.chance_tier === 'Moderate').length;
+  const reachCount = colleges.filter((c) => c.chance_tier === 'Reach').length;
 
   return (
     <div className="max-w-3xl">
       <PageHead
-        title="College Predictor"
-        sub="Predict Safe / Moderate / Reach colleges by All India Rank (AIR) or Score for MBBS · BDS · AYUSH"
+        title="AI College Predictor"
+        sub="Grounded in real MCC/state counselling data — AI explains, never invents"
       />
-      <ErrorBox message={error} />
 
-      {/* Mode Selector */}
-      <div className="flex p-1 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 mb-4 max-w-sm">
-        <button
-          type="button"
-          onClick={() => {
-            setMode('rank');
-            setResult(null);
-            setMatches([]);
-          }}
-          className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
-            mode === 'rank'
-              ? 'bg-orange-500 text-white shadow-md'
-              : 'text-slate-600 dark:text-white/60 hover:text-orange-500'
-          }`}
-        >
-          By NEET Rank (AIR)
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setMode('score');
-            setResult(null);
-            setMatches([]);
-          }}
-          className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
-            mode === 'score'
-              ? 'bg-orange-500 text-white shadow-md'
-              : 'text-slate-600 dark:text-white/60 hover:text-orange-500'
-          }`}
-        >
-          By Score / Marks
-        </button>
-      </div>
+      {/* ── Form ── */}
+      <form onSubmit={run} className={`rounded-2xl border p-5 space-y-4 mb-5 ${s.card}`}>
 
-      <ErrorBox message={error} />
-      <form onSubmit={run} className={`rounded-2xl border p-5 space-y-4 ${s.card}`}>
-        <label className="block">
-          <span className={`text-xs font-bold uppercase ${s.muted}`}>Exam</span>
-          <select
-            value={exam}
-            onChange={(e) => setExam(e.target.value)}
-            className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
-          >
-            {['NEET UG', 'NEET PG', 'NEET MDS', 'INICET', 'NEET SS', 'DNB PDCET'].map((x) => (
-              <option key={x}>{x}</option>
+        {/* Exam Track */}
+        <div>
+          <span className={`text-xs font-bold uppercase ${s.muted}`}>Exam Track</span>
+          <div className="flex gap-2 mt-1.5">
+            {(['MBBS_BDS', 'AYUSH'] as const).map((t) => (
+              <button
+                key={t} type="button"
+                onClick={() => setExamTrack(t)}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
+                  examTrack === t
+                    ? 'bg-primary text-white border-primary shadow-md'
+                    : `border-white/10 ${s.muted} hover:border-primary/40`
+                }`}
+              >
+                {t === 'MBBS_BDS' ? '🏥 MBBS / BDS' : '🌿 AYUSH (BAMS/BHMS/BUMS)'}
+              </button>
             ))}
-          </select>
-        </label>
-        {exam === 'NEET UG' && (
-          <label className="block">
-            <span className={`text-xs font-bold uppercase ${s.muted}`}>Course</span>
-            <select
-              value={course}
-              onChange={(e) => setCourse(e.target.value)}
-              className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
-            >
-              {DASH_COURSES.filter((c) => c !== 'All').map((x) => (
-                <option key={x}>{x}</option>
-              ))}
-            </select>
-          </label>
-        )}
+          </div>
+        </div>
 
-        {mode === 'rank' ? (
+        {/* Rank / Score Toggle */}
+        <div>
+          <span className={`text-xs font-bold uppercase ${s.muted}`}>Input Mode</span>
+          <div className="flex p-1 mt-1.5 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+            {(['rank', 'score'] as const).map((m) => (
+              <button
+                key={m} type="button"
+                onClick={() => { setMode(m); setAiResponse(null); }}
+                className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+                  mode === m ? 'bg-orange-500 text-white shadow-md' : `${s.muted} hover:text-orange-500`
+                }`}
+              >
+                {m === 'rank' ? 'By NEET Rank (AIR)' : 'By NEET Score'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Rank / Score Input */}
+        <div className="grid grid-cols-2 gap-3">
           <label className="block">
-            <span className={`text-xs font-bold uppercase text-orange-500`}>NEET All India Rank (AIR) *</span>
+            <span className={`text-xs font-bold uppercase text-orange-500`}>
+              {mode === 'rank' ? 'NEET AIR *' : 'NEET Score (0–720) *'}
+            </span>
             <input
               type="number"
-              min="1"
-              max="2500000"
-              value={rank}
-              onChange={(e) => setRank(e.target.value)}
-              placeholder="e.g. 15400"
+              value={mode === 'rank' ? rank : score}
+              onChange={(e) => mode === 'rank' ? setRank(e.target.value) : setScore(e.target.value)}
+              min={mode === 'rank' ? 1 : 0}
+              max={mode === 'rank' ? 2000000 : 720}
+              placeholder={mode === 'rank' ? 'e.g. 15400' : 'e.g. 612'}
               className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
               required
             />
           </label>
-        ) : (
           <label className="block">
-            <span className={`text-xs font-bold uppercase text-orange-500`}>Score (out of 720) *</span>
-            <input
-              type="number"
-              min="0"
-              max="720"
-              value={score}
-              onChange={(e) => setScore(e.target.value)}
-              placeholder="e.g. 612"
-              className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
-              required
-            />
-          </label>
-        )}
-
-        <label className="block">
-          <span className={`text-xs font-bold uppercase ${s.muted}`}>Category</span>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
-          >
-            {['General', 'OBC', 'EWS', 'SC', 'ST'].map((x) => (
-              <option key={x}>{x}</option>
-            ))}
-          </select>
-        </label>
-
-        {/* New Filters: State, Quota, Round */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <label className="block">
-            <span className={`text-xs font-bold uppercase ${s.muted}`}>Preferred State</span>
+            <span className={`text-xs font-bold uppercase ${s.muted}`}>NEET Year</span>
             <select
-              value={targetState}
-              onChange={(e) => setTargetState(e.target.value)}
+              value={neetYear}
+              onChange={(e) => setNeetYear(Number(e.target.value))}
               className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
             >
-              <option>All India / Any State</option>
-              {INDIAN_STATES.map((x) => (
-                <option key={x}>{x}</option>
-              ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className={`text-xs font-bold uppercase ${s.muted}`}>Quota</span>
-            <select
-              value={quota}
-              onChange={(e) => setQuota(e.target.value)}
-              className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
-            >
-              {['All India Quota (AIQ)', 'State Quota', 'Both'].map((x) => (
-                <option key={x}>{x}</option>
-              ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className={`text-xs font-bold uppercase ${s.muted}`}>Counselling Round</span>
-            <select
-              value={round}
-              onChange={(e) => setRound(e.target.value)}
-              className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
-            >
-              {['All Rounds', 'Round 1', 'Round 2', 'Mop-Up / Round 3', 'Stray Vacancy'].map((x) => (
-                <option key={x}>{x}</option>
-              ))}
+              {[2026, 2025, 2024].map((y) => <option key={y}>{y}</option>)}
             </select>
           </label>
         </div>
 
-        <button type="submit" disabled={loading} className="zn-cta zn-cta-primary w-full justify-center">
+        {/* Category + Domicile */}
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block">
+            <span className={`text-xs font-bold uppercase ${s.muted}`}>Category</span>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
+            >
+              {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+            </select>
+          </label>
+          <label className="block">
+            <span className={`text-xs font-bold uppercase ${s.muted}`}>Domicile State</span>
+            <select
+              value={domicileState}
+              onChange={(e) => setDomicileState(e.target.value)}
+              className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
+            >
+              <option value="">All India / Not Applicable</option>
+              {INDIA_STATES.map((st) => <option key={st}>{st}</option>)}
+            </select>
+          </label>
+        </div>
+
+        {/* Quota Multi-Select */}
+        <div>
+          <span className={`text-xs font-bold uppercase ${s.muted}`}>Quota (select all that apply)</span>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {QUOTA_OPTIONS.map(({ value, label }) => (
+              <button
+                key={value} type="button"
+                onClick={() => toggleQuota(value)}
+                className={`text-xs px-3 py-1.5 rounded-full border font-semibold transition-all ${
+                  quotas.includes(value)
+                    ? 'bg-primary text-white border-primary'
+                    : `border-white/15 ${s.muted} hover:border-primary/40`
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {error && (
+          <p className="text-sm font-semibold text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
+            {error}
+          </p>
+        )}
+
+        <button type="submit" disabled={loading} className="zn-cta zn-cta-primary w-full justify-center text-sm">
           {loading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : mode === 'rank' ? (
-            `Predict colleges for Rank #${Number(rank || 0).toLocaleString()}`
+            <><Loader2 className="w-4 h-4 animate-spin" /> Analysing with AI…</>
           ) : (
-            'Predict rank & colleges'
+            `🔮 Predict Colleges${mode === 'rank' && rank ? ` for Rank #${Number(rank).toLocaleString()}` : ''}`
           )}
         </button>
       </form>
-      {result && (
-        <div className={`mt-4 rounded-2xl border p-6 text-center ${s.card}`}>
-          <p className={`text-xs font-bold uppercase mb-1 ${s.muted}`}>
-            {mode === 'rank' ? 'Active Rank Prediction' : 'Estimated AIR range'}
-          </p>
-          <p className="text-3xl font-black text-primary">
-            {mode === 'rank' ? (
-              <>AIR #{Number(result.rank || rank).toLocaleString()}</>
-            ) : (
-              <>
-                {result.predicted_rank_min.toLocaleString()} – {result.predicted_rank_max.toLocaleString()}
-              </>
-            )}
-          </p>
-          <p className={`text-xs mt-2 ${s.muted}`}>{result.note}</p>
-          {savedMsg && <p className="text-xs font-bold text-emerald-600 mt-2">{savedMsg}</p>}
-        </div>
-      )}
-      {summary && (
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          {[
-            { l: 'Safe / Likely', v: summary.safe_count },
-            { l: 'Moderate', v: summary.moderate_count },
-            { l: 'Reach', v: summary.reach_count },
-          ].map((x) => (
-            <div key={x.l} className={`rounded-xl border p-3 text-center ${s.card}`}>
-              <p className="text-xl font-black">{x.v}</p>
-              <p className={`text-[10px] font-bold uppercase ${s.muted}`}>{x.l}</p>
-            </div>
-          ))}
-        </div>
-      )}
-      {matches.length > 0 && (
-        <div className="mt-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="font-bold text-sm">Recommended college shortlist</p>
-            {isPremium ? (
-              <span className="text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                👑 Premium Access ({matches.length} matches)
-              </span>
-            ) : (
-              <span className="text-[10px] font-semibold text-muted-foreground">
-                Showing top {Math.min(matches.length, 3)} of {matches.length} predictions
-              </span>
-            )}
-          </div>
 
-          {/* Visible matches (top 3 for free, all for premium) */}
-          {(isPremium ? matches : matches.slice(0, 3)).map((m) => (
-            <div key={m.college_name + m.chance} className={`rounded-xl border p-3.5 ${s.card}`}>
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${tone(m.chance_tone)}`}>
-                    {m.chance} · {m.best_path}
-                  </span>
-                  <p className="font-bold text-sm mt-1 leading-snug">{m.college_name}</p>
-                  <p className={`text-xs ${s.muted}`}>
-                    {m.state}
-                    {m.nirf && m.nirf < 999999 ? ` · NIRF #${m.nirf}` : ''}
-                    {m.opening_rank ? ` · Opening: ${m.opening_rank.toLocaleString()}` : ''}
-                    {m.aiq_rank ? ` · Closing: ${m.aiq_rank.toLocaleString()}` : ''}
-                    {m.total_seats ? ` · ${m.total_seats} seats` : ''}
-                  </p>
+      {/* ── Results ── */}
+      {aiResponse && (
+        <div className="space-y-4">
+
+          {/* ── Qualifying Floor Banner ── */}
+          {!floorMet ? (
+            <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-5">
+              <p className="text-sm font-bold text-red-400 mb-1">⛔ Below NEET Qualifying Threshold</p>
+              <p className="text-sm text-red-300/80 leading-relaxed">
+                {aiResponse.fallback?.message ||
+                  'This score/rank is below the minimum NEET qualifying cutoff for this year and category. No MBBS/BDS/AYUSH seat is possible in any quota at any price this cycle. This is a regulatory requirement, not a budget constraint.'}
+              </p>
+              {aiResponse.fallback?.alternative_courses && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {aiResponse.fallback.alternative_courses.map((c) => (
+                    <span key={c} className="text-xs px-3 py-1 rounded-full bg-white/10 text-white/70 font-semibold">{c}</span>
+                  ))}
                 </div>
-                <span className="text-lg font-black shrink-0">{m.chance_score}</span>
-              </div>
+              )}
             </div>
-          ))}
-
-          {/* Upgrade prompt and blurred preview for Free users */}
-          {!isPremium && matches.length > 3 && (
-            <div className="space-y-3 pt-2">
-              <UpgradePrompt
-                title="Unlock All College Predictions & Cutoff Analysis"
-                description={`Get full access to all ${matches.length} matching medical colleges, round-wise cutoff trends, and closing rank insights.`}
-                featureName="College Predictions"
-              />
-
-              {/* Blurred teaser cards */}
-              <div className="select-none filter blur-sm pointer-events-none opacity-40 space-y-2">
-                {matches.slice(3, 5).map((m, i) => (
-                  <div key={i} className={`rounded-xl border p-3 ${s.card}`}>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-400">
-                          {m.chance} · {m.best_path}
+          ) : (
+            <>
+              {/* ── Summary Strip ── */}
+              <div className={`rounded-2xl border p-4 ${s.card}`}>
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div>
+                    <p className="font-bold text-sm">
+                      {colleges.length} colleges analysed
+                      {aiResponse.meta?.authority && (
+                        <span className={`ml-2 text-xs font-semibold ${s.muted}`}>
+                          via {aiResponse.meta.authority}
+                          {aiResponse.meta.round?.label ? ` · ${aiResponse.meta.round.label}` : ''}
                         </span>
-                        <p className="font-bold text-sm mt-1">{m.college_name}</p>
-                        <p className="text-xs text-muted-foreground">{m.state} · Top Medical Institute</p>
-                      </div>
-                      <span className="text-lg font-black text-amber-500">🔒 PRO</span>
-                    </div>
+                      )}
+                    </p>
+                    {aiResponse._provider_used && aiResponse._provider_used !== 'legacy-fallback' && (
+                      <p className={`text-[10px] font-medium mt-0.5 ${s.muted}`}>
+                        AI: {aiResponse._provider_used} · {aiResponse._response_time_ms || 0}ms
+                      </p>
+                    )}
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+                  <div className="flex gap-3 text-center">
+                    {[
+                      { l: 'High', v: highCount, cls: 'text-emerald-400' },
+                      { l: 'Moderate', v: modCount, cls: 'text-amber-400' },
+                      { l: 'Reach', v: reachCount, cls: 'text-orange-400' },
+                    ].map((x) => (
+                      <div key={x.l}>
+                        <p className={`text-xl font-black ${x.cls}`}>{x.v}</p>
+                        <p className={`text-[10px] font-bold uppercase ${s.muted}`}>{x.l}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-          <div className="flex gap-2 pt-2">
-            <Link to="/dashboard/compare" className="zn-cta text-sm py-2">
-              Compare
-            </Link>
-            <Link to="/dashboard/finder" className="zn-cta zn-cta-primary text-sm py-2">
-              Browse all
-            </Link>
-          </div>
+                {/* Scholarship count pill */}
+                {scholarships.length > 0 && (
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('colleges')}
+                      className={`text-xs px-3 py-1.5 rounded-full font-bold transition-all ${activeTab === 'colleges' ? 'bg-primary text-white' : `${s.muted} border border-white/10`}`}
+                    >
+                      🏥 Colleges ({colleges.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('scholarships')}
+                      className={`text-xs px-3 py-1.5 rounded-full font-bold transition-all ${activeTab === 'scholarships' ? 'bg-emerald-600 text-white' : `${s.muted} border border-white/10`}`}
+                    >
+                      🎓 Scholarships ({scholarships.length})
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Fraud Warning ── */}
+              {aiResponse.fraud_warning && (
+                <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-4">
+                  <p className="text-xs font-bold text-red-400 uppercase mb-1">⚠️ Fraud Warning</p>
+                  <p className="text-sm text-red-300/90 leading-relaxed">{aiResponse.fraud_warning}</p>
+                </div>
+              )}
+
+              {/* ── College Cards ── */}
+              {activeTab === 'colleges' && colleges.length > 0 && (
+                <div className="space-y-3">
+                  {colleges.map((c, i) => {
+                    const style = TIER_STYLES[c.chance_tier] || TIER_STYLES.Unlikely;
+                    const latestRef = c.closing_rank_reference?.[0];
+                    return (
+                      <div key={`${c.college_name}-${i}`} className={`rounded-xl border p-4 ${s.card} ${style.border}`}>
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${style.badge}`}>
+                                {style.icon} {c.chance_tier}
+                              </span>
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${s.chip}`}>
+                                {c.quota}
+                              </span>
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${s.chip}`}>
+                                {c.category}
+                              </span>
+                            </div>
+                            <p className="font-bold text-sm leading-snug">{c.college_name}</p>
+                            <p className={`text-xs mt-0.5 ${s.muted}`}>
+                              {c.state} · {c.course}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Rank Reference */}
+                        {latestRef && (
+                          <div className={`text-xs rounded-lg px-3 py-2 mt-2 ${s.dark ? 'bg-white/5' : 'bg-slate-50'}`}>
+                            <span className={`font-semibold ${s.muted}`}>
+                              {latestRef.year} {latestRef.round} closing rank:{' '}
+                            </span>
+                            <span className="font-bold">{latestRef.rank?.toLocaleString()}</span>
+                            <span className={`ml-2 text-[10px] ${s.muted}`}>
+                              (cutoffs move each year — guide only)
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Fee */}
+                        {c.fee && (
+                          <div className={`text-xs mt-2 ${s.muted}`}>
+                            💰 Fee ({c.fee.quota_tier}): ₹{c.fee.amount_min?.toLocaleString()}
+                            {c.fee.amount_max && c.fee.amount_max !== c.fee.amount_min
+                              ? ` – ₹${c.fee.amount_max?.toLocaleString()}`
+                              : ''} / year
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Fallback Message */}
+                  {aiResponse.fallback && (
+                    <div className={`rounded-xl border p-4 ${s.card}`}>
+                      <p className={`text-xs font-bold uppercase mb-1 ${s.muted}`}>
+                        Additional Options ({aiResponse.fallback.tier_reached})
+                      </p>
+                      <p className="text-sm leading-relaxed">{aiResponse.fallback.message}</p>
+                      {aiResponse.fallback.alternative_courses && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {aiResponse.fallback.alternative_courses.map((c) => (
+                            <span key={c} className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-semibold">{c}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-1">
+                    <Link to="/dashboard/compare" className="zn-cta text-sm py-2">Compare</Link>
+                    <Link to="/dashboard/finder" className="zn-cta zn-cta-primary text-sm py-2">Browse All Colleges</Link>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Scholarship Tab ── */}
+              {activeTab === 'scholarships' && (
+                <div className="space-y-3">
+                  {scholarships.length === 0 ? (
+                    <div className={`rounded-xl border p-4 text-center ${s.card}`}>
+                      <p className={`text-sm ${s.muted}`}>No specific scholarships matched for your profile. Check the National Scholarship Portal (scholarships.gov.in) for more schemes.</p>
+                    </div>
+                  ) : scholarships.map((sch, i) => (
+                    <div key={i} className={`rounded-xl border p-4 ${s.card}`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="font-bold text-sm">{sch.name}</p>
+                          <p className={`text-xs mt-0.5 ${s.muted}`}>{sch.provider}</p>
+                        </div>
+                        {sch.estimated_amount && (
+                          <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full whitespace-nowrap shrink-0">
+                            {sch.estimated_amount}
+                          </span>
+                        )}
+                      </div>
+                      <p className={`text-xs mt-2 leading-relaxed ${s.muted}`}>{sch.match_reason}</p>
+                      {sch.official_portal && (
+                        <a
+                          href={sch.official_portal}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+                        >
+                          🔗 Apply at official portal →
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* ── Disclaimers ── */}
+              {aiResponse.disclaimers && aiResponse.disclaimers.length > 0 && (
+                <div className={`rounded-xl border p-4 ${s.dark ? 'border-white/5 bg-white/3' : 'border-slate-200 bg-slate-50'}`}>
+                  <p className={`text-[10px] font-bold uppercase mb-2 ${s.muted}`}>⚖️ Important Disclaimers</p>
+                  <ul className="space-y-1.5">
+                    {aiResponse.disclaimers.map((d, i) => (
+                      <li key={i} className={`text-xs leading-relaxed ${s.muted}`}>• {d}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
     </div>

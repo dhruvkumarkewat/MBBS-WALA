@@ -1,3 +1,4 @@
+import aiPredict from './_handlers/ai-predict.js';
 import adminActivity from './_handlers/admin-activity.js';
 import adminAuth from './_handlers/admin-auth.js';
 import adminDocuments from './_handlers/admin-documents.js';
@@ -44,6 +45,7 @@ import wallet from './_handlers/wallet.js';
 import withdrawals from './_handlers/withdrawals.js';
 
 const routes = {
+  'ai-predict': aiPredict,
   'admin-activity': adminActivity,
   'admin-auth': adminAuth,
   'admin-documents': adminDocuments,
