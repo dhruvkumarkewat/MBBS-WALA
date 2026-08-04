@@ -1611,6 +1611,10 @@ a .pkg-learn-more {
 .dash-shell.dash-dark textarea {
   color-scheme: dark;
 }
+.dash-shell.dash-dark option {
+  background-color: #0f1f2c;
+  color: #ffffff;
+}
 /* Package learn-more stays dark-on-white even inside light shells */
 .dash-shell .pkg-learn-more {
   color: #0e1117 !important;
