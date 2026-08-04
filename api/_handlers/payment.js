@@ -46,9 +46,17 @@ export default async function handler(req, res) {
 
     // ── 2. POST action=create-order ──────────────────────────────────────────
     if (req.method === 'POST' && (action === 'create-order' || !action)) {
-      const { plan_slug = 'premium', plan_name = 'Premium Plan', amount = 4999, referral_code } = req.body || {};
+      const { plan_slug = 'premium', referral_code } = req.body || {};
       
-      let finalAmount = Number(amount);
+      const PLANS = {
+        'neet-ug': { name: 'NEET UG Counselling Pro', price: 4999 },
+        'neet-pg': { name: 'NEET PG / INI-CET Pro', price: 6999 },
+        'ultimate-bundle': { name: 'Ultimate Medical Master Bundle', price: 9999 },
+        'premium': { name: 'Premium Plan', price: 4999 }
+      };
+      const plan = PLANS[plan_slug] || PLANS['premium'];
+      const plan_name = plan.name;
+      let finalAmount = plan.price;
       let appliedReferralCode = null;
       let referrerId = null;
 
@@ -147,24 +155,37 @@ export default async function handler(req, res) {
     if (req.method === 'POST' && action === 'verify') {
       const {
         order_id,
-        payment_id = `pay_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        payment_id,
         signature,
-        plan_slug = 'premium',
-        plan_name = 'Premium Plan',
-        amount = 4999,
       } = req.body || {};
+
+      if (!order_id || !payment_id || !signature) {
+        return res.status(400).json({ error: 'Invalid payment signature' });
+      }
 
       // If Razorpay live secret is present, verify HMAC signature
       const secret = process.env.RAZORPAY_KEY_SECRET || 'VJk0E7jhcJFwuOFz303O5aGJ';
-      if (secret && signature && order_id) {
-        const expected = crypto
-          .createHmac('sha256', secret)
-          .update(`${order_id}|${payment_id}`)
-          .digest('hex');
-        if (expected !== signature) {
-          return res.status(400).json({ error: 'Invalid payment signature' });
-        }
+      const expected = crypto
+        .createHmac('sha256', secret)
+        .update(`${order_id}|${payment_id}`)
+        .digest('hex');
+      if (expected !== signature) {
+        return res.status(400).json({ error: 'Invalid payment signature' });
       }
+
+      const { data: dbOrder } = await supabase
+        .from('payments')
+        .select('amount, plan_slug, meta')
+        .eq('order_id', order_id)
+        .maybeSingle();
+
+      if (!dbOrder) {
+        return res.status(400).json({ error: 'Order not found in database' });
+      }
+
+      const amount = dbOrder.amount;
+      const plan_slug = dbOrder.plan_slug;
+      const plan_name = dbOrder.meta?.plan_name || 'Premium Plan';
 
       const now = new Date();
       const oneYearLater = new Date(now);

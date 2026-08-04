@@ -23,54 +23,16 @@ export async function requireUser(req, res) {
     };
   }
 
-  // --- FAST PATH: Always try JWT decode first ---
-  // supabase.auth.getUser(token) requires SERVICE_ROLE_KEY to verify JWTs.
-  // Without it, Supabase returns "Unregistered API key" (500 error).
-  // JWT decode works client-side and extracts user claims without any key.
   try {
-    const parts = token.split('.');
-    if (parts.length === 3) {
-      const payloadStr = Buffer.from(parts[1], 'base64').toString('utf-8');
-      const payload = JSON.parse(payloadStr);
-      if (payload && payload.sub) {
-        // Check token is not expired
-        const now = Math.floor(Date.now() / 1000);
-        if (payload.exp && payload.exp < now) {
-          console.warn('[requireUser] JWT expired at', new Date(payload.exp * 1000).toISOString());
-          res.status(401).json({ error: 'Token expired' });
-          return null;
-        }
-        console.log('[requireUser] JWT decode OK for user:', payload.sub);
-        return {
-          id: payload.sub,
-          email: payload.email || '',
-          user_metadata: payload.user_metadata || {},
-          role: payload.role || 'authenticated',
-        };
-      }
+    const { data, error } = await supabase.auth.getUser(token);
+    if (!error && data?.user) {
+      return data.user;
     }
-  } catch (jwtErr) {
-    console.warn('[requireUser] JWT decode failed:', jwtErr.message);
-  }
-
-  // --- FALLBACK: Try Supabase auth.getUser() (requires service role key) ---
-  const hasServiceKey = !!(
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.SUPABASE_SERVICE_KEY ||
-    process.env.SERVICE_ROLE_KEY
-  );
-  if (hasServiceKey) {
-    try {
-      const { data, error } = await supabase.auth.getUser(token);
-      if (!error && data?.user) {
-        return data.user;
-      }
-      if (error) {
-        console.warn('[requireUser] supabase.auth.getUser error:', error.message);
-      }
-    } catch (err) {
-      console.warn('[requireUser] supabase.auth.getUser exception:', err.message);
+    if (error) {
+      console.warn('supabase.auth.getUser error:', error.message);
     }
+  } catch (err) {
+    console.warn('supabase.auth.getUser exception:', err.message);
   }
 
   res.status(401).json({ error: 'Invalid or expired token' });
