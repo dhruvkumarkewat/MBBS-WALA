@@ -622,10 +622,18 @@ export function PredictorPage() {
                         {/* Fee */}
                         {c.fee && (
                           <div className={`text-xs mt-2 ${s.muted}`}>
-                            💰 Fee ({c.fee.quota_tier}): ₹{c.fee.amount_min?.toLocaleString()}
-                            {c.fee.amount_max && c.fee.amount_max !== c.fee.amount_min
-                              ? ` – ₹${c.fee.amount_max?.toLocaleString()}`
-                              : ''} / year
+                            💰 Est. Fee{(c.fee as any)?.quota_tier ? ` (${(c.fee as any).quota_tier})` : ''}:{' '}
+                            <span className="font-semibold">
+                              {typeof c.fee === 'string'
+                                ? c.fee
+                                : (c.fee as any)?.formatted
+                                ? (c.fee as any).formatted
+                                : (c.fee as any)?.amount_min
+                                ? `₹${(c.fee as any).amount_min?.toLocaleString()}${(c.fee as any).amount_max && (c.fee as any).amount_max !== (c.fee as any).amount_min ? ` – ₹${(c.fee as any).amount_max?.toLocaleString()}` : ''} / yr`
+                                : (c.fee as any)?.tuition_annual
+                                ? `₹${(c.fee as any).tuition_annual?.toLocaleString()} / yr`
+                                : 'Govt Subsidized Rate'}
+                            </span>
                           </div>
                         )}
                       </div>

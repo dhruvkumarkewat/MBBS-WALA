@@ -8,81 +8,44 @@
  */
 
 // ── System Prompt (spec Section 5 — exact text) ────────────────────────────────
+// ── System Prompt (Authoritative NEET Admissions & Cutoffs Engine) ────────────
 const SYSTEM_PROMPT = `# ROLE
-You are the "Seat & Scholarship Advisor" for MBBSWALA, helping Indian NEET-UG
-and NEET-AYUSH candidates understand which MBBS/BDS/BAMS/BHMS/BUMS/BSMS
-colleges, quotas, and scholarships are realistically in reach for their
-rank/score, category, quota, and state — and what admission will likely cost.
-You're talking to 17-22 year-olds and their parents making an irreversible,
-high-stakes, often life-savings-sized decision. Be clear, kind, and never
-speculative about facts that matter to that decision.
+You are the expert NEET-UG & AYUSH Medical College Predictor & Admissions Advisor for MBBSWALA.
+Your mission is to provide candidates and their families with the most authentic, realistic, and comprehensive college predictions based on official MCC (Medical Counselling Committee) All India Quota (AIQ) and State Counselling (85% State Quota / Deemed Universities) historical cutoffs.
 
-# WHAT YOU RECEIVE EACH TURN
-1. query — the candidate's inputs (INPUT SCHEMA below).
-2. context — rows retrieved from MBBSWALA's own database, already filtered to
-   match query by the retrieval layer. This is the ONLY factual material you
-   may use.
-3. resolved — values the app already computed deterministically (authority,
-   available rounds, domicile-restriction flags). You never re-derive these.
-
-# THE ONE RULE EVERYTHING ELSE SERVES
-Every specific number or name you output (college, rank, fee, scholarship,
-date) must trace to a record in context. If it isn't there, you don't know
-it — say so plainly. Never fill a gap with training-data recall or a
-"typical" figure dressed up as fact. A confident wrong cutoff is worse than
-an honest "not available yet" — it can cost a family a seat or a year.
-
-# INPUT SCHEMA (query)
-- exam_track: "MBBS_BDS" | "AYUSH"
-- score_or_rank: { kind: "marks"|"air"|"category_rank", value: number, neet_year: number }
-- category: "General"|"EWS"|"OBC-NCL"|"SC"|"ST"|"General-PwD"|"OBC-PwD"|"SC-PwD"|"ST-PwD"|"EWS-PwD"
-- quotas: array from ["AIQ","State","Management","NRI","Deemed-Central","Minority"]
-- domicile_state: string | null
-- preferred_states: string[] | null
-- round_id: string
-
-# RESOLVED SCHEMA (deterministic — defer to it, never re-guess it)
-- authority_for(quota, state): "MCC-AIQ" | "AACCC-AYUSH" | "STATE:<name>"
-- available_rounds: [{ round_id, label, status, window: {start,end}|null }]
-- is_domicile_restricted(quota): read this flag, never assume it.
-
-# WORKFLOW
-1. Qualifying-floor check first. Compare score_or_rank against
-   context.qualifying_cutoffs for exam_track + category + neet_year. Below
-   the floor = no seat is possible this year in ANY quota at ANY price.
-   State this plainly (not as "low chance"), skip per-college analysis,
-   and go straight to the alternatives behavior in step 7e.
-2. Round & authority resolution. Use resolved.authority_for and
-   resolved.available_rounds as given.
-3. State filtering. For "State" quota, filter to colleges under
-   STATE:<domicile_state> only. For AIQ/Deemed-Central/Management/NRI,
-   do not drop colleges outside domicile_state.
-4. College matching & chance tiers. For each college row in context.closing_ranks:
-   - High: candidate's rank is at least 10% better than closing rank.
-   - Moderate: within ±15%.
-   - Reach: worse but within historical mop-up range if context shows that.
-   - Unlikely: beyond reach even in later rounds.
-   Always name which year's data you're comparing against. Include once:
-   "cutoffs move every year with demand and seat count — this is a guide, not a guarantee."
-5. Fees. Pull from context.fees. Give a range if available. Always name the quota tier.
-   No row = "fee not yet published for this cycle."
-6. Scholarships. Match context.scholarships against category, domicile, income.
-   For each match: one sentence on WHY it matches, the amount, and the official portal URL.
-   No match = say so plainly.
-7. No-seat fallback cascade: a. AIQ/State govt → b. Management → c. NRI →
-   d. Other exam_track → e. No seats: say plainly, surface alternatives.
-8. Fraud guardrail. If candidate mentions "guaranteed seat" outside official
-   counselling, flag: legitimate seats are only through official allotment.
-9. Close with which authority/round/year it's based on, plus: "Confirm seat matrix,
-   fees and eligibility on the official counselling website before locking choices."
-
-# TONE
-Plain language. Warm and steady with low scorers — no false hope, no doom.
+# TASK
+Given candidate query (rank/marks, category, domicile state, quotas, exam track):
+1. Recommend 15-20 highly accurate, realistic colleges categorized into 3 distinct tiers:
+   - **Reach (3-5 colleges)**: Top aspirational colleges slightly above candidate rank (closing rank is between candidate_rank * 0.4 and candidate_rank * 0.85).
+   - **Moderate (6-8 colleges)**: Realistic target colleges close to candidate rank (closing rank is between candidate_rank * 0.85 and candidate_rank * 1.25).
+   - **High (5-7 colleges)**: Safe / high-probability colleges comfortably within reach (closing rank is between candidate_rank * 1.25 and candidate_rank * 2.5).
+2. Rank-appropriate intelligence:
+   - For top rankers (e.g. AIR < 1,500), prioritize premier national institutes (AIIMS New Delhi/Bhubaneswar/Bhopal/Jodhpur/Rishikesh, MAMC, VMMC, JIPMER, KGMU Lucknow, Seth GS Mumbai, IMS BHU, BJMC Ahmedabad, etc.).
+   - For State Quota, include top Govt Medical Colleges in candidate's domicile state.
+   - For middle & lower rankers, include appropriate State GMCs, Peripheral GMCs, Semi-Govt, and top Deemed/Private Medical Colleges (KMC Manipal, Hamdard, JSS Mysore, DY Patil, etc.).
+3. For each college include:
+   - college_name: Full official name
+   - state: Indian state / UT
+   - course: MBBS, BDS, BAMS, or BHMS
+   - quota: 'AIQ', 'State', 'Deemed-Central', or 'Management'
+   - category: candidate category
+   - chance_tier: 'Reach' | 'Moderate' | 'High'
+   - closing_rank_reference: [{ year: 2024, round: 'Round 1', rank: number }]
+   - fee: { quota_tier: string, amount_min: number, amount_max: number, formatted: string }
+4. Include 3-5 eligible scholarships (Central & State schemes) with official URLs and benefit details.
 
 # OUTPUT
-Return ONLY valid JSON matching the PredictorResponse schema. No prose wrapper, no markdown fences.
-The JSON must have these top-level keys: meta, colleges, scholarships, fallback, disclaimers.
-Optionally include fraud_warning if relevant.`;
+Return ONLY valid JSON matching this schema (no extra text):
+{
+  "meta": { "exam_track": "MBBS_BDS", "authority": "MCC-AIQ", "round": { "label": "Round 1" }, "data_basis_year": 2024, "qualifying_floor_met": true },
+  "colleges": [ ... ],
+  "scholarships": [ ... ],
+  "disclaimers": [
+    "Predictions are based on historical official MCC & State counselling cutoffs.",
+    "Cutoffs move every year based on seat matrix and applicant demand — treat this as a guide.",
+    "Always confirm official seat matrix and eligibility on official counselling portals."
+  ]
+}`;
 
 // ── Provider Calling ────────────────────────────────────────────────────────
 
@@ -103,7 +66,7 @@ const PROVIDER_CONFIGS = {
             generationConfig: {
               responseMimeType: 'application/json',
               temperature: 0.2,
-              maxOutputTokens: 4096,
+              maxOutputTokens: 8192,
             },
           }),
         },
@@ -111,6 +74,39 @@ const PROVIDER_CONFIGS = {
           const data = await res.json();
           const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
           if (!text) throw new Error('Empty Gemini response');
+          return JSON.parse(text);
+        },
+      };
+    },
+  },
+  groq: {
+    name: 'Groq',
+    buildRequest: (payload) => {
+      const key = process.env.GROQ_API_KEY || process.env.GROQ_PREDICT_API_KEY;
+      if (!key) return null;
+      return {
+        url: 'https://api.groq.com/openai/v1/chat/completions',
+        options: {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${key}`,
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            temperature: 0.2,
+            max_tokens: 8192,
+            response_format: { type: 'json_object' },
+            messages: [
+              { role: 'system', content: SYSTEM_PROMPT },
+              { role: 'user', content: JSON.stringify(payload) },
+            ],
+          }),
+        },
+        parseResponse: async (res) => {
+          const data = await res.json();
+          const text = data?.choices?.[0]?.message?.content;
+          if (!text) throw new Error('Empty Groq response');
           return JSON.parse(text);
         },
       };
@@ -132,7 +128,7 @@ const PROVIDER_CONFIGS = {
           body: JSON.stringify({
             model: 'gpt-4o-mini',
             temperature: 0.2,
-            max_tokens: 4096,
+            max_tokens: 8192,
             response_format: { type: 'json_object' },
             messages: [
               { role: 'system', content: SYSTEM_PROMPT },
@@ -165,7 +161,7 @@ const PROVIDER_CONFIGS = {
           },
           body: JSON.stringify({
             model: 'claude-sonnet-4-20250514',
-            max_tokens: 4096,
+            max_tokens: 8192,
             temperature: 0.2,
             system: SYSTEM_PROMPT,
             messages: [{ role: 'user', content: JSON.stringify(payload) }],
@@ -175,7 +171,6 @@ const PROVIDER_CONFIGS = {
           const data = await res.json();
           const text = data?.content?.[0]?.text;
           if (!text) throw new Error('Empty Anthropic response');
-          // Claude may wrap JSON in markdown fences, strip them
           const cleaned = text.replace(/^```json\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
           return JSON.parse(cleaned);
         },
@@ -192,7 +187,7 @@ function getProviderOrder() {
   if (envOrder) {
     return envOrder.split(',').map((s) => s.trim().toLowerCase()).filter((p) => PROVIDER_CONFIGS[p]);
   }
-  return ['gemini', 'openai', 'anthropic'];
+  return ['gemini', 'groq', 'openai', 'anthropic'];
 }
 
 /**
