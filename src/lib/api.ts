@@ -1,5 +1,8 @@
 import supabase from './supabase';
 
+let lastRefreshTime = 0;
+let refreshPromise: Promise<string | null> | null = null;
+
 export async function getAccessToken(forceRefresh = false): Promise<string | null> {
   try {
     if (!forceRefresh) {
@@ -12,12 +15,33 @@ export async function getAccessToken(forceRefresh = false): Promise<string | nul
         }
       }
     }
-    const refreshed = await supabase.auth.refreshSession();
-    if (refreshed.data.session?.access_token) {
-      return refreshed.data.session.access_token;
+
+    // Cooldown: Don't spam refreshSession if one was done in the last 10 seconds
+    const now = Date.now();
+    if (now - lastRefreshTime < 10000) {
+      const { data } = await supabase.auth.getSession();
+      return data.session?.access_token ?? null;
     }
-    const { data } = await supabase.auth.getSession();
-    return data.session?.access_token ?? null;
+
+    // Deduplicate in-flight refresh calls
+    if (refreshPromise) {
+      return await refreshPromise;
+    }
+
+    lastRefreshTime = now;
+    refreshPromise = (async () => {
+      try {
+        const refreshed = await supabase.auth.refreshSession();
+        return refreshed.data.session?.access_token ?? null;
+      } catch {
+        const { data } = await supabase.auth.getSession();
+        return data.session?.access_token ?? null;
+      } finally {
+        refreshPromise = null;
+      }
+    })();
+
+    return await refreshPromise;
   } catch {
     try {
       const { data } = await supabase.auth.getSession();

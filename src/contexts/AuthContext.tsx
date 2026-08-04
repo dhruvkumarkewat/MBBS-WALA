@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   ReactNode,
 } from 'react';
@@ -106,6 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  const activeFetchRef = useRef<Promise<UserProfile | null> | null>(null);
 
   const fetchProfile = useCallback(async (currUser: User | null, skipLoadingState = false): Promise<UserProfile | null> => {
     if (!currUser) {
@@ -113,61 +115,73 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfileLoading(false);
       return null;
     }
+
+    if (activeFetchRef.current) {
+      return activeFetchRef.current;
+    }
+
     // Only show loading spinner on first load, not on background token refreshes
     if (!skipLoadingState) setProfileLoading(true);
-    try {
-      const data = await apiJson<UserProfile>('/api/profile', {}, true);
-      // OVERRIDE stale backend data with user_metadata if user_metadata says it's completed
-      if (currUser?.user_metadata?.profile_completed) {
-        data.profile_completed = true;
-        data.onboarding_done = true;
-      }
-      setProfile(data);
-      return data;
-    } catch {
-      // API failed — try direct Supabase client query as fallback
-      // This works even when the backend API is broken (e.g., missing service role key)
+
+    const promise = (async () => {
       try {
-        const { data: directData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', currUser.id)
-          .maybeSingle();
-        if (directData) {
-          const meta = currUser.user_metadata || {};
-          // Trust profile_completed from DB OR user_metadata (whichever is true)
-          const isCompleted = Boolean(
-            directData.profile_completed ||
-            directData.onboarding_done ||
-            meta.profile_completed ||
-            meta.onboarding_done
-          );
-          const merged = {
-            ...directData,
-            profile_completed: isCompleted,
-            onboarding_done: isCompleted,
-          };
-          setProfile(merged);
-          return merged;
+        const data = await apiJson<UserProfile>('/api/profile', {}, true);
+        // OVERRIDE stale backend data with user_metadata if user_metadata says it's completed
+        if (currUser?.user_metadata?.profile_completed) {
+          data.profile_completed = true;
+          data.onboarding_done = true;
         }
+        setProfile(data);
+        return data;
       } catch {
-        // Direct Supabase query also failed — fall through to user_metadata
+        // API failed — try direct Supabase client query as fallback
+        // This works even when the backend API is broken (e.g., missing service role key)
+        try {
+          const { data: directData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', currUser.id)
+            .maybeSingle();
+          if (directData) {
+            const meta = currUser.user_metadata || {};
+            // Trust profile_completed from DB OR user_metadata (whichever is true)
+            const isCompleted = Boolean(
+              directData.profile_completed ||
+              directData.onboarding_done ||
+              meta.profile_completed ||
+              meta.onboarding_done
+            );
+            const merged = {
+              ...directData,
+              profile_completed: isCompleted,
+              onboarding_done: isCompleted,
+            };
+            setProfile(merged);
+            return merged;
+          }
+        } catch {
+          // Direct Supabase query also failed — fall through to user_metadata
+        }
+        // Last resort: use user_metadata from JWT
+        const meta = currUser.user_metadata || {};
+        const fallback: UserProfile = {
+          id: currUser.id,
+          email: currUser.email || '',
+          full_name: meta.full_name || meta.name || '',
+          phone: meta.phone || '',
+          profile_completed: Boolean(meta.profile_completed),
+          onboarding_done: Boolean(meta.onboarding_done),
+        };
+        setProfile(fallback);
+        return fallback;
+      } finally {
+        activeFetchRef.current = null;
+        setProfileLoading(false);
       }
-      // Last resort: use user_metadata from JWT
-      const meta = currUser.user_metadata || {};
-      const fallback: UserProfile = {
-        id: currUser.id,
-        email: currUser.email || '',
-        full_name: meta.full_name || meta.name || '',
-        phone: meta.phone || '',
-        profile_completed: Boolean(meta.profile_completed),
-        onboarding_done: Boolean(meta.onboarding_done),
-      };
-      setProfile(fallback);
-      return fallback;
-    } finally {
-      setProfileLoading(false);
-    }
+    })();
+
+    activeFetchRef.current = promise;
+    return promise;
   }, []);
 
   const refreshSession = useCallback(async () => {
