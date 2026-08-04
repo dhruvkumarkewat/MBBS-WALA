@@ -79,8 +79,23 @@ async function retrieveContext(query) {
     if (!closing) return null;
 
     const isGovt = (col.type || '').toLowerCase().includes('govt') || (col.type || '').toLowerCase().includes('central');
-    const feeVal = isGovt ? (col.feeGovt || 50000) : (col.feePvt || col.feeGovt || 1200000);
+    const isDeemed = (col.type || '').toLowerCase().includes('deemed') || (col.type || '').toLowerCase().includes('central');
     const stateMatch = domicileState && (col.state || '').toLowerCase().includes(domicileState.toLowerCase());
+
+    let quotaCode = 'AIQ';
+    if (stateMatch && quotas.includes('State') && (!quotas.includes('AIQ') || !isGovt)) {
+      quotaCode = 'State';
+    } else if (isDeemed && quotas.includes('Deemed-Central')) {
+      quotaCode = 'Deemed-Central';
+    } else if (!isGovt && (quotas.includes('Management') || quotas.includes('NRI'))) {
+      quotaCode = 'Management';
+    } else if (isGovt && quotas.includes('AIQ')) {
+      quotaCode = 'AIQ';
+    } else if (quotas.length > 0) {
+      quotaCode = quotas[0];
+    }
+
+    const feeVal = isGovt ? (col.feeGovt || 50000) : (col.feePvt || col.feeGovt || 1200000);
 
     return {
       id: col.id,
@@ -92,7 +107,7 @@ async function retrieveContext(query) {
       round_name: 'Round 1',
       year: year,
       course_name: examTrack === 'AYUSH' ? 'BAMS' : 'MBBS',
-      quota_code: col.counselling || (isGovt ? 'AIQ' : 'Management'),
+      quota_code: quotaCode,
       fee_amount: feeVal,
       seats: col.seats || 100,
       _state_match: stateMatch,
@@ -109,9 +124,13 @@ async function retrieveContext(query) {
   const seen = new Set();
   const deduplicated = [];
   for (const item of combined) {
-    const key = `${(item.college_name || '').trim().toLowerCase()}_${item.category}`;
+    const key = `${(item.college_name || '').trim().toLowerCase()}_${item.category}_${item.quota_code}`;
     if (!seen.has(key)) {
       seen.add(key);
+      // Filter strictly to selected quotas if specified
+      if (quotas.length > 0 && !quotas.includes(item.quota_code) && !quotas.includes('AIQ')) {
+        if (quotas.includes('State') && !item._state_match) continue;
+      }
       deduplicated.push(item);
     }
   }

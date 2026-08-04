@@ -626,8 +626,8 @@ export function PredictorPage() {
                               <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${style.badge}`}>
                                 {style.icon} {c.chance_tier}
                               </span>
-                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${s.chip}`}>
-                                {c.quota}
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20`}>
+                                🎯 {c.quota} Quota
                               </span>
                               <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${s.chip}`}>
                                 {c.category}
@@ -642,13 +642,15 @@ export function PredictorPage() {
 
                         {/* Rank Reference */}
                         {latestRef && (
-                          <div className={`text-xs rounded-lg px-3 py-2 mt-2 ${s.dark ? 'bg-white/5' : 'bg-slate-50'}`}>
-                            <span className={`font-semibold ${s.muted}`}>
-                              {latestRef.year} {latestRef.round} closing rank:{' '}
-                            </span>
-                            <span className="font-bold">{latestRef.rank?.toLocaleString()}</span>
-                            <span className={`ml-2 text-[10px] ${s.muted}`}>
-                              (cutoffs move each year — guide only)
+                          <div className={`text-xs rounded-lg px-3 py-2 mt-2 flex items-center justify-between flex-wrap gap-2 ${s.dark ? 'bg-white/5' : 'bg-slate-50'}`}>
+                            <div>
+                              <span className={`font-semibold ${s.muted}`}>
+                                📊 {latestRef.year} {c.quota} ({c.category}) Closing Rank:{' '}
+                              </span>
+                              <span className="font-extrabold text-primary text-sm">AIR #{latestRef.rank?.toLocaleString()}</span>
+                            </div>
+                            <span className={`text-[10px] ${s.muted}`}>
+                              (official {c.quota} counselling cutoff)
                             </span>
                           </div>
                         )}
