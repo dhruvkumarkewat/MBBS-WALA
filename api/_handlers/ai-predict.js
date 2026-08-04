@@ -32,7 +32,7 @@ function getCategoryClosing(cutoff, category) {
   return cutoff.GEN_closing || cutoff.GEN || cutoff.closing_rank || cutoff.closing;
 }
 
-async function retrieveContext(query) {
+export async function retrieveContext(query) {
   const year = query.score_or_rank?.neet_year || new Date().getFullYear();
   const category = query.category || 'General';
   const examTrack = query.exam_track || 'MBBS_BDS';
@@ -80,19 +80,20 @@ async function retrieveContext(query) {
 
     const isGovt = (col.type || '').toLowerCase().includes('govt') || (col.type || '').toLowerCase().includes('central');
     const isDeemed = (col.type || '').toLowerCase().includes('deemed') || (col.type || '').toLowerCase().includes('central');
-    const stateMatch = domicileState && (col.state || '').toLowerCase().includes(domicileState.toLowerCase());
+    const stateMatch = Boolean(domicileState && (col.state || '').toLowerCase().includes(domicileState.toLowerCase()));
 
+    // CRITICAL: A college can ONLY have quotaCode = 'State' if stateMatch is TRUE (domicile state match)
     let quotaCode = 'AIQ';
-    if (stateMatch && quotas.includes('State') && (!quotas.includes('AIQ') || !isGovt)) {
+    if (stateMatch && quotas.includes('State')) {
       quotaCode = 'State';
     } else if (isDeemed && quotas.includes('Deemed-Central')) {
       quotaCode = 'Deemed-Central';
     } else if (!isGovt && (quotas.includes('Management') || quotas.includes('NRI'))) {
       quotaCode = 'Management';
-    } else if (isGovt && quotas.includes('AIQ')) {
+    } else if (isGovt) {
       quotaCode = 'AIQ';
-    } else if (quotas.length > 0) {
-      quotaCode = quotas[0];
+    } else {
+      quotaCode = 'Management';
     }
 
     const feeVal = isGovt ? (col.feeGovt || 50000) : (col.feePvt || col.feeGovt || 1200000);
@@ -114,23 +115,42 @@ async function retrieveContext(query) {
     };
   }).filter(Boolean);
 
+  // Normalize direct cutoffs state matches
+  const normalizedDirect = (directCutoffs || []).map((item) => {
+    const stateMatch = Boolean(domicileState && (item.state || '').toLowerCase().includes(domicileState.toLowerCase()));
+    let quotaCode = item.quota_code || 'AIQ';
+    if (stateMatch && quotas.includes('State') && !quotas.includes('AIQ')) {
+      quotaCode = 'State';
+    } else if (quotaCode === 'State' && !stateMatch) {
+      quotaCode = 'AIQ';
+    }
+    return {
+      ...item,
+      quota_code: quotaCode,
+      _state_match: stateMatch,
+    };
+  });
+
   // Combine directCutoffs and collegeCutoffs
   const combined = [
-    ...(directCutoffs || []),
+    ...normalizedDirect,
     ...collegeCutoffs,
   ];
 
-  // Deduplicate by college_name + category
+  // Deduplicate and strictly enforce Quota & Domicile isolation
   const seen = new Set();
   const deduplicated = [];
+  const onlyStateQuota = quotas.includes('State') && !quotas.includes('AIQ');
+
   for (const item of combined) {
+    // If only State Quota was selected, drop all colleges outside the domicile state
+    if (onlyStateQuota && domicileState && !item._state_match) {
+      continue;
+    }
+
     const key = `${(item.college_name || '').trim().toLowerCase()}_${item.category}_${item.quota_code}`;
     if (!seen.has(key)) {
       seen.add(key);
-      // Filter strictly to selected quotas if specified
-      if (quotas.length > 0 && !quotas.includes(item.quota_code) && !quotas.includes('AIQ')) {
-        if (quotas.includes('State') && !item._state_match) continue;
-      }
       deduplicated.push(item);
     }
   }

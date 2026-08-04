@@ -12,18 +12,17 @@
 const SYSTEM_PROMPT = `# ROLE
 You are the expert NEET-UG & AYUSH Medical College Predictor & Admissions Advisor for MBBSWALA.
 
-# STRICT QUOTA-BASED PREDICTION RULES:
-1. **QUOTA RESPECT (CRITICAL)**:
-   - You MUST ONLY recommend colleges under the candidate's selected quotas in \`query.quotas\` (e.g. ['AIQ'], ['State'], ['Deemed-Central'], ['Management'], ['NRI']).
-   - If **'State'** quota is selected:
-     - Prioritize top Govt & Private Medical Colleges located in the candidate's \`domicile_state\`.
-     - Use authentic **85% State Quota cutoffs** for that state (e.g. MP DME, UP DGME, Maharashtra CET Cell, Rajasthan NEET UG, KEA Karnataka, etc.).
-   - If **'AIQ'** quota is selected:
-     - Provide top Govt Medical Colleges across India using authentic **15% All India Quota (MCC)** cutoffs.
-   - If **'Deemed-Central'** quota is selected:
-     - Provide Central Universities (BHU, AMU, DU) and top Deemed Universities (KMC Manipal, Hamdard, JSS Mysore, DY Patil, Kalinga, Symbiosis, etc.) using Deemed Quota cutoffs and realistic annual fees.
-   - If **'Management'** or **'NRI'** quota is selected:
-     - Provide Private Medical Colleges under Management / NRI quota with realistic management seat fees.
+# STRICT QUOTA & DOMICILE ISOLATION RULES (CRITICAL):
+1. **STATE QUOTA (85%) IS EXCLUSIVELY FOR DOMICILE STATE**:
+   - A candidate is ONLY eligible for 85% State Quota counselling in their designated \`domicile_state\`.
+   - Therefore, a college can ONLY have \`quota: "State"\` if its \`state\` matches candidate's \`domicile_state\`.
+   - **NEVER EVER assign \`quota: "State"\` to a college located in any other state**.
+   - If \`query.quotas\` only includes \`['State']\`:
+     - You MUST return 100% colleges located strictly within candidate's \`domicile_state\`.
+     - Use authentic State Quota closing cutoffs (e.g. MP DME, UP DGME, Maharashtra CET, Rajasthan NEET UG, KEA, etc.).
+   - If \`query.quotas\` includes \`['AIQ', 'State']\`:
+     - Colleges in \`domicile_state\` should use \`quota: "State"\` with State Quota cutoffs.
+     - Colleges outside \`domicile_state\` MUST ONLY use \`quota: "AIQ"\` (15% All India Quota) with MCC AIQ cutoffs.
 
 2. **RANK PROXIMITY & CHANCE ORDERING (TOP COLLEGES FIRST)**:
    For any candidate Rank R:
@@ -41,10 +40,10 @@ You are the expert NEET-UG & AYUSH Medical College Predictor & Admissions Adviso
    - college_name: Full official name
    - state: State name
    - course: 'MBBS' | 'BDS' | 'BAMS' | 'BHMS'
-   - quota: The exact quota ('AIQ', 'State', 'Deemed-Central', or 'Management')
+   - quota: The exact quota ('AIQ', 'State', 'Deemed-Central', or 'Management') — State Quota is strictly for domicile state
    - category: Candidate's category
    - chance_tier: 'High' | 'Moderate' | 'Reach'
-   - closing_rank_reference: [{ "year": 2024, "round": "Round 1", "rank": <cutoff_for_this_quota> }] (MUST reflect the cutoff for that specific quota & category)
+   - closing_rank_reference: [{ "year": 2024, "round": "Round 1", "rank": <cutoff_for_this_quota> }] (MUST reflect the authentic cutoff for that specific quota & category)
    - fee: { "quota_tier": string, "amount_min": number, "amount_max": number, "formatted": string }
 
 # OUTPUT FORMAT
@@ -322,8 +321,22 @@ export function buildFallbackResponse(query, context, resolved) {
   );
   const qualifies = !floor || (query.score_or_rank?.kind === 'marks' ? rank >= floor.cutoff_score : true);
 
+  const domicileState = query.domicile_state || '';
+  const selectedQuotas = query.quotas || [];
+  const onlyStateQuota = selectedQuotas.includes('State') && !selectedQuotas.includes('AIQ');
+
   // Score and categorize colleges with rank proximity
   const scoredColleges = (context.closing_ranks || []).map((cr) => {
+    const isHomeState = Boolean(domicileState && (cr.state || '').toLowerCase().includes(domicileState.toLowerCase()));
+    
+    // CRITICAL: A college can ONLY have quota 'State' if it matches candidate's domicile state
+    let quotaCode = cr.quota_code || 'AIQ';
+    if (isHomeState && selectedQuotas.includes('State') && !selectedQuotas.includes('AIQ')) {
+      quotaCode = 'State';
+    } else if (quotaCode === 'State' && !isHomeState) {
+      quotaCode = 'AIQ';
+    }
+
     const closingRank = cr.aiq_rank || cr.closing_rank || 0;
     let chance_tier = 'Unlikely';
 
@@ -343,7 +356,7 @@ export function buildFallbackResponse(query, context, resolved) {
       college_name: cr.college_name,
       state: cr.state || 'India',
       course: cr.course_name || (query.exam_track === 'AYUSH' ? 'BAMS' : 'MBBS'),
-      quota: cr.quota_code || (cr.type && cr.type.toLowerCase().includes('govt') ? 'AIQ' : 'Management'),
+      quota: quotaCode,
       category: cr.category || query.category,
       chance_tier,
       closing_rank_reference: [{ year: cr.year || year, round: cr.round_name || 'Round 1', rank: closingRank }],
@@ -356,8 +369,13 @@ export function buildFallbackResponse(query, context, resolved) {
       source_ids: [],
       _diff: Math.abs(closingRank - rank),
       _closing: closingRank,
+      _is_home_state: isHomeState,
     };
-  }).filter((c) => c.chance_tier !== 'Unlikely');
+  }).filter((c) => {
+    if (c.chance_tier === 'Unlikely') return false;
+    if (onlyStateQuota && domicileState && !c._is_home_state) return false;
+    return true;
+  });
 
   // Sort High chances by closest cutoffs right above candidate rank (ascending cutoff)
   const highTier = scoredColleges

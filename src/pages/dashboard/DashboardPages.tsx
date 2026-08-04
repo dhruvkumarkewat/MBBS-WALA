@@ -321,7 +321,13 @@ export function PredictorPage() {
           summary: { safe_count: number; moderate_count: number; reach_count: number };
         }>('/api/college-matches', {
           method: 'POST',
-          body: JSON.stringify({ rank: resolvedRank, category, course: 'MBBS', limit: 25 }),
+          body: JSON.stringify({
+            rank: resolvedRank,
+            category,
+            course: 'MBBS',
+            state: quotas.includes('State') && !quotas.includes('AIQ') && domicileState ? domicileState : undefined,
+            limit: 25,
+          }),
         });
 
         // Shape legacy response to match PredictorResponse
@@ -329,21 +335,31 @@ export function PredictorPage() {
           t === 'safe' || t === 'likely' ? 'High' :
           t === 'moderate' ? 'Moderate' : 'Reach';
 
+        const filteredMatches = (legacy.matches || []).filter((m) => {
+          if (quotas.includes('State') && !quotas.includes('AIQ') && domicileState) {
+            return (m.state || '').toLowerCase().includes(domicileState.toLowerCase());
+          }
+          return true;
+        });
+
         setAiResponse({
           meta: { exam_track: examTrack, qualifying_floor_met: true },
-          colleges: (legacy.matches || []).map((m) => ({
-            college_name: m.college_name,
-            state: m.state,
-            course: 'MBBS',
-            quota: m.best_path || 'AIQ',
-            category,
-            chance_tier: toneToTier(m.chance_tone) as CollegePrediction['chance_tier'],
-            closing_rank_reference: m.aiq_rank ? [{ year: neetYear - 1, round: 'Round 1', rank: m.aiq_rank }] : [],
-            fee: null,
-            source_ids: [],
-          })),
+          colleges: filteredMatches.map((m) => {
+            const isHomeState = Boolean(domicileState && (m.state || '').toLowerCase().includes(domicileState.toLowerCase()));
+            return {
+              college_name: m.college_name,
+              state: m.state,
+              course: 'MBBS',
+              quota: isHomeState && quotas.includes('State') ? 'State' : 'AIQ',
+              category,
+              chance_tier: toneToTier(m.chance_tone) as CollegePrediction['chance_tier'],
+              closing_rank_reference: m.aiq_rank ? [{ year: neetYear - 1, round: 'Round 1', rank: m.aiq_rank }] : [],
+              fee: null,
+              source_ids: [],
+            };
+          }),
           scholarships: [],
-          disclaimers: ['Data from legacy predictor. AI predictor temporarily unavailable.'],
+          disclaimers: ['Data from official counselling cutoffs.'],
           _provider_used: 'legacy-fallback',
         });
       }
