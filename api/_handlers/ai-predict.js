@@ -415,6 +415,9 @@ export default async function handler(req, res) {
       quota_code: r.quota_code,
       tier: r._tier,
       admission_chance_percentage: r._chance_percentage,
+      course_name: r.course_name,
+      fee_amount: r.fee_amount,
+      round_name: r.round_name,
     }));
     const aiPayload = { 
       query, 
