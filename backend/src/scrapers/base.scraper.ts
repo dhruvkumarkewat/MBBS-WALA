@@ -89,9 +89,9 @@ export abstract class BaseScraper {
                 .maybeSingle();
 
               if (previousNotice && previousNotice.description?.includes(checksum)) {
-                log.info({ file: filePath }, 'File content unchanged (checksum match) — skipping extraction');
-                result.recordsSkipped++;
-                continue;
+                log.info({ file: filePath }, 'File content unchanged (checksum match) — FORCE EXTRACTING ANYWAY');
+                // result.recordsSkipped++;
+                // continue;
               }
 
               content = await this.extractData(filePath, item.fileType);
@@ -313,13 +313,8 @@ export abstract class BaseScraper {
     ];
     if (invalidPhrases.some((phrase) => lower.includes(phrase))) return false;
 
-    // Accept if contains college/medical institution indicators
-    const medicalKeywords = [
-      'medical', 'college', 'hospital', 'institute', 'aiims', 'university', 'faculty',
-      'academy', 'vidyapeeth', 'ayurved', 'dental', 'homoeo', 'unani', 'siddha', 'nursing',
-      'gmc', 'rims', 'ims', 'vmmc', 'ucms', 'kgmu', 'pgims', 'mamc', 'bhumc', 'esic'
-    ];
-    return medicalKeywords.some((kw) => lower.includes(kw));
+    // Accept it as a college if it passes invalid phrase check since table parser guarantees it's attached to rank/seats.
+    return true;
   }
 
   /**

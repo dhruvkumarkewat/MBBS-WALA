@@ -102,22 +102,28 @@ export function AiAssistantPage() {
 
     setUserQueryCount((c) => c + 1);
     setBusy(true);
-    await new Promise((r) => setTimeout(r, 400));
-    const lower = q.toLowerCase();
-    let reply =
-      'Share AIR, category and domicile for sharper advice. Use Predictor, Finder and Seat Matrix — all backed by Supabase APIs.';
-    if (lower.includes('rank') || lower.includes('score'))
-      reply =
-        'Open College Predictor — it calls POST /api/rank-calculator against rank_bands. Then map the AIR band in Finder + Cutoffs.';
-    if (lower.includes('mp') || lower.includes('indore') || lower.includes('bhopal'))
-      reply =
-        'MP data lives in /api/seat-matrix and /api/cutoffs. MGM Indore & Gandhi Bhopal are competitive; pair with newer govt colleges as safety.';
-    if (lower.includes('document') || lower.includes('docs'))
-      reply =
-        'Documents are per-user in Supabase via /api/documents. Mark items Uploaded when ready for choice filling.';
-    if (lower.includes('save') || lower.includes('shortlist'))
-      reply = 'Star colleges in Finder — saved list is stored with your user id via /api/saved.';
-    setMessages((m) => [...m, { role: 'assistant', text: reply }]);
+    
+    try {
+      const response = await apiJson('/api/ai-chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          messages: [...messages, { role: 'user', text: q }]
+        })
+      });
+      
+      if (response && response.reply) {
+        setMessages((m) => [...m, { role: 'assistant', text: response.reply }]);
+      } else {
+        throw new Error('No reply from AI');
+      }
+    } catch (err) {
+      console.error('AI Chat Error:', err);
+      setMessages((m) => [...m, { 
+        role: 'assistant', 
+        text: 'Sorry, I am having trouble connecting to the network right now. Please try again later.' 
+      }]);
+    }
+    
     setBusy(false);
   };
 
