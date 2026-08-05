@@ -204,32 +204,75 @@ export default function CompetitionMapModule({ dark, embedded }: Props) {
             {/* hot/cold rail */}
             {summary && (
               <div className="absolute top-3 left-3 z-10 flex flex-col gap-2 max-w-[200px]">
-                <MiniList
-                  dark={dark}
-                  title="Hottest"
-                  icon={<Flame className="w-3.5 h-3.5 text-rose-500" />}
-                  items={summary.hottest || []}
-                  onPick={(name) => {
-                    const s = states.find((x) => x.state_name === name);
-                    if (s) {
-                      setSelected(s);
-                      setPanelOpen(true);
-                    }
-                  }}
-                />
-                <MiniList
-                  dark={dark}
-                  title="Easier"
-                  icon={<Leaf className="w-3.5 h-3.5 text-teal-500" />}
-                  items={summary.easiest || []}
-                  onPick={(name) => {
-                    const s = states.find((x) => x.state_name === name);
-                    if (s) {
-                      setSelected(s);
-                      setPanelOpen(true);
-                    }
-                  }}
-                />
+                {filters.rank ? (
+                  <>
+                    {summary.highest_chance && summary.highest_chance.length > 0 && (
+                      <MiniList
+                        dark={dark}
+                        title="Highest Chance"
+                        icon={<Leaf className="w-3.5 h-3.5 text-green-500" />}
+                        items={summary.highest_chance}
+                        onPick={(name) => {
+                          const s = states.find((x) => x.state_name === name);
+                          if (s) { setSelected(s); setPanelOpen(true); }
+                        }}
+                      />
+                    )}
+                    {summary.moderate_chance && summary.moderate_chance.length > 0 && (
+                      <MiniList
+                        dark={dark}
+                        title="Moderate Chance"
+                        icon={<Flame className="w-3.5 h-3.5 text-yellow-500" />}
+                        items={summary.moderate_chance}
+                        onPick={(name) => {
+                          const s = states.find((x) => x.state_name === name);
+                          if (s) { setSelected(s); setPanelOpen(true); }
+                        }}
+                      />
+                    )}
+                    {summary.very_difficult && summary.very_difficult.length > 0 && (
+                      <MiniList
+                        dark={dark}
+                        title="Very Difficult"
+                        icon={<AlertCircle className="w-3.5 h-3.5 text-rose-500" />}
+                        items={summary.very_difficult}
+                        onPick={(name) => {
+                          const s = states.find((x) => x.state_name === name);
+                          if (s) { setSelected(s); setPanelOpen(true); }
+                        }}
+                      />
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <MiniList
+                      dark={dark}
+                      title="Hottest"
+                      icon={<Flame className="w-3.5 h-3.5 text-rose-500" />}
+                      items={summary.hottest || []}
+                      onPick={(name) => {
+                        const s = states.find((x) => x.state_name === name);
+                        if (s) {
+                          setSelected(s);
+                          setPanelOpen(true);
+                        }
+                      }}
+                    />
+                    <MiniList
+                      dark={dark}
+                      title="Easier"
+                      icon={<Leaf className="w-3.5 h-3.5 text-teal-500" />}
+                      items={summary.easiest || []}
+                      onPick={(name) => {
+                        const s = states.find((x) => x.state_name === name);
+                        if (s) {
+                          setSelected(s);
+                          setPanelOpen(true);
+                        }
+                      }}
+                    />
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -341,7 +384,7 @@ function MiniList({
   dark?: boolean;
   title: string;
   icon: React.ReactNode;
-  items: Array<{ state_name: string; competition_score: number }>;
+  items: Array<{ state_name: string; competition_score: number | string }>;
   onPick: (name: string) => void;
 }) {
   return (

@@ -16,6 +16,15 @@ interface Props {
   dark?: boolean;
 }
 
+function LegendItem({ color, label }: { color: string; label: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+      <span className="whitespace-nowrap">{label}</span>
+    </div>
+  );
+}
+
 export default function IndiaCompetitionMap({ paths, states, selectedKey, onSelect, dark }: Props) {
   const [hoverKey, setHoverKey] = useState<string | null>(null);
   const [mouse, setMouse] = useState({ x: 0, y: 0 });
@@ -66,7 +75,7 @@ export default function IndiaCompetitionMap({ paths, states, selectedKey, onSele
 
         {paths.states.map((st) => {
           const data = resolve(st.name);
-          const score = data?.competition_score ?? 35;
+          const prob = data?.admission_probability ?? null;
           const key = canonicalStateKey(st.name);
           const active = selectedKey === key || hoverKey === key;
           const muted = selectedKey && selectedKey !== key;
@@ -75,8 +84,8 @@ export default function IndiaCompetitionMap({ paths, states, selectedKey, onSele
             <motion.path
               key={st.key}
               d={st.d}
-              fill={scoreColor(score, dark)}
-              stroke={active ? scoreStroke(score) : dark ? 'rgba(255,255,255,0.12)' : 'rgba(11,61,74,0.18)'}
+              fill={scoreColor(prob, dark)}
+              stroke={active ? scoreStroke(prob) : dark ? 'rgba(255,255,255,0.12)' : 'rgba(11,61,74,0.18)'}
               strokeWidth={active ? 2.2 : 0.7}
               filter={active ? 'url(#cm-glow)' : undefined}
               className="cursor-pointer transition-[fill,stroke-width] duration-150"
@@ -86,7 +95,7 @@ export default function IndiaCompetitionMap({ paths, states, selectedKey, onSele
               }}
               tabIndex={0}
               role="button"
-              aria-label={`${st.name}${data ? `, competition ${data.competition_score}` : ''}`}
+              aria-label={`${st.name}${data ? `, admit probability ${Math.round(data.admission_probability * 100)}%` : ''}`}
               onMouseEnter={(e) => {
                 setHoverKey(st.name);
                 setMouse({ x: e.clientX, y: e.clientY });
@@ -114,16 +123,16 @@ export default function IndiaCompetitionMap({ paths, states, selectedKey, onSele
           dark ? 'bg-black/40 border-white/10 text-white/70' : 'bg-white/80 border-primary-dark/10 text-gray-500'
         }`}
       >
-        <p className="mb-1.5 uppercase tracking-wide opacity-70">Competition heat</p>
-        <div className="flex items-center gap-2">
-          <span>Low</span>
-          <div
-            className="flex-1 h-2 rounded-full"
-            style={{
-              background: 'linear-gradient(90deg, #14b8a6, #f59e0b, #f43f5e)',
-            }}
-          />
-          <span>Extreme</span>
+        <p className="mb-1.5 uppercase tracking-wide opacity-70">Admission Probability</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-1">
+          <LegendItem color={dark ? '#064e3b' : '#065f46'} label="Excellent Chance" />
+          <LegendItem color={dark ? '#14532d' : '#16a34a'} label="Very Good" />
+          <LegendItem color={dark ? '#166534' : '#4ade80'} label="Good" />
+          <LegendItem color={dark ? '#854d0e' : '#facc15'} label="Borderline" />
+          <LegendItem color={dark ? '#9a3412' : '#f97316'} label="Low Chance" />
+          <LegendItem color={dark ? '#7f1d1d' : '#ef4444'} label="Very Low" />
+          <LegendItem color={dark ? '#450a0a' : '#991b1b'} label="Impossible" />
+          <LegendItem color={dark ? '#374151' : '#9ca3af'} label="No Data" />
         </div>
       </div>
 

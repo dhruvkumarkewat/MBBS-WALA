@@ -65,8 +65,10 @@ export default async function handler(req, res) {
       quota = 'All',
       college_type = 'All',
       year = '2024',
+      round = 'Round 1',
       min_score,
       max_fees,
+      rank,
     } = req.query;
 
     let yearNum = Number(year) || 2024;
@@ -74,6 +76,7 @@ export default async function handler(req, res) {
     if (yearNum > 2024) {
       yearNum = 2024;
     }
+    const userRank = Number(rank) || null;
 
     async function fetchAll(table, select, modifier = q => q, maxPages = 1) {
       const pageSize = 1000;
@@ -187,12 +190,66 @@ export default async function handler(req, res) {
         const density = Math.min(20, Math.round(totalSeats / Math.max(totalColleges, 1) / 20));
         competitionScore = Math.min(99, Math.max(20, competitionScore + (10 - density)));
       }
-
+      
       const difficulty = row.difficulty || difficultyFromScore(competitionScore);
-      const admissionProbability =
-        row.admission_probability != null
+
+      let matchingColleges = 0;
+      let safestCollege = null;
+      let mostCompetitiveCollege = null;
+      let bestCollege = null;
+      let lowestCR = Infinity;
+      let highestCR = -Infinity;
+      
+      const collegeProbs = [];
+
+      for (const col of liveCols) {
+        // find cutoffs for this college
+        const colCuts = liveCuts.filter(c => String(c.college_name || '').toLowerCase().includes(String(col.name || '').toLowerCase().slice(0, 12)));
+        const colRanks = colCuts
+          .map((c) => c.aiq_rank || parseRankMid(c.state_rank_range))
+          .filter((n) => typeof n === 'number' && !Number.isNaN(n));
+        
+        let colCR = colRanks.length ? Math.max(...colRanks) : row.avg_closing_rank;
+        if (!colCR) continue;
+
+        if (colCR < lowestCR) { lowestCR = colCR; mostCompetitiveCollege = col.name; }
+        if (colCR > highestCR) { highestCR = colCR; safestCollege = col.name; }
+
+        let prob = 0.5;
+        if (userRank) {
+          const diff = colCR - userRank;
+          const ratio = diff / userRank; 
+          
+          if (ratio >= 0.1) prob = 1.0;
+          else if (ratio <= -0.15) prob = 0.0;
+          else {
+            prob = (ratio + 0.15) / 0.25;
+            prob = Math.max(0, Math.min(1, prob));
+          }
+          if (prob > 0.4) matchingColleges++;
+        }
+        collegeProbs.push({ name: col.name, cr: colCR, prob });
+      }
+
+      if (lowestCR === Infinity) lowestCR = null;
+      if (highestCR === -Infinity) highestCR = null;
+
+      let admissionProbability = 0;
+      if (userRank && collegeProbs.length > 0) {
+        collegeProbs.sort((a, b) => b.prob - a.prob);
+        const topN = Math.max(1, Math.min(5, collegeProbs.length));
+        const bestOppProbs = collegeProbs.slice(0, topN).map(c => c.prob);
+        admissionProbability = bestOppProbs.reduce((a, b) => a + b, 0) / bestOppProbs.length;
+        bestCollege = collegeProbs[0]?.name;
+        // Adjust competition score based on user's probability (0 to 100)
+        // If prob is 100%, competition is low for them (e.g. 10). If prob is 0%, competition is extreme (e.g. 99)
+        competitionScore = 100 - Math.round(admissionProbability * 100);
+        competitionScore = Math.max(5, Math.min(99, competitionScore));
+      } else {
+        admissionProbability = row.admission_probability != null
           ? Number(row.admission_probability)
           : Math.max(0.08, Math.min(0.85, (100 - competitionScore) / 100));
+      }
 
       const topFromLive = liveCols.slice(0, 6).map((c, i) => ({
         name: c.name,
@@ -233,6 +290,18 @@ export default async function handler(req, res) {
             };
 
       const live = { avgClosingRank, govt: govtColleges, priv: privateColleges };
+      
+      let insightText = '';
+      if (userRank) {
+        if (matchingColleges > 0) {
+          const chanceLevel = admissionProbability >= 0.8 ? 'strong' : admissionProbability >= 0.4 ? 'moderate' : 'low';
+          insightText = `Your current AIR gives ${chanceLevel} admission chances in ${row.state_name} because ${matchingColleges} colleges closed below your rank in ${round}.`;
+        } else {
+          insightText = `Your current AIR makes admission very difficult in ${row.state_name}. Try looking at private quotas or other states.`;
+        }
+      } else {
+        insightText = buildInsight(row, live);
+      }
 
       return {
         id: row.id,
@@ -240,7 +309,7 @@ export default async function handler(req, res) {
         state_name: row.state_name,
         map_name: row.state_name,
         competition_score: Math.round(competitionScore * 10) / 10,
-        difficulty,
+        difficulty: userRank ? difficultyFromScore(competitionScore) : difficulty,
         total_colleges: totalColleges,
         govt_colleges: govtColleges,
         private_colleges: privateColleges,
@@ -249,9 +318,15 @@ export default async function handler(req, res) {
         aiq_seats: aiqSeats,
         state_quota_seats: stateQuota,
         avg_closing_rank: avgClosingRank,
+        lowest_closing_rank: lowestCR,
+        highest_closing_rank: highestCR,
+        safest_college: safestCollege,
+        most_competitive_college: mostCompetitiveCollege,
+        best_college: bestCollege,
+        matching_colleges: matchingColleges,
         avg_cutoff: avgCutoff,
         admission_probability: Math.round(admissionProbability * 1000) / 1000,
-        insight: buildInsight(row, live),
+        insight: insightText,
         demand_index: Number(row.demand_index) || competitionScore,
         supply_index: Number(row.supply_index) || Math.max(5, 100 - competitionScore),
         top_colleges,
@@ -315,6 +390,9 @@ export default async function handler(req, res) {
           competition_score: r.competition_score,
           difficulty: r.difficulty,
         })),
+      highest_chance: userRank ? [...list].filter(r => r.admission_probability >= 0.8).sort((a,b) => b.admission_probability - a.admission_probability).slice(0, 5).map(r => ({ state_name: r.state_name, competition_score: Math.round(r.admission_probability * 100) + '%' })) : undefined,
+      moderate_chance: userRank ? [...list].filter(r => r.admission_probability >= 0.4 && r.admission_probability < 0.8).sort((a,b) => b.admission_probability - a.admission_probability).slice(0, 5).map(r => ({ state_name: r.state_name, competition_score: Math.round(r.admission_probability * 100) + '%' })) : undefined,
+      very_difficult: userRank ? [...list].filter(r => r.admission_probability < 0.4).sort((a,b) => a.admission_probability - b.admission_probability).slice(0, 5).map(r => ({ state_name: r.state_name, competition_score: Math.round(r.admission_probability * 100) + '%' })) : undefined,
     };
 
     // Detail mode

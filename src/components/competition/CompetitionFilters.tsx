@@ -48,15 +48,29 @@ export default function CompetitionFiltersBar({ value, onChange, stateOptions, d
         </button>
       </div>
 
-      <div className="relative mb-3">
-        <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${dark ? 'text-white/30' : 'text-text-grey'}`} />
-        <input
-          value={value.q}
-          onChange={(e) => set('q', e.target.value)}
-          placeholder="Search states or colleges…"
-          className={`w-full pl-10 ${field}`}
-          aria-label="Search states or colleges"
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+        <div className="relative">
+          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${dark ? 'text-white/30' : 'text-text-grey'}`} />
+          <input
+            value={value.q}
+            onChange={(e) => set('q', e.target.value)}
+            placeholder="Search states or colleges…"
+            className={`w-full pl-10 ${field}`}
+            aria-label="Search states or colleges"
+          />
+        </div>
+        <div className="relative">
+          <input
+            type="number"
+            value={value.rank || ''}
+            onChange={(e) => set('rank', e.target.value)}
+            placeholder="Enter your AIR Rank to predict chances..."
+            className={`w-full font-bold ${field} ${dark ? 'focus:ring-teal-500' : 'focus:ring-primary'}`}
+            aria-label="Student AIR Rank"
+            min="1"
+            max="3000000"
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-2">

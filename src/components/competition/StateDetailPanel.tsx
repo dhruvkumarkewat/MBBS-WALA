@@ -83,7 +83,12 @@ export default function StateDetailPanel({ state, onClose, dark }: Props) {
           <Kpi dark={dark} icon={Target} label="AIQ seats" value={formatNum(state.aiq_seats)} />
           <Kpi dark={dark} icon={Layers} label="State quota" value={formatNum(state.state_quota_seats)} />
           <Kpi dark={dark} icon={TrendingUp} label="Avg close rank" value={formatNum(state.avg_closing_rank)} />
-          <Kpi dark={dark} icon={Sparkles} label="Avg cutoff" value={formatNum(state.avg_cutoff)} />
+          {state.lowest_closing_rank != null && (
+            <Kpi dark={dark} icon={Target} label="Lowest CR" value={formatNum(state.lowest_closing_rank)} />
+          )}
+          {state.highest_closing_rank != null && (
+            <Kpi dark={dark} icon={Sparkles} label="Highest CR" value={formatNum(state.highest_closing_rank)} />
+          )}
         </div>
 
         {/* AI insight */}
@@ -101,6 +106,18 @@ export default function StateDetailPanel({ state, onClose, dark }: Props) {
             <li>• Re-validate bonds/fees before locking private options.</li>
           </ul>
         </section>
+
+        <button
+          type="button"
+          className="w-full rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-sm py-3 px-4 shadow-lg shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+          onClick={() => {
+            // Optional: navigate to the predictor page or open modal
+            alert('Opening College Predictor...');
+          }}
+        >
+          <Target className="w-4 h-4" />
+          Run College Predictor
+        </button>
         {/* Premium Data and Charts */}
         {!isPremium ? (
           <div className="relative mt-2">

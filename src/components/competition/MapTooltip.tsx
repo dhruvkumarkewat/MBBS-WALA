@@ -29,7 +29,7 @@ export default function MapTooltip({ state, x, y, dark }: Props) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 6, scale: 0.98 }}
       transition={{ duration: 0.16 }}
-      className="fixed z-[80] w-[300px] pointer-events-none"
+      className="fixed z-[80] w-[340px] pointer-events-none"
       style={{ left, top }}
       role="tooltip"
     >
@@ -75,7 +75,39 @@ export default function MapTooltip({ state, x, y, dark }: Props) {
             <Metric icon={Target} label="AIQ seats" value={formatNum(state.aiq_seats)} dark={dark} />
             <Metric icon={Percent} label="State quota" value={formatNum(state.state_quota_seats)} dark={dark} />
             <Metric icon={TrendingUp} label="Avg close rank" value={formatNum(state.avg_closing_rank)} dark={dark} />
+            {state.lowest_closing_rank != null && (
+              <Metric icon={TrendingUp} label="Lowest CR" value={formatNum(state.lowest_closing_rank)} dark={dark} />
+            )}
+            {state.highest_closing_rank != null && (
+              <Metric icon={TrendingUp} label="Highest CR" value={formatNum(state.highest_closing_rank)} dark={dark} />
+            )}
+            {state.matching_colleges != null && state.matching_colleges > 0 && (
+              <Metric icon={Target} label="Matching Clgs" value={String(state.matching_colleges)} dark={dark} />
+            )}
           </div>
+
+          {(state.most_competitive_college || state.safest_college) && (
+            <div className={`rounded-xl px-3 py-2 text-[10px] space-y-1 ${dark ? 'bg-white/5 border border-white/10' : 'bg-grey-bg-light/70 border border-primary-dark/5'}`}>
+              {state.best_college && (
+                <div className="flex justify-between gap-2">
+                  <span className="font-bold opacity-60">Top Eligible</span>
+                  <span className="font-bold truncate max-w-[160px] text-right">{state.best_college}</span>
+                </div>
+              )}
+              {state.most_competitive_college && (
+                <div className="flex justify-between gap-2">
+                  <span className="font-bold opacity-60">Most Competitive</span>
+                  <span className="font-bold truncate max-w-[160px] text-right">{state.most_competitive_college}</span>
+                </div>
+              )}
+              {state.safest_college && (
+                <div className="flex justify-between gap-2">
+                  <span className="font-bold opacity-60">Safest College</span>
+                  <span className="font-bold truncate max-w-[160px] text-right">{state.safest_college}</span>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className={`rounded-xl px-3 py-2 text-[11px] font-medium leading-relaxed flex gap-2 ${dark ? 'bg-teal-500/10 text-teal-100' : 'bg-teal-50 text-teal-900'}`}>
             <Sparkles className="w-3.5 h-3.5 shrink-0 mt-0.5" />

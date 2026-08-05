@@ -15,21 +15,21 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 // --- MOCK AUTH FOR DEMO / PLACEHOLDER PROJECTS ---
 if (supabaseUrl?.includes('placeholder')) {
   console.warn('Running with MOCK Supabase auth (placeholder URL detected). Demo accounts are active.');
-  
+
   let currentSession = null;
   const listeners = new Set();
-  
+
   try {
     const saved = localStorage.getItem('mock_sb_session');
     if (saved) currentSession = JSON.parse(saved);
-  } catch (e) {}
+  } catch (e) { }
 
   const notify = (event) => {
     listeners.forEach(cb => cb(event, currentSession));
   };
 
   supabase.auth.getSession = async () => ({ data: { session: currentSession }, error: null });
-  
+
   supabase.auth.onAuthStateChange = (cb) => {
     listeners.add(cb);
     return { data: { subscription: { unsubscribe: () => listeners.delete(cb) } } };
@@ -53,7 +53,7 @@ if (supabaseUrl?.includes('placeholder')) {
       }
     };
     localStorage.setItem('mock_sb_session', JSON.stringify(currentSession));
-    
+
     // Track roles for mock API interceptor
     if (isAdmin || isCounsellor) {
       localStorage.setItem('mock_is_staff', 'true');

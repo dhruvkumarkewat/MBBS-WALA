@@ -40,6 +40,12 @@ export interface StateCompetition {
   }>;
   seat_rows?: Array<Record<string, unknown>>;
   cutoff_rows?: Array<Record<string, unknown>>;
+  safest_college?: string;
+  most_competitive_college?: string;
+  best_college?: string;
+  matching_colleges?: number;
+  lowest_closing_rank?: number;
+  highest_closing_rank?: number;
 }
 
 export interface CompetitionSummary {
@@ -47,8 +53,11 @@ export interface CompetitionSummary {
   total_colleges: number;
   total_seats: number;
   avg_competition: number;
-  hottest: Array<{ state_name: string; competition_score: number; difficulty: string }>;
-  easiest: Array<{ state_name: string; competition_score: number; difficulty: string }>;
+  hottest?: Array<{ state_name: string; competition_score: number; difficulty?: string }>;
+  easiest?: Array<{ state_name: string; competition_score: number; difficulty?: string }>;
+  highest_chance?: Array<{ state_name: string; competition_score: number | string }>;
+  moderate_chance?: Array<{ state_name: string; competition_score: number | string }>;
+  very_difficult?: Array<{ state_name: string; competition_score: number | string }>;
 }
 
 export interface MapPathState {
@@ -95,23 +104,33 @@ export function canonicalStateKey(name: string): string {
   return ALIASES[k] || k;
 }
 
-export function scoreColor(score: number, dark = false): string {
-  // teal → amber → rose heat
-  const s = Math.max(0, Math.min(100, score)) / 100;
-  if (s < 0.45) {
-    return dark ? `rgba(45, 212, 191, ${0.25 + s})` : `rgba(20, 184, 166, ${0.2 + s * 0.5})`;
-  }
-  if (s < 0.7) {
-    return dark ? `rgba(251, 191, 36, ${0.3 + s * 0.4})` : `rgba(245, 158, 11, ${0.25 + s * 0.45})`;
-  }
-  return dark ? `rgba(251, 113, 133, ${0.35 + s * 0.4})` : `rgba(244, 63, 94, ${0.28 + s * 0.5})`;
+export function scoreColor(prob: number | null, dark = false): string {
+  if (prob == null || Number.isNaN(prob)) return dark ? '#374151' : '#9ca3af'; // Grey for No Data
+  
+  // Convert from 0-1 fractional format if needed, though we will provide 0-100 to this function
+  const p = prob <= 1 ? prob * 100 : prob;
+
+  if (p >= 95) return dark ? '#064e3b' : '#065f46'; // Dark Green
+  if (p >= 80) return dark ? '#14532d' : '#16a34a'; // Green
+  if (p >= 60) return dark ? '#166534' : '#4ade80'; // Light Green
+  if (p >= 40) return dark ? '#854d0e' : '#facc15'; // Yellow
+  if (p >= 20) return dark ? '#9a3412' : '#f97316'; // Orange
+  if (p >= 1) return dark ? '#7f1d1d' : '#ef4444'; // Red
+  return dark ? '#450a0a' : '#991b1b'; // Dark Red
 }
 
-export function scoreStroke(score: number): string {
-  const s = Math.max(0, Math.min(100, score));
-  if (s < 45) return '#0d9488';
-  if (s < 70) return '#d97706';
-  return '#e11d48';
+export function scoreStroke(prob: number | null): string {
+  if (prob == null || Number.isNaN(prob)) return 'rgba(156, 163, 175, 0.4)';
+  
+  const p = prob <= 1 ? prob * 100 : prob;
+
+  if (p >= 95) return '#064e3b';
+  if (p >= 80) return '#14532d';
+  if (p >= 60) return '#166534';
+  if (p >= 40) return '#a16207';
+  if (p >= 20) return '#c2410c';
+  if (p >= 1) return '#991b1b';
+  return '#450a0a';
 }
 
 export function difficultyTone(d: string): string {
@@ -142,6 +161,7 @@ export interface CompetitionFilters {
   college_type: string;
   fees: string;
   q: string;
+  rank: string;
 }
 
 export const defaultCompetitionFilters: CompetitionFilters = {
@@ -154,6 +174,7 @@ export const defaultCompetitionFilters: CompetitionFilters = {
   college_type: 'All',
   fees: 'All',
   q: '',
+  rank: '',
 };
 
 export function buildCompetitionQuery(f: CompetitionFilters): string {
@@ -165,6 +186,7 @@ export function buildCompetitionQuery(f: CompetitionFilters): string {
   if (f.year) p.set('year', f.year);
   if (f.college_type && f.college_type !== 'All') p.set('college_type', f.college_type);
   if (f.q) p.set('q', f.q);
+  if (f.rank) p.set('rank', f.rank);
   // fees/round reserved for UI + future API
   if (f.fees && f.fees !== 'All') p.set('fees', f.fees);
   if (f.round) p.set('round', f.round);
