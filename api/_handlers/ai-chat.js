@@ -3,6 +3,7 @@
  *
  * Routes conversational chat to Gemini.
  */
+import supabase from './db-client.js';
 
 const SYSTEM_PROMPT = `You are the expert NEET-UG & AYUSH Medical College Admissions Advisor for MBBSWALA.
 You are chatting directly with students who need guidance on medical colleges, cutoffs, counseling, and the admission process.
@@ -49,7 +50,31 @@ export default async function (req, res) {
       contextualPrompt += `Category: ${userContext.category || 'General'}\n`;
       contextualPrompt += `Domicile State: ${userContext.domicile_state || 'Not provided'}\n`;
       contextualPrompt += `Preferred Course: ${userContext.preferred_course || 'MBBS'}\n`;
-      contextualPrompt += `Use this student profile context to provide personalized advice. Do NOT ask them for their rank or category if it is provided above!`;
+      contextualPrompt += `Use this student profile context to provide personalized advice. Do NOT ask them for their rank or category if it is provided above!\n`;
+      
+      // Inject real-time database cutoffs if we have a rank
+      if (userContext.neet_rank && userContext.category) {
+        try {
+          const { data: colleges } = await supabase
+            .from('cutoffs')
+            .select('college_name, state, quota, round, closing_rank')
+            .eq('category', userContext.category)
+            .gte('closing_rank', userContext.neet_rank * 0.9) // slightly above rank
+            .lte('closing_rank', userContext.neet_rank * 1.5) // moderately below rank (safe)
+            .limit(10);
+            
+          if (colleges && colleges.length > 0) {
+            contextualPrompt += `\n\n--- REAL-TIME DATABASE CUTOFFS (FOR THIS STUDENT'S RANK & CATEGORY) ---\n`;
+            contextualPrompt += `Here are some actual colleges from our Supabase database where the closing rank is safely near the student's rank:\n`;
+            colleges.forEach(c => {
+               contextualPrompt += `- ${c.college_name} (${c.state}) | Quota: ${c.quota} | Round: ${c.round} | Closing Rank: ${c.closing_rank}\n`;
+            });
+            contextualPrompt += `\nYou MUST use these specific database examples when suggesting colleges to the student! Highlight that these are real historical cutoffs for their category.\n`;
+          }
+        } catch (dbErr) {
+          console.error("Failed to fetch contextual cutoffs:", dbErr);
+        }
+      }
     }
 
     // Format messages for Gemini
