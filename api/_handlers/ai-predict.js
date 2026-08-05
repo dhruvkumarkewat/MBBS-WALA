@@ -234,23 +234,46 @@ const DEEMED_KEYWORDS = [
     .select('*')
     .limit(200);
 
-  // 6. Scholarships — match by category scope
+  // 6. Scholarships — match by category scope, state scope, and course scope
   const { data: scholarships } = await supabase
     .from('scholarships')
     .select('*')
     .eq('is_active', true);
 
+  const catNorm = (category || 'General').toUpperCase();
+  const selectedCourse = examTrack === 'AYUSH' ? 'BAMS' : 'MBBS';
+
   const matchedScholarships = (scholarships || []).filter((s) => {
+    // 1. Category Matching
     if (s.category_scope && s.category_scope.length > 0) {
-      if (!s.category_scope.includes(category)) return false;
+      const matchesCat = s.category_scope.some((cs) => {
+        const csUpper = cs.toUpperCase();
+        if (catNorm.includes('OBC') && csUpper.includes('OBC')) return true;
+        if (catNorm.includes('SC') && csUpper.includes('SC')) return true;
+        if (catNorm.includes('ST') && csUpper.includes('ST')) return true;
+        if (catNorm.includes('EWS') && csUpper.includes('EWS')) return true;
+        if (catNorm.includes('PWD') && csUpper.includes('PWD')) return true;
+        if ((catNorm === 'GENERAL' || catNorm === 'GEN') && (csUpper === 'GENERAL' || csUpper === 'GEN')) return true;
+        return csUpper === catNorm;
+      });
+      if (!matchesCat) return false;
     }
+
+    // 2. State Domicile Matching
     if (s.state_scope && s.state_scope.length > 0 && domicileState) {
-      if (!s.state_scope.includes(domicileState)) return false;
+      const stateNorm = domicileState.toLowerCase();
+      const matchesState = s.state_scope.some(
+        (st) => stateNorm.includes(st.toLowerCase()) || st.toLowerCase().includes(stateNorm)
+      );
+      if (!matchesState) return false;
     }
+
+    // 3. Course Matching
     if (s.course_scope && s.course_scope.length > 0) {
-      const course = examTrack === 'AYUSH' ? 'BAMS' : 'MBBS';
-      if (!s.course_scope.includes(course)) return false;
+      const matchesCourse = s.course_scope.some((c) => c.toUpperCase() === selectedCourse.toUpperCase());
+      if (!matchesCourse) return false;
     }
+
     return true;
   });
 

@@ -428,15 +428,34 @@ export function buildFallbackResponse(query, context, resolved) {
   // Assemble with TOP HIGH CHANCE COLLEGES FIRST
   const colleges = [...highTier, ...modTier, ...reachTier];
 
-  // Match scholarships
-  const scholarships = (context.scholarships || []).map((s) => ({
-    name: s.name,
-    provider: s.provider,
-    match_reason: `Matches your ${query.category} category`,
-    estimated_amount: s.amount_description || null,
-    official_portal: s.official_portal,
-    source_id: s.source_id || '',
-  }));
+  // Match scholarships with rich eligibility explanations
+  const scholarships = (context.scholarships || []).map((s) => {
+    let reason = `Eligible based on ${query.category || 'General'} category`;
+    if (s.eligibility?.family_income_limit) {
+      reason += ` & family annual income limit of ₹${Number(s.eligibility.family_income_limit).toLocaleString('en-IN')}`;
+    }
+    if (s.eligibility?.min_percentile) {
+      reason += ` for top rankers (above ${s.eligibility.min_percentile}th percentile)`;
+    }
+    if (s.eligibility?.gender === 'female') {
+      reason += ` (Special welfare initiative for female medical students)`;
+    }
+    if (s.eligibility?.minority) {
+      reason = `Minority welfare scholarship scheme (Annual family income limit: ₹${Number(s.eligibility.family_income_limit || 250000).toLocaleString('en-IN')})`;
+    }
+    if (s.eligibility?.pwd) {
+      reason = `Welfare scheme for students with benchmark disabilities (${s.eligibility.disability_percentage || 40}%+ PwD)`;
+    }
+
+    return {
+      name: s.name,
+      provider: s.provider,
+      match_reason: s.description ? `${s.description} — ${reason}` : reason,
+      estimated_amount: s.amount_description || (s.amount_max ? `Up to ₹${s.amount_max.toLocaleString('en-IN')}/year` : null),
+      official_portal: s.official_portal,
+      source_id: s.source_id || '',
+    };
+  });
 
   return {
     meta: {

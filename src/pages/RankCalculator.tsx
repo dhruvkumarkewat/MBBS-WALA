@@ -1,8 +1,17 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calculator, Loader2, Sparkles, Trophy, Award, MapPin, CheckCircle2 } from 'lucide-react';
+import { Calculator, Loader2, Sparkles, Trophy, Award, MapPin, CheckCircle2, GraduationCap, ExternalLink } from 'lucide-react';
 import CollegeMatchResults, { type MatchRow } from '../components/CollegeMatchResults';
 import { MEDICAL_COURSES, maxScoreForCourse, INDIAN_STATES, COUNSELLING_ROUNDS } from '../lib/courses';
+
+export interface ScholarshipMatch {
+  name: string;
+  provider: string;
+  match_reason: string;
+  estimated_amount: string | null;
+  official_portal: string;
+  source_id?: string;
+}
 
 const EXAMS = ['NEET UG', 'NEET PG', 'NEET MDS', 'INICET', 'NEET SS', 'DNB PDCET'];
 const CATEGORIES = ['General', 'OBC', 'EWS', 'SC', 'ST'];
@@ -55,6 +64,8 @@ export default function RankCalculator() {
   } | null>(null);
 
   const [matches, setMatches] = useState<MatchRow[]>([]);
+  const [scholarships, setScholarships] = useState<ScholarshipMatch[]>([]);
+  const [activeTab, setActiveTab] = useState<'colleges' | 'scholarships'>('colleges');
   const [summary, setSummary] = useState<{
     safe_count: number;
     moderate_count: number;
@@ -73,6 +84,7 @@ export default function RankCalculator() {
     setError('');
     setResult(null);
     setMatches([]);
+    setScholarships([]);
     setSummary(null);
 
     let targetRank = 0;
@@ -129,6 +141,7 @@ export default function RankCalculator() {
       const mData = await mRes.json();
       if (mRes.ok) {
         setMatches(mData.matches || []);
+        setScholarships(mData.scholarships || []);
         setSummary(mData.summary || null);
         setMatchNote(mData.note || '');
       }
@@ -449,20 +462,40 @@ export default function RankCalculator() {
           </div>
         )}
 
-        {/* Matched Colleges List */}
-        {matches.length > 0 && (
+        {/* Matched Colleges & Eligible Scholarships Section */}
+        {(matches.length > 0 || scholarships.length > 0) && (
           <div className="space-y-6">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <h2 className="font-display text-2xl md:text-3xl font-black">
-                  Recommended College Matches
-                </h2>
-                <p className="text-sm text-white/55 font-medium mt-1">
-                  Categorized into Safe (high admission chance), Moderate (competitive), and Reach picks.
-                </p>
+            {/* Tab selection */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('colleges')}
+                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                    activeTab === 'colleges'
+                      ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25'
+                      : 'bg-white/5 text-white/60 hover:text-white border border-white/10'
+                  }`}
+                >
+                  🏥 Matched Colleges ({matches.length})
+                </button>
+                {scholarships.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('scholarships')}
+                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5 ${
+                      activeTab === 'scholarships'
+                        ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/25'
+                        : 'bg-white/5 text-emerald-400 hover:text-emerald-300 border border-emerald-500/20'
+                    }`}
+                  >
+                    <GraduationCap className="w-4 h-4" /> Eligible Scholarships ({scholarships.length})
+                  </button>
+                )}
               </div>
+
               <div className="flex items-center gap-1.5 text-xs text-white/50 font-bold">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Live Cutoff Data
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Grounded in Official Data
               </div>
             </div>
 
@@ -478,20 +511,76 @@ export default function RankCalculator() {
               </div>
             )}
 
-            <CollegeMatchResults
-              matches={matches}
-              summary={summary || undefined}
-              note={matchNote}
-              dark
-              rank={
-                mode === 'rank'
-                  ? Number(rank)
-                  : result
-                  ? Math.round((result.predicted_rank_min + result.predicted_rank_max) / 2)
-                  : undefined
-              }
-              category={category}
-            />
+            {/* Colleges Tab Content */}
+            {activeTab === 'colleges' && matches.length > 0 && (
+              <CollegeMatchResults
+                matches={matches}
+                summary={summary || undefined}
+                note={matchNote}
+                dark
+                rank={
+                  mode === 'rank'
+                    ? Number(rank)
+                    : result
+                    ? Math.round((result.predicted_rank_min + result.predicted_rank_max) / 2)
+                    : undefined
+                }
+                category={category}
+              />
+            )}
+
+            {/* Scholarships Tab Content */}
+            {activeTab === 'scholarships' && (
+              <div className="space-y-4">
+                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/25">
+                  <p className="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-1">
+                    🎯 Scholarships Matched For Your Profile
+                  </p>
+                  <p className="text-xs text-white/80 leading-relaxed">
+                    Based on your candidate category (<strong className="text-emerald-300">{category}</strong>)
+                    {state !== 'All India (AIQ)' && <> and domicile state (<strong className="text-emerald-300">{state}</strong>)</>}, you are eligible to apply for the following government and merit financial assistance schemes:
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {scholarships.map((sch, i) => (
+                    <div
+                      key={i}
+                      className="p-5 rounded-2xl bg-[#141822] border border-white/10 hover:border-emerald-500/40 transition-all flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h4 className="font-bold text-base text-white leading-snug">{sch.name}</h4>
+                          {sch.estimated_amount && (
+                            <span className="text-xs font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 rounded-full shrink-0">
+                              {sch.estimated_amount}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs font-semibold text-white/50 mb-3">{sch.provider}</p>
+                        <p className="text-xs text-white/70 leading-relaxed bg-white/5 p-3 rounded-xl border border-white/5">
+                          {sch.match_reason}
+                        </p>
+                      </div>
+
+                      {sch.official_portal && (
+                        <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
+                          <span className="text-[11px] text-white/40 font-medium">Official Portal</span>
+                          <a
+                            href={sch.official_portal}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300 underline"
+                          >
+                            Apply Online <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

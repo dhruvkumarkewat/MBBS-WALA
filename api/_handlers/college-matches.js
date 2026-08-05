@@ -181,6 +181,66 @@ export default async function handler(req, res) {
       recommended: pick.length,
     };
 
+    // Fetch and filter eligible scholarships for this candidate profile
+    const { data: scholarships } = await supabase
+      .from('scholarships')
+      .select('*')
+      .eq('is_active', true);
+
+    const catNorm = (category || 'General').toUpperCase();
+    const matchedScholarships = (scholarships || []).filter((s) => {
+      if (s.category_scope && s.category_scope.length > 0) {
+        const matchesCat = s.category_scope.some((cs) => {
+          const csUpper = cs.toUpperCase();
+          if (catNorm.includes('OBC') && csUpper.includes('OBC')) return true;
+          if (catNorm.includes('SC') && csUpper.includes('SC')) return true;
+          if (catNorm.includes('ST') && csUpper.includes('ST')) return true;
+          if (catNorm.includes('EWS') && csUpper.includes('EWS')) return true;
+          if (catNorm.includes('PWD') && csUpper.includes('PWD')) return true;
+          if ((catNorm === 'GENERAL' || catNorm === 'GEN') && (csUpper === 'GENERAL' || csUpper === 'GEN')) return true;
+          return csUpper === catNorm;
+        });
+        if (!matchesCat) return false;
+      }
+      if (s.state_scope && s.state_scope.length > 0 && state && state !== 'All India (AIQ)') {
+        const stateNorm = state.toLowerCase();
+        const matchesState = s.state_scope.some(
+          (st) => stateNorm.includes(st.toLowerCase()) || st.toLowerCase().includes(stateNorm)
+        );
+        if (!matchesState) return false;
+      }
+      if (s.course_scope && s.course_scope.length > 0) {
+        const matchesCourse = s.course_scope.some((c) => c.toUpperCase() === course.toUpperCase());
+        if (!matchesCourse) return false;
+      }
+      return true;
+    }).map((s) => {
+      let reason = `Eligible based on ${category || 'General'} category`;
+      if (s.eligibility?.family_income_limit) {
+        reason += ` & annual income limit of ₹${Number(s.eligibility.family_income_limit).toLocaleString('en-IN')}`;
+      }
+      if (s.eligibility?.min_percentile) {
+        reason += ` for top rankers (${s.eligibility.min_percentile}+ percentile)`;
+      }
+      if (s.eligibility?.gender === 'female') {
+        reason += ` (Special initiative for female medical students)`;
+      }
+      if (s.eligibility?.minority) {
+        reason = `Minority welfare scheme (Income limit: ₹${Number(s.eligibility.family_income_limit || 250000).toLocaleString('en-IN')})`;
+      }
+      if (s.eligibility?.pwd) {
+        reason = `Specially-abled students welfare scheme (${s.eligibility.disability_percentage || 40}%+ PwD)`;
+      }
+      return {
+        name: s.name,
+        provider: s.provider,
+        match_reason: s.description ? `${s.description} — ${reason}` : reason,
+        estimated_amount: s.amount_description || (s.amount_max ? `Up to ₹${s.amount_max.toLocaleString('en-IN')}/year` : null),
+        official_portal: s.official_portal,
+        source_id: s.source_id || '',
+      };
+    });
+
     return res.status(200).json({
       rank,
       category,
@@ -190,6 +250,7 @@ export default async function handler(req, res) {
       supported_courses: MEDICAL_COURSES,
       summary,
       matches: pick,
+      scholarships: matchedScholarships,
       buckets: {
         safe: safe.slice(0, 8),
         moderate: moderate.slice(0, 8),

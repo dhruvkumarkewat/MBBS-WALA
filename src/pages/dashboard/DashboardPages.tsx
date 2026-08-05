@@ -328,6 +328,11 @@ export function PredictorPage() {
             round?: string;
             aiq_rank: number; total_seats: number | null;
           }>;
+          scholarships?: Array<{
+            name: string; provider: string; match_reason: string;
+            estimated_amount: string | null; official_portal: string;
+            source_id?: string;
+          }>;
           summary: { safe_count: number; moderate_count: number; reach_count: number };
         }>('/api/college-matches', {
           method: 'POST',
@@ -369,7 +374,14 @@ export function PredictorPage() {
               source_ids: [],
             };
           }),
-          scholarships: [],
+          scholarships: (legacy.scholarships || []).map((s) => ({
+            name: s.name,
+            provider: s.provider,
+            match_reason: s.match_reason,
+            estimated_amount: s.estimated_amount,
+            official_portal: s.official_portal,
+            source_id: s.source_id || '',
+          })),
           disclaimers: ['Data from official counselling cutoffs.'],
           _provider_used: 'legacy-fallback',
         });
