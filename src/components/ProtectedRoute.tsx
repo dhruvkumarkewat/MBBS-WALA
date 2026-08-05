@@ -10,7 +10,7 @@ export default function ProtectedRoute({
   children,
   checkOnboarding = true,
 }: ProtectedRouteProps) {
-  const { user, loading, profileLoading, isProfileComplete } = useAuth();
+  const { user, loading, profileLoading, isProfileComplete, isStaff } = useAuth();
   const location = useLocation();
 
   // Block with loading spinner ONLY if we don't yet know the profile status.
@@ -31,6 +31,11 @@ export default function ProtectedRoute({
 
   if (!user) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
+  // If staff tries to visit /onboarding, send to /admin
+  if (location.pathname === '/onboarding' && isStaff) {
+    return <Navigate to="/admin" replace />;
   }
 
   // If user completed profile and tries to visit /onboarding, send to /dashboard

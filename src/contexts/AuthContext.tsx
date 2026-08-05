@@ -82,6 +82,8 @@ interface AuthContextValue {
   profile: UserProfile | null;
   profileLoading: boolean;
   isProfileComplete: boolean;
+  isStaff: boolean;
+  staffRole: string | null;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
   refreshProfile: () => Promise<UserProfile | null>;
@@ -95,6 +97,8 @@ const AuthContext = createContext<AuthContextValue>({
   profile: null,
   profileLoading: true,
   isProfileComplete: false,
+  isStaff: false,
+  staffRole: null,
   signOut: async () => {},
   refreshSession: async () => {},
   refreshProfile: async () => null,
@@ -107,7 +111,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [isStaff, setIsStaff] = useState<boolean>(false);
+  const [staffRole, setStaffRole] = useState<string | null>(null);
   const activeFetchRef = useRef<Promise<UserProfile | null> | null>(null);
+
+  const checkStaffRole = useCallback(async (uid: string) => {
+    try {
+      const { data } = await supabase
+        .from('staff_profiles')
+        .select('role, is_active')
+        .eq('user_id', uid)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (data?.role) {
+        setIsStaff(true);
+        setStaffRole(data.role);
+        return { isStaff: true, role: data.role };
+      }
+    } catch {
+      // staff check failed
+    }
+    setIsStaff(false);
+    setStaffRole(null);
+    return { isStaff: false, role: null };
+  }, []);
 
   const fetchProfile = useCallback(async (currUser: User | null, skipLoadingState = false): Promise<UserProfile | null> => {
     if (!currUser) {
@@ -208,8 +235,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(u);
       setLoading(false);
       if (u) {
+        checkStaffRole(u.id);
         fetchProfile(u);
       } else {
+        setIsStaff(false);
+        setStaffRole(null);
         setProfile(null);
         setProfileLoading(false);
       }
@@ -222,13 +252,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const u = s?.user ?? null;
       setUser(u);
       setLoading(false);
-      // Skip profile re-fetch on token refresh or user metadata update
-      // USER_UPDATED fires when supabase.auth.updateUser() is called — if we re-fetch
-      // at that point, the backend may return stale data and overwrite our local state.
       if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') return;
       if (u) {
-        fetchProfile(u, true); // true = skipLoadingState so the dashboard doesn't unmount
+        checkStaffRole(u.id);
+        fetchProfile(u, true);
       } else {
+        setIsStaff(false);
+        setStaffRole(null);
         setProfile(null);
         setProfileLoading(false);
       }
@@ -238,11 +268,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, [fetchProfile, checkStaffRole]);
 
   const isProfileComplete = useMemo(() => {
+    if (isStaff) return true; // Staff/Admin/Counsellor accounts are exempt from student onboarding
     return checkProfileCompleteness(profile);
-  }, [profile]);
+  }, [profile, isStaff]);
 
   const value = useMemo(
     () => ({
@@ -252,15 +283,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile,
       profileLoading,
       isProfileComplete,
+      isStaff,
+      staffRole,
       refreshSession,
       refreshProfile,
       setProfileState,
       signOut: async () => {
         setProfile(null);
+        setIsStaff(false);
+        setStaffRole(null);
         await supabase.auth.signOut();
       },
     }),
-    [user, session, loading, profile, profileLoading, isProfileComplete, refreshSession, refreshProfile, setProfileState]
+    [user, session, loading, profile, profileLoading, isProfileComplete, isStaff, staffRole, refreshSession, refreshProfile, setProfileState]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -126,6 +126,9 @@ export default function App() {
           <Route path="about-us" element={<L><About /></L>} />
           <Route path="careers" element={<L><Careers /></L>} />
           <Route path="login" element={<L><Login /></L>} />
+          <Route path="admin/login" element={<L><Login defaultPortal="admin" /></L>} />
+          <Route path="counselor/login" element={<L><Login defaultPortal="admin" /></L>} />
+          <Route path="staff/login" element={<L><Login defaultPortal="admin" /></L>} />
           <Route path="colleges" element={<L><Colleges /></L>} />
           <Route path="cutoffs" element={<L><Cutoffs /></L>} />
           <Route path="seat-matrix" element={<L><SeatMatrix /></L>} />

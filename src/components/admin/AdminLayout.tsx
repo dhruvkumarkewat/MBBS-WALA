@@ -113,7 +113,7 @@ export default function AdminLayout() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      navigate('/login', { replace: true, state: { from: '/admin' } });
+      navigate('/admin/login', { replace: true, state: { from: '/admin' } });
       return;
     }
 
@@ -195,7 +195,7 @@ export default function AdminLayout() {
       /* ignore */
     }
     await signOut();
-    navigate('/login');
+    navigate('/admin/login');
   };
 
   if (authLoading || loading) {
@@ -233,11 +233,19 @@ export default function AdminLayout() {
             <div className="flex gap-3 justify-center flex-wrap">
               <button
                 type="button"
-                onClick={() => signOut().then(() => navigate('/login'))}
+                onClick={() => signOut().then(() => navigate('/admin/login'))}
                 className="px-5 py-2.5 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 font-bold text-sm text-white shadow-lg shadow-orange-500/30"
               >
-                Switch account
+                Sign in with Staff Account
               </button>
+              <Link
+                to="/dashboard"
+                className={`px-5 py-2.5 rounded-full border font-bold text-sm ${
+                  dark ? 'border-white/20 text-white' : 'border-slate-200 text-slate-700'
+                }`}
+              >
+                Student Dashboard
+              </Link>
               <Link
                 to="/"
                 className={`px-5 py-2.5 rounded-full border font-bold text-sm ${

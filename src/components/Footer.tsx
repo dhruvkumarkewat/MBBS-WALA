@@ -17,7 +17,8 @@ const company = [
   { name: 'Contact', path: '/contact' },
   { name: 'Testimonials', path: '/testimonials' },
   { name: 'Careers', path: '/careers' },
-  { name: 'Login', path: '/login' },
+  { name: 'Student Login', path: '/login' },
+  { name: 'Staff & Counsellor', path: '/admin/login' },
 ];
 
 const legal = [
