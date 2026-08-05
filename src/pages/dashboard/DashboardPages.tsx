@@ -525,7 +525,7 @@ export function PredictorPage() {
   }, [colleges]);
 
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <PageHead
         title="AI College Predictor"
         sub="Grounded in real MCC/state counselling data — AI explains, never invents"
