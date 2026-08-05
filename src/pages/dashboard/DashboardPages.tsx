@@ -385,7 +385,7 @@ export function PredictorPage() {
   // ── Persistence ──
   useEffect(() => {
     if (profile?.id) {
-      const saved = localStorage.getItem(`mbbswala_prediction_${profile.id}`);
+      const saved = localStorage.getItem(`mbbswala_prediction_v2_${profile.id}`);
       if (saved) {
         try {
           setAiResponse(JSON.parse(saved));
@@ -398,14 +398,14 @@ export function PredictorPage() {
 
   useEffect(() => {
     if (profile?.id && aiResponse) {
-      localStorage.setItem(`mbbswala_prediction_${profile.id}`, JSON.stringify(aiResponse));
+      localStorage.setItem(`mbbswala_prediction_v2_${profile.id}`, JSON.stringify(aiResponse));
     }
   }, [aiResponse, profile?.id]);
 
   const handleRecalculate = () => {
     setAiResponse(null);
     if (profile?.id) {
-      localStorage.removeItem(`mbbswala_prediction_${profile.id}`);
+      localStorage.removeItem(`mbbswala_prediction_v2_${profile.id}`);
     }
   };
 
