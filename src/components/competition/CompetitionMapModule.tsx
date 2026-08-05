@@ -43,7 +43,7 @@ export default function CompetitionMapModule({ dark, embedded }: Props) {
     }
     return {
       ...defaultCompetitionFilters,
-      rank: profile?.rank || profile?.neet_rank || '',
+      rank: profile?.neet_rank?.toString() || '',
       category: profile?.category || 'All',
       state: profile?.domicile_state || 'All',
       fees: budgetFee
@@ -56,7 +56,7 @@ export default function CompetitionMapModule({ dark, embedded }: Props) {
   useEffect(() => {
     setFilters(prev => ({
       ...prev,
-      rank: prev.rank || profile?.rank || profile?.neet_rank || '',
+      rank: prev.rank || profile?.neet_rank?.toString() || '',
       category: prev.category === 'All' ? (profile?.category || 'All') : prev.category,
       state: prev.state === 'All' ? (profile?.domicile_state || 'All') : prev.state,
     }));
