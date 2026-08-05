@@ -15,30 +15,70 @@ export default async function handler(req, res) {
 
     const action = req.query?.action || (req.body && req.body.action) || '';
 
-    // ── 1. GET: Fetch payment history and active subscription ────────────────
-    if (req.method === 'GET') {
+    // ── 1. GET or POST action=sync-subscription: Fetch payment history and verify subscription ──
+    if (req.method === 'GET' || action === 'sync-subscription' || action === 'restore') {
       const { data: paymentsList } = await supabase
         .from('payments')
         .select('*')
-        .eq('user_id', user.id)
+        .or(`user_id.eq.${user.id},user_id.eq.${user.email || ''}`)
         .order('id', { ascending: false });
 
       const { data: subList } = await supabase
         .from('subscriptions')
         .select('*')
-        .eq('user_id', user.id)
+        .or(`user_id.eq.${user.id},user_id.eq.${user.email || ''}`)
         .order('id', { ascending: false });
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('is_premium, subscription_status, subscription_plan, payment_status, premium_start_date, premium_end_date')
+        .select('*')
         .eq('id', user.id)
         .maybeSingle();
 
+      const hasActiveSub = subList?.some(s => s.status === 'active' || s.status === 'completed' || !s.status);
+      const hasCapturedPay = paymentsList?.some(p => p.status === 'captured' || p.status === 'success' || p.status === 'paid' || p.status === 'complete');
+      
+      let isPrem = Boolean(profile?.is_premium) || 
+                   profile?.subscription_status === 'active' || 
+                   profile?.payment_status === 'Paid' || 
+                   Boolean(hasActiveSub) || 
+                   Boolean(hasCapturedPay) ||
+                   Boolean(user.user_metadata?.is_premium);
+
+      const activeSub = subList?.[0] || null;
+      const latestPay = paymentsList?.[0] || null;
+      const planName = profile?.subscription_plan && profile.subscription_plan !== 'Free Plan'
+        ? profile.subscription_plan
+        : (activeSub?.plan_name || latestPay?.meta?.plan_name || 'NEET Counselling Pro');
+
+      // Auto-heal profile if premium is verified from payments/subs but not marked in profiles
+      if (isPrem && (!profile?.is_premium || profile?.subscription_status !== 'active')) {
+        try {
+          await supabase
+            .from('profiles')
+            .update({
+              is_premium: true,
+              subscription_status: 'active',
+              subscription_plan: planName,
+              payment_status: 'Paid',
+            })
+            .eq('id', user.id);
+        } catch (pErr) {
+          console.warn('Auto-heal payment profile update warning:', pErr.message);
+        }
+      }
+
       return res.status(200).json({
-        profile: profile || {},
-        is_premium: Boolean(profile?.is_premium),
-        subscription: subList?.[0] || null,
+        profile: {
+          ...(profile || {}),
+          is_premium: isPrem,
+          subscription_status: isPrem ? 'active' : (profile?.subscription_status || 'free'),
+          subscription_plan: isPrem ? planName : 'Free Plan',
+        },
+        is_premium: isPrem,
+        subscription_status: isPrem ? 'active' : (profile?.subscription_status || 'free'),
+        subscription_plan: isPrem ? planName : 'Free Plan',
+        subscription: activeSub,
         subscriptions: subList || [],
         payments: paymentsList || [],
       });

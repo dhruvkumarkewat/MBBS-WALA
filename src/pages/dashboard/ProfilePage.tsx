@@ -25,6 +25,7 @@ import {
   Key,
   ExternalLink,
   ChevronRight,
+  RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -54,12 +55,33 @@ export function ProfilePage() {
 
   const [activeTab, setActiveTab] = useState<'personal' | 'academic' | 'preferences' | 'account'>('personal');
   const [loading, setLoading] = useState(true);
+  const [syncingPlan, setSyncingPlan] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [copiedRef, setCopiedRef] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [passwordMsg, setPasswordMsg] = useState('');
+
+  const handleSyncPurchases = async () => {
+    try {
+      setSyncingPlan(true);
+      const res = await apiJson<any>('/api/payment?action=sync-subscription', {
+        method: 'POST',
+      }, true);
+      await refetchPremium();
+      await loadProfile();
+      if (res?.is_premium) {
+        success('Plan Synchronized! 🎉', `Your ${res.subscription_plan || 'Premium'} plan is active.`);
+      } else {
+        success('Check Complete', 'No active subscription found. If you purchased offline or with a different email, please contact support.');
+      }
+    } catch (err: any) {
+      toastError('Sync Error', err.message || 'Could not verify purchases');
+    } finally {
+      setSyncingPlan(false);
+    }
+  };
 
   // Form State
   const [form, setForm] = useState({
@@ -367,6 +389,16 @@ export function ProfilePage() {
                     Free Plan
                   </span>
                 )}
+                <button
+                  type="button"
+                  onClick={handleSyncPurchases}
+                  disabled={syncingPlan}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-border/80 bg-background/50 hover:bg-muted text-[11px] font-medium text-muted-foreground hover:text-foreground transition-all"
+                  title="Check database and sync premium status"
+                >
+                  <RefreshCw className={`w-3 h-3 ${syncingPlan ? 'animate-spin text-primary' : ''}`} />
+                  <span>{syncingPlan ? 'Syncing...' : 'Sync Purchases'}</span>
+                </button>
               </div>
               <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">{form.email}</p>
               <p className="text-xs text-primary font-bold mt-1">
@@ -836,13 +868,24 @@ export function ProfilePage() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => navigate('/dashboard/subscription')}
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:opacity-90 transition-all"
-                >
-                  {isPremium ? 'Manage Subscription' : 'Upgrade to Premium'}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSyncPurchases}
+                    disabled={syncingPlan}
+                    className="px-3 py-2 rounded-xl text-xs font-semibold border border-border bg-card hover:bg-muted text-foreground transition-all flex items-center gap-1.5"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${syncingPlan ? 'animate-spin text-primary' : ''}`} />
+                    <span>{syncingPlan ? 'Checking...' : 'Sync Purchases'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/dashboard/subscription')}
+                    className="px-4 py-2 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:opacity-90 transition-all"
+                  >
+                    {isPremium ? 'Manage Subscription' : 'Upgrade to Premium'}
+                  </button>
+                </div>
               </div>
 
               {isPremium && premiumEndDate && (

@@ -30,6 +30,7 @@ const company = [
   { name: 'About us', path: '/about-us' },
   { name: 'Testimonials', path: '/testimonials' },
   { name: 'Careers', path: '/careers' },
+  { name: 'Staff & Counsellor Login', path: '/admin/login' },
 ];
 
 type MenuKey = 'tools' | 'counselling' | 'company' | null;

@@ -130,6 +130,105 @@ export default async function handler(req, res) {
           .eq('id', user.id);
       }
 
+      // Comprehensive Premium Verification across all related tables
+      let isPremium = Boolean(data?.is_premium) || 
+                      data?.subscription_status === 'active' || 
+                      data?.payment_status === 'Paid' || 
+                      Boolean(user.user_metadata?.is_premium);
+      let planName = data?.subscription_plan && data.subscription_plan !== 'Free Plan' ? data.subscription_plan : 'NEET Counselling Pro';
+      let subStatus = data?.subscription_status === 'active' ? 'active' : (isPremium ? 'active' : 'free');
+      let endDate = data?.premium_end_date || null;
+
+      if (!isPremium) {
+        // 1. Check subscriptions table
+        try {
+          const { data: subData } = await supabase
+            .from('subscriptions')
+            .select('*')
+            .or(`user_id.eq.${user.id},user_id.eq.${user.email || ''}`)
+            .order('id', { ascending: false })
+            .limit(1);
+
+          if (subData && subData.length > 0) {
+            const sub = subData[0];
+            if (sub.status === 'active' || sub.status === 'completed' || !sub.status) {
+              isPremium = true;
+              subStatus = 'active';
+              planName = sub.plan_name || sub.plan_slug || planName;
+              endDate = sub.end_date || endDate;
+            }
+          }
+        } catch (subErr) {
+          console.warn('Subscriptions check error:', subErr.message);
+        }
+
+        // 2. Check payments table
+        if (!isPremium) {
+          try {
+            const { data: payData } = await supabase
+              .from('payments')
+              .select('*')
+              .or(`user_id.eq.${user.id},user_id.eq.${user.email || ''}`)
+              .in('status', ['captured', 'success', 'paid', 'complete'])
+              .order('id', { ascending: false })
+              .limit(1);
+
+            if (payData && payData.length > 0) {
+              const pay = payData[0];
+              isPremium = true;
+              subStatus = 'active';
+              planName = pay.meta?.plan_name || pay.plan_slug || planName;
+            }
+          } catch (payErr) {
+            console.warn('Payments check error:', payErr.message);
+          }
+        }
+
+        // 3. Check student_counselling table
+        if (!isPremium) {
+          try {
+            const { data: scData } = await supabase
+              .from('student_counselling')
+              .select('*')
+              .or(`user_id.eq.${user.id},email.eq.${user.email || ''}`)
+              .eq('payment_status', 'Paid')
+              .limit(1);
+
+            if (scData && scData.length > 0) {
+              isPremium = true;
+              subStatus = 'active';
+              planName = scData[0].purchased_course || planName;
+            }
+          } catch (scErr) {
+            console.warn('Student counselling payment check error:', scErr.message);
+          }
+        }
+
+        // Auto-heal and sync profile row if premium found in any linked table
+        if (isPremium) {
+          data.is_premium = true;
+          data.subscription_status = 'active';
+          data.subscription_plan = planName;
+          data.payment_status = 'Paid';
+          data.premium_end_date = endDate;
+          
+          try {
+            await supabase
+              .from('profiles')
+              .update({
+                is_premium: true,
+                subscription_status: 'active',
+                subscription_plan: planName,
+                payment_status: 'Paid',
+                premium_end_date: endDate,
+              })
+              .eq('id', user.id);
+          } catch (healErr) {
+            console.warn('Profile auto-heal update warning:', healErr.message);
+          }
+        }
+      }
+
       // Attach wallet summary & saved colleges count
       const savedCount = await supabase
         .from('saved_colleges')
@@ -149,6 +248,11 @@ export default async function handler(req, res) {
 
       return res.status(200).json({
         ...data,
+        is_premium: Boolean(isPremium),
+        subscription_status: isPremium ? 'active' : (data.subscription_status || 'free'),
+        subscription_plan: isPremium ? (data.subscription_plan || planName) : 'Free Plan',
+        payment_status: isPremium ? 'Paid' : (data.payment_status || 'Unpaid'),
+        premium_end_date: data.premium_end_date || endDate,
         full_name: data.full_name || data.name || user.user_metadata?.full_name || '',
         name: data.name || data.full_name || '',
         email: data.email || user.email || '',

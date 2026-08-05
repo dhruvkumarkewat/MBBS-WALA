@@ -41,25 +41,57 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      // 1. Check Profile endpoint
       const res = await apiJson<{
         is_premium?: boolean;
         subscription_status?: string;
         subscription_plan?: string;
         premium_end_date?: string | null;
+        payment_status?: string;
       }>('/api/profile', {}, true);
 
-      const premium = Boolean(res?.is_premium);
-      const subStatus = (res?.subscription_status as any) || (premium ? 'active' : 'free');
-      const subPlan = res?.subscription_plan || (premium ? 'Premium' : 'Free Plan');
+      let premium = Boolean(res?.is_premium) || 
+                    res?.subscription_status === 'active' || 
+                    res?.payment_status === 'Paid' ||
+                    Boolean(user.user_metadata?.is_premium);
+      let subStatus = (res?.subscription_status as any) || (premium ? 'active' : 'free');
+      let subPlan = res?.subscription_plan && res.subscription_plan !== 'Free Plan'
+        ? res.subscription_plan
+        : (premium ? 'NEET Counselling Pro' : 'Free Plan');
+      let subEndDate = res?.premium_end_date || null;
+
+      // 2. Secondary verification via Payment endpoint if still not recognized
+      if (!premium) {
+        try {
+          const payRes = await apiJson<{
+            is_premium?: boolean;
+            subscription_status?: string;
+            subscription_plan?: string;
+            subscription?: { end_date?: string; plan_name?: string };
+            payments?: any[];
+          }>('/api/payment', {}, true);
+
+          if (payRes?.is_premium || payRes?.payments?.some((p: any) => p.status === 'captured' || p.status === 'success' || p.status === 'paid')) {
+            premium = true;
+            subStatus = 'active';
+            subPlan = payRes.subscription_plan || payRes.subscription?.plan_name || 'NEET Counselling Pro';
+            subEndDate = payRes.subscription?.end_date || subEndDate;
+          }
+        } catch (pErr) {
+          console.warn('Premium verification secondary check warning:', pErr);
+        }
+      }
 
       setIsPremium(premium);
       setStatus(subStatus);
       setPlan(subPlan);
-      setEndDate(res?.premium_end_date || null);
+      setEndDate(subEndDate);
     } catch {
-      // Fallback
-      setIsPremium(false);
-      setStatus('free');
+      // Fallback to user metadata check
+      const metaPrem = Boolean(user.user_metadata?.is_premium);
+      setIsPremium(metaPrem);
+      setStatus(metaPrem ? 'active' : 'free');
+      setPlan(metaPrem ? 'NEET Counselling Pro' : 'Free Plan');
     } finally {
       setLoading(false);
     }

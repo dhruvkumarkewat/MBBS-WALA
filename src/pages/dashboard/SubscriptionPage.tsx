@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   ArrowRight,
   HelpCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -43,11 +44,12 @@ const PLANS: Plan[] = [
     features: [
       'Unlimited College Predictor (1000+ Colleges)',
       'MCC AIQ + All 28 State Quota Round-wise Cutoffs',
-      'Seat Matrix & Vacancy Matrix (2020-2024)',
-      'AI Smart Choice Filling Order Generator',
-      'Permanent Referral Code (Earn ₹500/referral)',
-      'Document Checklist & Bond / Stipend Directory',
-      'Priority WhatsApp Support by Counsellors',
+      'AI Smart Choice Preference Order Sequence',
+      'Category & Domicile Matrix Analyzer',
+      '24/7 AI Medical Counselling Chatbot',
+      'Closing Rank Trends (2020-2024)',
+      'Official Fee Structure & Bond Penalty Breakdown',
+      'Permanent ₹500 Referral Rewards per friend',
     ],
   },
   {
@@ -55,16 +57,16 @@ const PLANS: Plan[] = [
     name: 'NEET PG / INI-CET Pro',
     price: 6999,
     originalPrice: 11999,
-    badge: 'Specialist',
+    badge: 'Specialized',
     popular: false,
-    description: 'Post-graduate specialty predictor with clinical / non-clinical seat matrices & closing ranks.',
+    description: 'Advanced clinical MD/MS and DNB hospital analytics and stipend trends.',
     features: [
-      'NEET PG & INI-CET Specialty Predictor',
-      'Branch-wise Closing Ranks (MD/MS/DNB/Diploma)',
-      'Hospital Bed Strength & Patient Flow Insights',
-      'Stipend, Bond, and Penalty Analyzer by State',
-      'Round 1 to Stray Vacancy Cutoff Trends',
-      '1-on-1 PG Counsellor Session Scheduling',
+      'All Clinical & Non-Clinical Speciality Predictors',
+      'DNB & Private Medical College Cutoffs',
+      'State Quota & In-service Quota Matrices',
+      'Bond Conditions, Stipend & Bed Strength Audits',
+      'AI Choice Filling Master Sequence',
+      'Priority Mentor Helpline',
     ],
   },
   {
@@ -72,11 +74,11 @@ const PLANS: Plan[] = [
     name: 'Ultimate Medical Master Bundle',
     price: 9999,
     originalPrice: 16999,
-    badge: 'All-Inclusive',
+    badge: 'Best Value',
     popular: false,
-    description: 'Full access for UG & PG + dedicated personal counsellor allocation for end-to-end guidance.',
+    description: 'Everything in UG & PG, plus direct 1-on-1 human counsellor phone support.',
     features: [
-      'Everything in NEET UG + NEET PG Pro',
+      'Everything in NEET UG + PG Plans included',
       'Dedicated Senior Medical Counsellor Assigned',
       'Live Choice Locking Assistance on MCC/State Portal',
       'College Fee Structure & Hidden Fee Audit',
@@ -93,6 +95,7 @@ export function SubscriptionPage() {
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [upgradingPlan, setUpgradingPlan] = useState<string | null>(null);
   const [payments, setPayments] = useState<any[]>([]);
   const [activeSub, setActiveSub] = useState<any>(null);
@@ -112,6 +115,27 @@ export function SubscriptionPage() {
       }
     } catch (err: any) {
       setReferralMsg({ type: 'error', text: err.message || 'Error validating code.' });
+    }
+  };
+
+  const handleSyncPurchases = async () => {
+    try {
+      setSyncing(true);
+      setError('');
+      const data = await apiJson<any>('/api/payment?action=sync-subscription', {
+        method: 'POST',
+      }, true);
+      await refetchPremium();
+      await loadData();
+      if (data?.is_premium) {
+        success('Plan Restored! 🎉', `Your ${data.subscription_plan || 'Premium'} plan is active.`);
+      } else {
+        success('Verification Done', 'If you purchased under a different email or offline, please contact support with your payment receipt.');
+      }
+    } catch (err: any) {
+      toastError('Sync Failed', err.message || 'Could not verify purchases.');
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -257,6 +281,18 @@ export function SubscriptionPage() {
         <p className="text-sm text-muted-foreground">
           Unlock 1000+ AI College Predictions, MCC & State Round-wise Cutoffs, Seat Matrices, and Smart Choice Filling.
         </p>
+        <div className="pt-1 flex items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={handleSyncPurchases}
+            disabled={syncing}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-border/80 bg-card hover:bg-muted text-xs font-semibold text-foreground transition-all shadow-sm"
+            title="Scan database to detect and link past purchases"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin text-primary' : 'text-muted-foreground'}`} />
+            <span>{syncing ? 'Checking Database...' : 'Restore / Sync Purchases'}</span>
+          </button>
+        </div>
       </div>
 
       {error && (
