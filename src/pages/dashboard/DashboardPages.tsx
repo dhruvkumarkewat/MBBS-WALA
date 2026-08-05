@@ -71,6 +71,7 @@ function ErrorBox({ message }: { message: string }) {
 export function AiAssistantPage() {
   const s = useShell();
   const { isPremium } = usePremium();
+  const { user } = useAuth();
   type ChatMsg = { role: 'assistant' | 'user'; text: string };
   const [messages, setMessages] = useState<ChatMsg[]>([
     {
@@ -107,7 +108,8 @@ export function AiAssistantPage() {
       const response = await apiJson<{ reply: string }>('/api/ai-chat', {
         method: 'POST',
         body: JSON.stringify({
-          messages: [...messages, { role: 'user', text: q }]
+          messages: [...messages, { role: 'user', text: q }],
+          userContext: user
         })
       });
       

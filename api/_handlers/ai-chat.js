@@ -26,7 +26,7 @@ export default async function (req, res) {
   try {
     let body = '';
     for await (const chunk of req) body += chunk.toString();
-    const { messages } = JSON.parse(body);
+    const { messages, userContext } = JSON.parse(body);
 
     if (!messages || !Array.isArray(messages)) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -38,6 +38,19 @@ export default async function (req, res) {
       throw new Error('Missing GEMINI_API_KEY environment variable');
     }
 
+    // Prepare contextual system prompt
+    let contextualPrompt = SYSTEM_PROMPT;
+    if (userContext) {
+      contextualPrompt += `\n\n--- STUDENT PROFILE CONTEXT ---\n`;
+      contextualPrompt += `Name: ${userContext.name || userContext.full_name || 'Unknown'}\n`;
+      contextualPrompt += `NEET Rank (AIR): ${userContext.neet_rank || 'Not provided'}\n`;
+      contextualPrompt += `NEET Score: ${userContext.neet_score || 'Not provided'}\n`;
+      contextualPrompt += `Category: ${userContext.category || 'General'}\n`;
+      contextualPrompt += `Domicile State: ${userContext.domicile_state || 'Not provided'}\n`;
+      contextualPrompt += `Preferred Course: ${userContext.preferred_course || 'MBBS'}\n`;
+      contextualPrompt += `Use this student profile context to provide personalized advice. Do NOT ask them for their rank or category if it is provided above!`;
+    }
+
     // Format messages for Gemini
     // Gemini expects role to be 'user' or 'model'
     const formattedMessages = messages.map(msg => ({
@@ -46,7 +59,7 @@ export default async function (req, res) {
     }));
 
     const payload = {
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      systemInstruction: { parts: [{ text: contextualPrompt }] },
       contents: formattedMessages,
       generationConfig: {
         temperature: 0.5,
