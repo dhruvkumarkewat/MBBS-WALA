@@ -89,14 +89,16 @@ const DEEMED_KEYWORDS = [
 
   // Map colleges into structured closing ranks
   const collegeCutoffs = (allColleges || []).map((col) => {
+    if (!col.name || col.name === '-' || col.name.length < 3) return null;
+    
     const baseClosing = getCategoryClosing(col.cutoff, category);
     if (!baseClosing) return null;
     const closing = Math.round(baseClosing * roundMultiplier);
 
     const colType = (col.type || '').toLowerCase();
     const colName = (col.name || '').toLowerCase();
-    const isDeemed = DEEMED_KEYWORDS.some((k) => colName.includes(k)) || colType.includes('deemed');
-    const isGovt = !isDeemed && (colType.includes('govt') || colType.includes('central') || colName.includes('aiims') || colName.includes('jipmer') || colName.includes('government') || colName.includes('gmc') || colName.includes('grant') || colName.includes('king george') || colName.includes('lady hardinge') || colName.includes('vmmc') || colName.includes('safdarjung') || colName.includes('maulana azad'));
+    const isDeemed = colType.includes('deemed') || ['patil', 'manipal', 'jss', 'srm', 'saveetha', 'bharati'].some((k) => colName.includes(k));
+    const isGovt = !isDeemed && (colType.includes('government') || colType.includes('govt') || colType.includes('central') || colName.includes('aiims') || colName.includes('jipmer') || colName.includes('medical college,') || colName.includes('government'));
     const stateMatch = Boolean(domicileState && (col.state || '').toLowerCase().includes(domicileState.toLowerCase()));
 
     let quotaCode = 'AIQ';
@@ -127,7 +129,7 @@ const DEEMED_KEYWORDS = [
       category: category,
       round_name: selectedRound === 'All Rounds' || selectedRound === 'All' ? 'Round 1' : selectedRound,
       year: year,
-      course_name: examTrack === 'AYUSH' ? 'BAMS' : 'MBBS',
+      course_name: col.course || (examTrack === 'AYUSH' ? 'BAMS' : 'MBBS'),
       quota_code: quotaCode,
       fee_amount: feeVal,
       seats: col.seats || 100,
@@ -162,11 +164,16 @@ const DEEMED_KEYWORDS = [
   ];
 
   // Deduplicate and strictly enforce Quota & Domicile isolation
-  const seen = new Set();
+  const seenNames = new Set();
   const deduplicated = [];
   const onlyStateQuota = quotas.includes('State') && !quotas.includes('AIQ');
 
   for (const item of combined) {
+    if (!item.college_name || item.college_name === '-' || item.college_name.length < 3) continue;
+
+    const normalizedName = item.college_name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (seenNames.has(normalizedName)) continue;
+    
     // 1. STRICT QUOTA FILTER: If user specified quotas, NEVER include colleges of unselected quotas
     if (quotas.length > 0 && !quotas.includes(item.quota_code)) {
       continue;
@@ -178,15 +185,12 @@ const DEEMED_KEYWORDS = [
     }
 
     // 3. DOMICILE STATE FILTER: If only State Quota was selected, drop all colleges outside domicile state
-    if (onlyStateQuota && domicileState && !item._state_match) {
+    if (onlyStateQuota && !item._state_match) {
       continue;
     }
 
-    const key = `${(item.college_name || '').trim().toLowerCase()}_${item.category}_${item.quota_code}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      deduplicated.push(item);
-    }
+    seenNames.add(normalizedName);
+    deduplicated.push(item);
   }
 
   // Rank relevance scoring for candidate's rank: High, Moderate, Reach

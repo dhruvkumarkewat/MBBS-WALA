@@ -63,7 +63,8 @@ export default async function handler(req, res) {
     const category = body.category || 'General';
     const state = body.state || null;
     const round = body.round || 'Round 1';
-    const course = normalizeCourse(body.course) || 'MBBS';
+    const examTrack = body.exam_track || 'MBBS_BDS';
+    const course = normalizeCourse(body.course) || null;
     const limit = Math.min(40, Math.max(5, Number(body.limit) || 18));
 
     if (!rank || Number.isNaN(rank) || rank < 1) {
@@ -92,10 +93,24 @@ export default async function handler(req, res) {
     if (error) throw error;
 
     const validMatches = [];
-    (colleges || []).forEach(c => {
+    (colleges || []).forEach((c) => {
+      if (!c.name || c.name === '-' || c.name.length < 3) return;
+
       // If state quota is active, strictly exclude any non-matching state colleges
       if (isStateQuota && !(c.state || '').toLowerCase().includes(state.toLowerCase())) {
         return;
+      }
+
+      let quotaCode = isStateQuota ? 'State' : 'AIQ';
+      const colType = (c.type || c.college_type || '').toLowerCase();
+      const colName = c.name.toLowerCase();
+      const isDeemed = colType.includes('deemed') || ['patil', 'manipal', 'jss', 'srm', 'saveetha', 'bharati'].some(k => colName.includes(k));
+      const isGovt = colType.includes('government') || colType.includes('govt') || colType.includes('central') || colName.includes('aiims') || colName.includes('jipmer') || colName.includes('medical college,') || colName.includes('government');
+      
+      if (isDeemed) {
+        quotaCode = 'Deemed-Central';
+      } else if (!isGovt && !isStateQuota) {
+        quotaCode = 'Management';
       }
 
       const cutoffData = extractCutoffData(c.cutoff, category);
@@ -119,12 +134,15 @@ export default async function handler(req, res) {
         chance: chance.label,
         chance_score: chance.score,
         chance_tone: chance.tone,
-        best_path: isStateQuota ? 'State Quota (85%)' : 'AIQ',
+        best_path: quotaCode === 'Management' ? 'Management Quota' : quotaCode === 'Deemed-Central' ? 'Deemed / Central University' : (isStateQuota ? 'State Quota (85%)' : 'AIQ'),
+        quota: quotaCode,
+        course: c.course || 'MBBS',
+        fee: c.feeGovt ? c.feeGovt : c.feePvt ? c.feePvt : isGovt ? 50000 : 1400000,
         aiq_chance: chance.label,
         state_chance: isStateQuota ? chance.label : null,
         total_seats: c.seats,
         open_seats: c.seats,
-        college_kind: c.college_type,
+        college_kind: c.type || c.college_type,
         nirf: c.nirf || 999999 // Fallback for sorting
       });
     });
