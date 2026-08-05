@@ -166,7 +166,7 @@ export function AdminOverviewPage() {
   const isSuper = data.role === 'super_admin';
   const pipeline = data.pipeline || [];
   const maxPipe = Math.max(1, ...pipeline.map((p: any) => p.count));
-  const firstName = data.staff?.full_name?.split(' ')[0] || (isSuper ? 'Admin' : 'Counsellor');
+  const firstName = data.staff?.name?.split(' ')[0] || (isSuper ? 'Admin' : 'Counsellor');
 
   return (
     <div className="space-y-6">
@@ -328,7 +328,7 @@ export function AdminOverviewPage() {
                 className="flex items-center justify-between gap-3 p-3 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition"
               >
                 <div className="min-w-0">
-                  <p className="font-bold text-slate-900 truncate">{st.full_name}</p>
+                  <p className="font-bold text-slate-900 truncate">{st.name}</p>
                   <p className="text-xs text-slate-400 font-medium">
                     AIR {st.neet_rank?.toLocaleString() || '—'} · {st.state || '—'} · {st.purchased_counselling || st.purchased_course || 'No package'}
                   </p>
@@ -360,7 +360,7 @@ export function AdminOverviewPage() {
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-bold text-sm text-slate-900">{c.full_name}</p>
+                      <p className="font-bold text-sm text-slate-900">{c.name}</p>
                       <Badge tone={statusTone(c.presence || 'offline')}>{c.presence || 'offline'}</Badge>
                     </div>
                     <p className="text-[11px] text-slate-400 font-medium truncate">
@@ -447,7 +447,7 @@ export function AdminStaffPage() {
   };
 
   const remove = async (s: any) => {
-    if (!confirm(`Delete counsellor ${s.full_name}?`)) return;
+    if (!confirm(`Delete counsellor ${s.name}?`)) return;
     await apiJson('/api/admin-staff', { method: 'DELETE', body: JSON.stringify({ user_id: s.user_id }) }, true);
     load();
   };
@@ -524,7 +524,7 @@ export function AdminStaffPage() {
               />
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <h3 className="font-bold text-lg text-slate-900">{s.full_name}</h3>
+                  <h3 className="font-bold text-lg text-slate-900">{s.name}</h3>
                   <Badge tone={statusTone(s.presence || 'offline')}>{s.presence || 'offline'}</Badge>
                   <Badge tone={s.is_active ? 'green' : 'red'}>{s.is_active ? 'Active' : 'Inactive'}</Badge>
                 </div>
@@ -709,7 +709,7 @@ export function AdminStudentsPage() {
                           <option value="">Unassigned</option>
                           {staff.map((s) => (
                             <option key={s.user_id} value={s.user_id}>
-                              {s.full_name}
+                              {s.name}
                             </option>
                           ))}
                         </select>
@@ -928,7 +928,7 @@ export function AdminStudentDetailPage() {
             <option value="">Unassigned</option>
             {staff.map((s) => (
               <option key={s.user_id} value={s.user_id}>
-                {s.full_name}
+                {s.name}
               </option>
             ))}
           </select>
@@ -1369,7 +1369,7 @@ export function AdminPurchasesPage() {
                 <option value="">Assign later</option>
                 {staff.map((s) => (
                   <option key={s.user_id} value={s.user_id}>
-                    {s.full_name}
+                    {s.name}
                   </option>
                 ))}
               </select>
@@ -1434,7 +1434,7 @@ export function AdminPurchasesPage() {
                       <option value="">Unassigned</option>
                       {staff.map((s) => (
                         <option key={s.user_id} value={s.user_id}>
-                          {s.full_name}
+                          {s.name}
                         </option>
                       ))}
                     </select>
