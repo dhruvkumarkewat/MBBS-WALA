@@ -3,12 +3,13 @@ import { useInView } from 'framer-motion';
 
 interface Stat {
   id: number;
+  prefix?: string;
   suffix: string;
   label: string;
   numeric_value: number;
 }
 
-function CountUp({ to, suffix }: { to: number; suffix: string }) {
+function CountUp({ to, suffix, prefix = '' }: { to: number; suffix: string; prefix?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true });
   const [val, setVal] = useState(0);
@@ -29,7 +30,7 @@ function CountUp({ to, suffix }: { to: number; suffix: string }) {
 
   return (
     <span ref={ref}>
-      {val.toLocaleString()}
+      {prefix}{val.toLocaleString()}
       {suffix}
     </span>
   );
@@ -53,7 +54,26 @@ export default function Stats() {
       })
       .then((d) => {
         if (Array.isArray(d) && d.length > 0) {
-          setStats(d.slice(0, 4));
+          const parsed = d.slice(0, 4).map((s: any) => {
+            if (s.value && s.numeric_value === undefined) {
+               const strVal = String(s.value).replace(/,/g, '');
+               const numMatch = strVal.match(/[\d.]+/);
+               const num = numMatch ? parseFloat(numMatch[0]) : 0;
+               const numStr = numMatch ? numMatch[0] : '';
+               const prefix = String(s.value).substring(0, String(s.value).replace(/,/g, '').indexOf(numStr));
+               // getting the suffix is easier: remove prefix and number string
+               // wait, commas were removed for numMatch, so just extract from original using regex
+               const origMatch = String(s.value).match(/([\D]*)([\d.,]+)([\D]*)/);
+               return {
+                 ...s,
+                 numeric_value: origMatch ? parseFloat(origMatch[2].replace(/,/g, '')) : 0,
+                 prefix: origMatch ? origMatch[1] : '',
+                 suffix: origMatch ? origMatch[3] : String(s.value)
+               };
+            }
+            return s;
+          });
+          setStats(parsed);
         } else {
           setStats(FALLBACK_STATS);
         }
@@ -79,7 +99,7 @@ export default function Stats() {
         {stats.map((s) => (
           <div key={s.id} className="text-center">
             <p className="font-display text-3xl sm:text-4xl font-bold text-slate-900 leading-none mb-2">
-              <CountUp to={s.numeric_value} suffix={s.suffix} />
+              <CountUp to={s.numeric_value} prefix={s.prefix} suffix={s.suffix} />
             </p>
             <p className="text-xs sm:text-sm font-semibold text-slate-500 leading-snug">{s.label}</p>
           </div>

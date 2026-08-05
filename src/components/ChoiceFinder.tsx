@@ -173,7 +173,7 @@ export default function ChoiceFinder({ embedded = false }: { embedded?: boolean 
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Link
-                to={`/rank-calculator`}
+                to={`/login`}
                 className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-full border border-white/15 text-white font-bold text-sm hover:bg-white/5 w-full sm:w-auto"
               >
                 Full predictor
@@ -189,7 +189,7 @@ export default function ChoiceFinder({ embedded = false }: { embedded?: boolean 
 
           <p className="text-[11px] text-white/40 mt-4 font-medium">
             *Based on past cut-offs. Open{' '}
-            <Link to="/rank-calculator" className="text-[#F97316] font-semibold hover:underline">
+            <Link to="/login" className="text-[#F97316] font-semibold hover:underline">
               rank calculator
             </Link>{' '}
             for Safe / Moderate / Reach college lists across all medical courses.

@@ -1,10 +1,10 @@
 import supabase from './db-client.js';
 
 const FALLBACK_STATS = [
-  { id: '1', key: 'students_counselled', label: 'Students Counselled', value: '45,000+', icon: 'Users' },
-  { id: '2', key: 'success_rate', label: 'Allotment Success Rate', value: '99.4%', icon: 'Award' },
-  { id: '3', key: 'colleges_mapped', label: 'Medical Colleges Mapped', value: '1,000+', icon: 'Building' },
-  { id: '4', key: 'scholarships', label: 'Scholarships Unlocked', value: '₹12 Cr+', icon: 'BadgePercent' }
+  { id: 1, key: 'students_counselled', label: 'Students Counselled', numeric_value: 45000, suffix: '+', icon: 'Users' },
+  { id: 2, key: 'success_rate', label: 'Allotment Success Rate', numeric_value: 99, suffix: '%', icon: 'Award' },
+  { id: 3, key: 'colleges_mapped', label: 'Medical Colleges Mapped', numeric_value: 1000, suffix: '+', icon: 'Building' },
+  { id: 4, key: 'scholarships', label: 'Scholarships Unlocked', numeric_value: 12, prefix: '₹', suffix: ' Cr+', icon: 'BadgePercent' }
 ];
 
 export default async function handler(req, res) {
