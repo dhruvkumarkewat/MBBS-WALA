@@ -146,7 +146,7 @@ export interface CompetitionFilters {
 
 export const defaultCompetitionFilters: CompetitionFilters = {
   state: 'All',
-  course: 'MBBS',
+  course: 'All',
   category: 'All',
   quota: 'All',
   round: 'Round 1',
