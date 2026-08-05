@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { GitCompareArrows, Loader2, CheckCircle2, Lightbulb } from 'lucide-react';
+import { GitCompareArrows, Loader2, CheckCircle2, Lightbulb, ChevronDown } from 'lucide-react';
 
 import { MEDICAL_COURSES } from '../lib/courses';
 
@@ -26,6 +26,68 @@ type ComparePayload = {
   insights: string[];
 };
 
+function DarkSearchableSelect({ value, onChange, options, placeholder }: { value: string, onChange: (v: string) => void, options: { id: string, label: string }[], placeholder?: string }) {
+  const [inputValue, setInputValue] = useState('');
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      const selected = options.find(o => String(o.id) === value);
+      setInputValue(selected ? selected.label : '');
+    }
+  }, [value, options, open]);
+
+  const filtered = options.filter(o => o.label.toLowerCase().includes(inputValue.toLowerCase())).slice(0, 50);
+
+  return (
+    <div className="relative mt-1.5">
+      <div 
+        className="w-full border border-white/12 rounded-2xl px-3.5 py-3 font-semibold bg-[#171B24] text-white flex items-center justify-between focus-within:ring-2 focus-within:ring-[#F97316]/35 cursor-pointer"
+        onClick={() => setOpen(true)}
+      >
+        <input 
+          className="w-full bg-transparent outline-none truncate placeholder:text-white/30"
+          value={open ? inputValue : (options.find(o => String(o.id) === value)?.label || '')}
+          onChange={(e) => {
+            setInputValue(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => {
+            setOpen(true);
+            setInputValue('');
+          }}
+          placeholder={placeholder || 'Search college...'}
+        />
+        <ChevronDown className="w-4 h-4 opacity-50 shrink-0 text-white" />
+      </div>
+      
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute z-50 top-full left-0 right-0 mt-2 rounded-xl border border-white/10 bg-[#171B24] shadow-2xl overflow-hidden flex flex-col max-h-[300px]">
+            <div className="overflow-y-auto zn-scroll py-1">
+              {filtered.length === 0 && <div className="p-3 text-sm opacity-50 text-center text-white">No results</div>}
+              {filtered.map(o => (
+                <div 
+                  key={o.id} 
+                  className={`px-3.5 py-2.5 text-sm cursor-pointer hover:bg-white/10 text-white ${String(o.id) === value ? 'font-bold text-[#F97316]' : ''}`}
+                  onClick={() => {
+                    onChange(String(o.id));
+                    setInputValue(o.label);
+                    setOpen(false);
+                  }}
+                >
+                  {o.label}
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function Compare() {
   const [params] = useSearchParams();
   const [colleges, setColleges] = useState<College[]>([]);
@@ -39,7 +101,7 @@ export default function Compare() {
 
   useEffect(() => {
     setLoadingList(true);
-    const qs = new URLSearchParams({ limit: '400' });
+    const qs = new URLSearchParams({ limit: '9999' });
     if (course !== 'All') qs.set('course', course);
     fetch(`/api/colleges?${qs}`)
       .then((r) => r.json())
@@ -146,17 +208,11 @@ export default function Compare() {
                   <span className="text-xs font-bold uppercase tracking-wide text-white/40">
                     {side.label}
                   </span>
-                  <select
+                  <DarkSearchableSelect
                     value={side.value}
-                    onChange={(e) => side.set(e.target.value)}
-                    className="mt-1.5 w-full border border-white/12 rounded-2xl px-3.5 py-3 font-semibold bg-[#171B24] text-white focus:outline-none focus:ring-2 focus:ring-[#F97316]/35"
-                  >
-                    {options.map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => side.set(val)}
+                    options={options}
+                  />
                 </label>
               ))}
             </div>
