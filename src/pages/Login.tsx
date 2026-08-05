@@ -398,6 +398,27 @@ export default function Login({ defaultPortal }: LoginProps) {
       : 'Join thousands of medical aspirants planning their dream admission.';
   }, [portal, mode]);
 
+  // If user is already authenticated and routing to dashboard/admin, or in OAuth callback / active submit, show clean loading page
+  const isRoutingActive =
+    Boolean((user && !error && (portal === 'student' || isStaff)) || isOAuthRedirect || (loading && isSubmitting.current));
+
+  if (isRoutingActive) {
+    return (
+      <div className="auth-page relative min-h-[calc(100dvh-5rem)] flex items-center justify-center p-6">
+        <div className="pointer-events-none absolute inset-0 auth-page-ambient" aria-hidden />
+        <div className="relative z-10 text-center max-w-sm">
+          <div className="w-12 h-12 border-3 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <h3 className="text-lg font-bold text-white tracking-tight mb-1">
+            {portal === 'admin' || isStaff ? 'Opening Staff Workstation…' : 'Opening your counselling workspace…'}
+          </h3>
+          <p className="text-xs text-white/70 font-medium">
+            {msg || 'Verifying your credentials and session…'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="auth-page relative min-h-[calc(100dvh-5rem)] overflow-hidden">
       {/* Soft ambient — theme aware */}

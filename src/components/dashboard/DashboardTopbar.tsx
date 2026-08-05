@@ -23,17 +23,26 @@ export default function DashboardTopbar({ title }: { title?: string }) {
   const [q, setQ] = useState('');
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifs, setNotifs] = useState<Array<{ id: number; title: string; read: boolean }>>([]);
-  const [displayName, setDisplayName] = useState('demo');
+  const [displayName, setDisplayName] = useState(() => {
+    return user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '';
+  });
 
   useEffect(() => {
+    if (!user) {
+      setDisplayName('');
+      return;
+    }
+    const initial = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Student';
+    setDisplayName(initial);
+
     apiJson<{ full_name?: string }>('/api/profile', {}, true)
       .then((p) => {
-        setDisplayName(
-          p.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'demo'
-        );
+        if (p?.full_name && p.full_name.trim()) {
+          setDisplayName(p.full_name.trim());
+        }
       })
       .catch(() => {
-        setDisplayName(user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'demo');
+        setDisplayName(user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Student');
       });
     apiJson<Array<{ id: number; title: string; read: boolean }>>('/api/notifications', {}, true)
       .then(setNotifs)
@@ -41,12 +50,15 @@ export default function DashboardTopbar({ title }: { title?: string }) {
   }, [user]);
 
   const unread = notifs.filter((n) => !n.read).length;
-  const initials = displayName
+  const nameToUse = displayName || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Student';
+  const initials = nameToUse
+    .trim()
     .split(' ')
-    .map((p) => p[0])
+    .filter(Boolean)
+    .map((p: string) => p[0])
     .join('')
     .slice(0, 1)
-    .toUpperCase();
+    .toUpperCase() || 'S';
 
   const bar = dark
     ? 'bg-[#0b0d12]/92 border-white/[0.06] text-white'
@@ -170,17 +182,17 @@ export default function DashboardTopbar({ title }: { title?: string }) {
                 ? 'border-white/10 bg-white/[0.06] hover:bg-white/10'
                 : 'border-black/5 bg-white'
             }`}
-            title={displayName}
+            title={nameToUse}
           >
             <span className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ff7a1a] to-[#ea580c] text-white grid place-items-center text-xs font-bold shadow-md shadow-orange-500/30">
               {initials}
             </span>
             <span
-              className={`text-sm font-bold max-w-[5.5rem] truncate hidden sm:inline ${
+              className={`text-sm font-bold max-w-[6rem] truncate hidden sm:inline ${
                 dark ? 'text-white' : 'text-[#111827]'
               }`}
             >
-              {displayName}
+              {nameToUse}
             </span>
           </Link>
         </div>
