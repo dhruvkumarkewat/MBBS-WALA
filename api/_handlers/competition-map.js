@@ -71,17 +71,27 @@ export default async function handler(req, res) {
 
     const yearNum = Number(year) || 2024;
 
-    const [{ data: baseRows, error: baseErr }, { data: colleges, error: colErr }, { data: seats, error: seatErr }, { data: cuts, error: cutErr }] =
+    async function fetchAll(table, select, modifier = q => q, maxPages = 1) {
+      const pageSize = 1000;
+      const ranges = Array.from({length: maxPages}, (_, i) => [i*pageSize, (i+1)*pageSize - 1]);
+      const res = await Promise.all(ranges.map(r => modifier(supabase.from(table).select(select)).range(r[0], r[1])));
+      return res.flatMap(r => r.data || []);
+    }
+
+    const [baseRowsRes, colleges, seats, cuts] =
       await Promise.all([
         supabase.from('state_competition').select('*').eq('year', yearNum).order('competition_score', { ascending: false }),
-        supabase.from('colleges').select('id,name,city,state,country,college_type,course').ilike('country', 'INDIA'),
-        supabase.from('seat_matrix').select('*'),
-        supabase.from('cutoffs').select('*'),
+        fetchAll('colleges', 'id,name,city,state,country,college_type,course', q => q.ilike('country', 'INDIA'), 3),
+        fetchAll('seat_matrix', '*', q => q, 2),
+        category !== 'All' 
+          ? fetchAll('cutoffs', 'state, category, score, closing_rank', q => q.eq('category', category), 10)
+          : []
       ]);
 
-    if (colErr) console.warn('colleges query note:', colErr.message);
-    if (seatErr) console.warn('seat_matrix query note:', seatErr.message);
-    if (cutErr) console.warn('cutoffs query note:', cutErr.message);
+    const baseRows = baseRowsRes.data || [];
+    const baseErr = baseRowsRes.error;
+
+    if (baseErr) console.warn('base query note:', baseErr.message);
 
     const collegesByState = new Map();
     for (const c of colleges || []) {
