@@ -23,6 +23,7 @@ import {
 import CompetitionFiltersBar from './CompetitionFilters';
 import IndiaCompetitionMap from './IndiaCompetitionMap';
 import StateDetailPanel from './StateDetailPanel';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface Props {
   dark?: boolean;
@@ -30,7 +31,37 @@ interface Props {
 }
 
 export default function CompetitionMapModule({ dark, embedded }: Props) {
-  const [filters, setFilters] = useState<CompetitionFilters>(defaultCompetitionFilters);
+  const { profile } = useAuth();
+
+  const initialFilters = useMemo(() => {
+    let budgetFee = 'All';
+    if (profile?.tuition_budget) {
+      const budget = Number(profile.tuition_budget);
+      if (budget < 500000) budgetFee = 'Under ₹5L';
+      else if (budget <= 1500000) budgetFee = '₹5L–₹15L';
+      else budgetFee = 'Above ₹15L';
+    }
+    return {
+      ...defaultCompetitionFilters,
+      rank: profile?.rank || profile?.neet_rank || '',
+      category: profile?.category || 'All',
+      state: profile?.domicile_state || 'All',
+      fees: budgetFee
+    };
+  }, [profile]);
+
+  const [filters, setFilters] = useState<CompetitionFilters>(initialFilters);
+
+  // Sync when profile loads if they haven't changed defaults
+  useEffect(() => {
+    setFilters(prev => ({
+      ...prev,
+      rank: prev.rank || profile?.rank || profile?.neet_rank || '',
+      category: prev.category === 'All' ? (profile?.category || 'All') : prev.category,
+      state: prev.state === 'All' ? (profile?.domicile_state || 'All') : prev.state,
+    }));
+  }, [profile]);
+
   const [paths, setPaths] = useState<IndiaPathsFile | null>(null);
   const [states, setStates] = useState<StateCompetition[]>([]);
   const [summary, setSummary] = useState<CompetitionSummary | null>(null);

@@ -104,33 +104,33 @@ export function canonicalStateKey(name: string): string {
   return ALIASES[k] || k;
 }
 
-export function scoreColor(prob: number | null, dark = false): string {
-  if (prob == null || Number.isNaN(prob)) return dark ? '#374151' : '#9ca3af'; // Grey for No Data
-  
+export function scoreColor(prob: number | null, dark?: boolean): string {
+  if (prob === null) return dark ? '#1e293b' : '#e2e8f0';
+
   // Convert from 0-1 fractional format if needed, though we will provide 0-100 to this function
   const p = prob <= 1 ? prob * 100 : prob;
 
-  if (p >= 95) return dark ? '#064e3b' : '#065f46'; // Dark Green
-  if (p >= 80) return dark ? '#14532d' : '#16a34a'; // Green
-  if (p >= 60) return dark ? '#166534' : '#4ade80'; // Light Green
-  if (p >= 40) return dark ? '#854d0e' : '#facc15'; // Yellow
-  if (p >= 20) return dark ? '#9a3412' : '#f97316'; // Orange
-  if (p >= 1) return dark ? '#7f1d1d' : '#ef4444'; // Red
-  return dark ? '#450a0a' : '#991b1b'; // Dark Red
+  if (p >= 95) return dark ? '#15803d' : '#16a34a'; // Bright Dark Green
+  if (p >= 80) return dark ? '#22c55e' : '#22c55e'; // Bright Green
+  if (p >= 60) return dark ? '#4ade80' : '#4ade80'; // Light Green
+  if (p >= 40) return dark ? '#eab308' : '#eab308'; // Vivid Yellow
+  if (p >= 20) return dark ? '#f97316' : '#f97316'; // Vivid Orange
+  if (p >= 1) return dark ? '#ef4444' : '#ef4444'; // Bright Red
+  return dark ? '#b91c1c' : '#dc2626'; // Vivid Dark Red
 }
 
-export function scoreStroke(prob: number | null): string {
-  if (prob == null || Number.isNaN(prob)) return 'rgba(156, 163, 175, 0.4)';
-  
+export function scoreStroke(prob: number | null, dark?: boolean): string {
+  if (prob === null) return dark ? '#334155' : '#cbd5e1';
+
   const p = prob <= 1 ? prob * 100 : prob;
 
-  if (p >= 95) return '#064e3b';
-  if (p >= 80) return '#14532d';
-  if (p >= 60) return '#166534';
-  if (p >= 40) return '#a16207';
-  if (p >= 20) return '#c2410c';
-  if (p >= 1) return '#991b1b';
-  return '#450a0a';
+  if (p >= 95) return dark ? '#16a34a' : '#15803d';
+  if (p >= 80) return dark ? '#4ade80' : '#16a34a';
+  if (p >= 60) return dark ? '#86efac' : '#22c55e';
+  if (p >= 40) return dark ? '#fde047' : '#eab308';
+  if (p >= 20) return dark ? '#fdba74' : '#f97316';
+  if (p >= 1) return dark ? '#fca5a5' : '#ef4444';
+  return dark ? '#ef4444' : '#b91c1c';
 }
 
 export function difficultyTone(d: string): string {
