@@ -207,9 +207,25 @@ const DEEMED_KEYWORDS = [
       }
     }
 
+    let percentage = 0;
+    if (closing > 0 && candidateRank > 0) {
+        const ratio = closing / candidateRank; 
+        if (ratio >= 1.5) percentage = 95 + Math.floor(Math.random() * 4);
+        else if (ratio >= 1.1) percentage = 90 + Math.floor((ratio - 1.1) * 12.5);
+        else if (ratio >= 1.0) percentage = 85 + Math.floor((ratio - 1.0) * 50);
+        else if (ratio >= 0.95) percentage = 75 + Math.floor((ratio - 0.95) * 200);
+        else if (ratio >= 0.85) percentage = 50 + Math.floor((ratio - 0.85) * 250);
+        else if (ratio >= 0.70) percentage = 30 + Math.floor((ratio - 0.70) * 133);
+        else if (ratio >= 0.50) percentage = 10 + Math.floor((ratio - 0.50) * 100);
+        else percentage = 1 + Math.floor(ratio * 18);
+        
+        percentage = Math.max(1, Math.min(99, percentage));
+    }
+
     return {
       ...c,
       _tier: tier,
+      _chance_percentage: percentage,
       _diff: Math.abs(closing - candidateRank),
       _closing: closing,
     };
@@ -383,6 +399,8 @@ export default async function handler(req, res) {
       closing_rank: r.closing_rank,
       category: r.category,
       quota_code: r.quota_code,
+      tier: r._tier,
+      admission_chance_percentage: r._chance_percentage,
     }));
     const aiPayload = { 
       query, 
