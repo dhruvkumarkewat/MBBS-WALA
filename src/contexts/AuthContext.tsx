@@ -84,7 +84,7 @@ interface AuthContextValue {
   isProfileComplete: boolean;
   isStaff: boolean;
   staffRole: string | null;
-  signOut: () => Promise<void>;
+  signOut: (redirectUrl?: string) => Promise<void>;
   refreshSession: () => Promise<void>;
   refreshProfile: () => Promise<UserProfile | null>;
   setProfileState: (p: UserProfile | null) => void;
@@ -99,7 +99,7 @@ const AuthContext = createContext<AuthContextValue>({
   isProfileComplete: false,
   isStaff: false,
   staffRole: null,
-  signOut: async () => {},
+  signOut: async (redirectUrl?: string) => {},
   refreshSession: async () => {},
   refreshProfile: async () => null,
   setProfileState: () => {},
@@ -288,11 +288,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refreshSession,
       refreshProfile,
       setProfileState,
-      signOut: async () => {
+      signOut: async (redirectUrl?: string) => {
         setProfile(null);
         setIsStaff(false);
         setStaffRole(null);
         await supabase.auth.signOut();
+        window.location.href = redirectUrl || '/';
       },
     }),
     [user, session, loading, profile, profileLoading, isProfileComplete, isStaff, staffRole, refreshSession, refreshProfile, setProfileState]

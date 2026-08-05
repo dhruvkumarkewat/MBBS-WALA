@@ -194,8 +194,7 @@ export default function AdminLayout() {
     } catch {
       /* ignore */
     }
-    await signOut();
-    navigate('/admin/login');
+    await signOut('/admin/login');
   };
 
   if (authLoading || loading) {
@@ -233,7 +232,7 @@ export default function AdminLayout() {
             <div className="flex gap-3 justify-center flex-wrap">
               <button
                 type="button"
-                onClick={() => signOut().then(() => navigate('/admin/login'))}
+                onClick={() => signOut('/admin/login')}
                 className="px-5 py-2.5 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 font-bold text-sm text-white shadow-lg shadow-orange-500/30"
               >
                 Sign in with Staff Account

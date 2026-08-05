@@ -95,7 +95,6 @@ export default function DashboardSidebar() {
 
   const logout = async () => {
     await signOut();
-    navigate('/login');
     setSidebarOpen(false);
   };
 

@@ -19,25 +19,15 @@ export default async function handler(req, res) {
     if (req.method === 'GET' || action === 'sync-subscription' || action === 'restore') {
       let paymentsQuery = supabase
         .from('payments')
-        .select('*');
-
-      if (user.email && user.email.trim()) {
-        paymentsQuery = paymentsQuery.or(`user_id.eq.${user.id},user_id.eq.${user.email.trim()}`);
-      } else {
-        paymentsQuery = paymentsQuery.eq('user_id', user.id);
-      }
+        .select('*')
+        .eq('user_id', user.id);
 
       const { data: paymentsList } = await paymentsQuery.order('id', { ascending: false });
 
       let subsQuery = supabase
         .from('subscriptions')
-        .select('*');
-
-      if (user.email && user.email.trim()) {
-        subsQuery = subsQuery.or(`user_id.eq.${user.id},user_id.eq.${user.email.trim()}`);
-      } else {
-        subsQuery = subsQuery.eq('user_id', user.id);
-      }
+        .select('*')
+        .eq('user_id', user.id);
 
       const { data: subList } = await subsQuery.order('id', { ascending: false });
 
@@ -240,26 +230,31 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Invalid payment signature' });
       }
 
+      const { data: dbOrder } = await supabase
+        .from('payments')
+        .select('amount, plan_slug, meta, user_id')
+        .eq('order_id', order_id)
+        .maybeSingle();
+
+      if (!dbOrder) {
+        return res.status(400).json({ error: 'Order not found in database' });
+      }
+      
+      if (dbOrder.user_id !== user.id) {
+        return res.status(403).json({ error: 'Unauthorized payment verification' });
+      }
+
       // If Razorpay live secret is present, verify HMAC signature or simulation
       const secret = process.env.RAZORPAY_KEY_SECRET || 'VJk0E7jhcJFwuOFz303O5aGJ';
       const expected = crypto
         .createHmac('sha256', secret)
         .update(`${order_id}|${payment_id}`)
         .digest('hex');
-      const isSimulated = order_id.startsWith('order_sim_') || signature === 'simulated_sig';
+        
+      const isSimulatedOrder = order_id.startsWith('order_sim_');
       
-      if (!isSimulated && expected !== signature) {
+      if (!isSimulatedOrder && expected !== signature) {
         return res.status(400).json({ error: 'Invalid payment signature' });
-      }
-
-      const { data: dbOrder } = await supabase
-        .from('payments')
-        .select('amount, plan_slug, meta')
-        .eq('order_id', order_id)
-        .maybeSingle();
-
-      if (!dbOrder) {
-        return res.status(400).json({ error: 'Order not found in database' });
       }
 
       const amount = dbOrder.amount;

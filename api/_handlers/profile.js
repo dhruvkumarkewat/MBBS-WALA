@@ -141,13 +141,8 @@ export default async function handler(req, res) {
         let subQuery = supabase
           .from('subscriptions')
           .select('*')
-          .eq('status', 'active');
-        
-        if (user.email && user.email.trim()) {
-          subQuery = subQuery.or(`user_id.eq.${user.id},user_id.eq.${user.email.trim()}`);
-        } else {
-          subQuery = subQuery.eq('user_id', user.id);
-        }
+          .eq('status', 'active')
+          .eq('user_id', user.id);
 
         const { data: subData } = await subQuery.order('id', { ascending: false }).limit(1);
 
@@ -171,13 +166,8 @@ export default async function handler(req, res) {
           let payQuery = supabase
             .from('payments')
             .select('*')
-            .in('status', ['captured', 'success', 'paid', 'complete']);
-
-          if (user.email && user.email.trim()) {
-            payQuery = payQuery.or(`user_id.eq.${user.id},user_id.eq.${user.email.trim()}`);
-          } else {
-            payQuery = payQuery.eq('user_id', user.id);
-          }
+            .in('status', ['captured', 'success', 'paid', 'complete'])
+            .eq('user_id', user.id);
 
           const { data: payData } = await payQuery.order('id', { ascending: false }).limit(1);
 
