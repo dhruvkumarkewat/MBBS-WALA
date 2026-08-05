@@ -104,7 +104,7 @@ export function AiAssistantPage() {
     setBusy(true);
     
     try {
-      const response = await apiJson('/api/ai-chat', {
+      const response = await apiJson<{ reply: string }>('/api/ai-chat', {
         method: 'POST',
         body: JSON.stringify({
           messages: [...messages, { role: 'user', text: q }]
