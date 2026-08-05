@@ -66,49 +66,49 @@ export default function DashboardTopbar({ title }: { title?: string }) {
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="min-w-0 flex-1 sm:flex-none sm:block">
+        <div className="min-w-0 shrink-0">
           <p className={`text-[10px] font-bold uppercase tracking-[0.16em] hidden sm:block ${dark ? 'text-orange-400/80' : 'text-orange-600/80'}`}>
             Student portal
           </p>
-          <h1 className="text-[15px] sm:text-[16px] font-bold tracking-tight leading-tight truncate max-w-[46vw] sm:max-w-none">
+          <h1 className="text-[15px] sm:text-[16px] font-bold tracking-tight leading-tight truncate max-w-[36vw] sm:max-w-none">
             {title || 'Dashboard'}
           </h1>
         </div>
 
-        <div className="hidden sm:block flex-1 max-w-xl relative mx-auto min-w-0">
+        <div className="hidden lg:block flex-1 max-w-md relative mx-auto min-w-0">
           <Search className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${dark ? 'text-white/30' : 'text-[#9ca3af]'}`} />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search colleges, cutoffs, docs…"
-            className={`w-full rounded-full pl-11 pr-16 py-2.5 text-sm font-medium outline-none border transition-shadow ${
+            className={`w-full rounded-full pl-11 pr-16 py-2 text-sm font-medium outline-none border transition-shadow ${
               dark
                 ? 'bg-white/[0.04] border-white/10 placeholder:text-white/30 focus:ring-2 focus:ring-orange-500/25'
                 : 'bg-white border-[#e8eaed] placeholder:text-[#9ca3af] shadow-sm focus:ring-2 focus:ring-orange-500/15'
             }`}
           />
-          <kbd className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold px-1.5 py-0.5 rounded-md border hidden md:inline ${
+          <kbd className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold px-1.5 py-0.5 rounded-md border hidden xl:inline ${
             dark ? 'border-white/10 text-white/30' : 'border-[#e5e7eb] text-[#c0c4cc]'
           }`}>⌘ K</kbd>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto">
           <Link
             to="/dashboard/predictor"
-            className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#ff7a1a] to-[#f97316] text-white px-4 py-2 text-sm font-bold shadow-lg shadow-orange-500/25 hover:brightness-105"
+            className="hidden xl:inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#ff7a1a] to-[#f97316] text-white px-3.5 py-1.5 text-xs sm:text-sm font-bold shadow-md shadow-orange-500/20 hover:brightness-105"
           >
             <Crosshair className="w-3.5 h-3.5" /> Predict
           </Link>
           <Link
             to="/dashboard/competition-map"
-            className="hidden md:inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-sky-500 to-blue-600 text-white px-4 py-2 text-sm font-bold shadow-lg shadow-sky-500/20 hover:brightness-105"
+            className="hidden 2xl:inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-sky-500 to-blue-600 text-white px-3.5 py-1.5 text-xs sm:text-sm font-bold shadow-md shadow-sky-500/20 hover:brightness-105"
             title="Closing Rank Map"
           >
             <Map className="w-3.5 h-3.5" /> Map
           </Link>
 
           {!isPremium && (
-            <Link to="/dashboard/subscription" className={`w-10 h-10 rounded-full grid place-items-center transition-colors ${dark ? 'hover:bg-white/8 text-amber-300' : 'hover:bg-orange-50 text-amber-500'}`} title="Upgrade to Premium">
+            <Link to="/dashboard/subscription" className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full grid place-items-center transition-colors ${dark ? 'hover:bg-white/8 text-amber-300' : 'hover:bg-orange-50 text-amber-500'}`} title="Upgrade to Premium">
               <Crown className="w-[18px] h-[18px]" />
             </Link>
           )}
