@@ -8,7 +8,7 @@ const COURSES = [...MEDICAL_COURSES, 'All'];
 const CATEGORIES = ['All', 'General', 'OBC', 'EWS', 'SC', 'ST'];
 const QUOTAS = ['All', 'AIQ', 'State', 'AACCC', 'Management', 'NRI'];
 const ROUNDS = ['Round 1', 'Round 2', 'Round 3', 'Stray'];
-const YEARS = ['2024', '2023', '2022'];
+const YEARS = ['2026', '2025', '2024', '2023', '2022'];
 const TYPES = ['All', 'Government', 'Private'];
 const FEES = ['All', 'Under ₹5L', '₹5L–₹15L', 'Above ₹15L'];
 

@@ -150,7 +150,7 @@ export const defaultCompetitionFilters: CompetitionFilters = {
   category: 'All',
   quota: 'All',
   round: 'Round 1',
-  year: '2024',
+  year: '2026',
   college_type: 'All',
   fees: 'All',
   q: '',
