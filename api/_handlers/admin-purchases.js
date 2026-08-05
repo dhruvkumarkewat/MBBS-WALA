@@ -40,7 +40,7 @@ export default async function handler(req, res) {
       if (staffIds.length) {
         const { data } = await supabase
           .from('staff_profiles')
-          .select('user_id, full_name, employee_id, email, presence, photo_url')
+          .select('user_id, name, email')
           .in('user_id', staffIds);
         staff = data || [];
       }
@@ -152,13 +152,13 @@ export default async function handler(req, res) {
       let staffName = '';
       if (assignedStaffId) {
         const sp = await getStaffProfile(assignedStaffId);
-        staffName = sp?.full_name || '';
+        staffName = sp?.name || '';
         await notifyAssignment({
           student,
           staffId: assignedStaffId,
           staffName,
           packageName: itemName,
-          assignedByName: ctx.staff.full_name || 'Super Admin',
+          assignedByName: ctx.staff.name || 'Super Admin',
         });
       }
 
@@ -217,9 +217,9 @@ export default async function handler(req, res) {
         await notifyAssignment({
           student: student || { full_name: `Student #${existing.student_id}`, user_id: existing.user_id },
           staffId: assigned_staff_id,
-          staffName: sp?.full_name,
+          staffName: sp?.name,
           packageName: existing.item_name,
-          assignedByName: ctx.staff.full_name || 'Super Admin',
+          assignedByName: ctx.staff.name || 'Super Admin',
         });
         await logActivity(ctx.user.id, 'Assigned Counsellor to Purchase', 'purchase', id, {
           staff_id: assigned_staff_id,

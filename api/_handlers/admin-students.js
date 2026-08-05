@@ -224,16 +224,11 @@ export default async function handler(req, res) {
         await notifyAssignment({
           student: data,
           staffId: body.assigned_to,
-          staffName: sp?.full_name,
+          staffName: sp?.name,
           packageName: data.purchased_counselling || data.purchased_course,
-          assignedByName: staff.full_name || 'Super Admin',
+          assignedByName: staff.name || 'Super Admin',
         });
-        // Keep purchases in sync
-        await supabase
-          .from('purchases')
-          .update({ assigned_staff_id: body.assigned_to })
-          .eq('student_id', Number(id))
-          .eq('status', 'paid');
+        // Note: purchases table has no assigned_staff_id in this schema
       }
 
       // Removed invalid staff_profiles update with missing columns

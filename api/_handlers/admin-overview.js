@@ -79,9 +79,9 @@ export default async function handler(req, res) {
     if (staffIds.length) {
       const { data: sn } = await supabase
         .from('staff_profiles')
-        .select('user_id, full_name')
+        .select('user_id, name')
         .in('user_id', staffIds);
-      staffNames = Object.fromEntries((sn || []).map((s) => [s.user_id, s.full_name]));
+      staffNames = Object.fromEntries((sn || []).map((s) => [s.user_id, s.name]));
     }
 
     const paidPurchases = (purchases || []).filter((p) => p.status === 'paid');
