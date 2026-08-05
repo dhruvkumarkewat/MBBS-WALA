@@ -35,8 +35,13 @@ export default async function (req, res) {
       return res.end(JSON.stringify({ error: 'Missing messages array' }));
     }
 
-    const key = process.env.GEMINI_API_KEY;
-    if (!key) {
+    const keys = [
+      process.env.GEMINI_API_KEY,
+      process.env.GEMINI_API_KEY_2,
+      process.env.GEMINI_API_KEY_FALLBACK
+    ].filter(Boolean);
+
+    if (keys.length === 0) {
       throw new Error('Missing GEMINI_API_KEY environment variable');
     }
 
@@ -93,20 +98,38 @@ export default async function (req, res) {
       },
     };
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    let data;
+    let success = false;
+    let lastError = null;
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error('Gemini API Error:', errText);
-      throw new Error(`Gemini API Error: ${response.status}`);
+    for (const key of keys) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          data = await response.json();
+          success = true;
+          break; // Exit loop on success
+        } else {
+          lastError = await response.text();
+          console.warn(`Gemini API Error with a key (Status ${response.status}): ${lastError}`);
+        }
+      } catch (fetchErr) {
+        lastError = fetchErr.message;
+        console.warn(`Fetch error with a Gemini key: ${lastError}`);
+      }
     }
 
-    const data = await response.json();
+    if (!success) {
+      console.error('All Gemini API keys failed. Last error:', lastError);
+      throw new Error(`Gemini API Error: All keys failed.`);
+    }
+
     const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I couldn't process that request right now.";
 
     res.writeHead(200, { 'Content-Type': 'application/json' });

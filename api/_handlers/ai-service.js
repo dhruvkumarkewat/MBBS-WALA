@@ -107,6 +107,39 @@ const PROVIDER_CONFIGS = {
       };
     },
   },
+  gemini_fallback: {
+    name: 'Gemini (Fallback Key)',
+    buildRequest: (payload) => {
+      const key = process.env.GEMINI_API_KEY_2 || process.env.GEMINI_API_KEY_FALLBACK;
+      if (!key) return null;
+      return {
+        url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+        options: {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(15000),
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+            contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload) }] }],
+            generationConfig: {
+              responseMimeType: 'application/json',
+              temperature: 0.1,
+              maxOutputTokens: 8192,
+              thinkingConfig: {
+                thinkingBudget: 0,
+              },
+            },
+          }),
+        },
+        parseResponse: async (res) => {
+          const data = await res.json();
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (!text) throw new Error('Empty Gemini response');
+          return JSON.parse(text);
+        },
+      };
+    },
+  },
   groq: {
     name: 'Groq',
     buildRequest: (payload) => {
