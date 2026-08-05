@@ -318,6 +318,33 @@ export function PredictorPage() {
   const [tierFilter, setTierFilter] = useState<'ALL' | 'High' | 'Moderate' | 'Reach'>('ALL');
   const [quotaFilter, setQuotaFilter] = useState<string>('ALL');
 
+  // ── Persistence ──
+  useEffect(() => {
+    if (profile?.id) {
+      const saved = localStorage.getItem(`mbbswala_prediction_${profile.id}`);
+      if (saved) {
+        try {
+          setAiResponse(JSON.parse(saved));
+        } catch (e) {
+          console.error('Failed to parse saved prediction');
+        }
+      }
+    }
+  }, [profile?.id]);
+
+  useEffect(() => {
+    if (profile?.id && aiResponse) {
+      localStorage.setItem(`mbbswala_prediction_${profile.id}`, JSON.stringify(aiResponse));
+    }
+  }, [aiResponse, profile?.id]);
+
+  const handleRecalculate = () => {
+    setAiResponse(null);
+    if (profile?.id) {
+      localStorage.removeItem(`mbbswala_prediction_${profile.id}`);
+    }
+  };
+
   // Sync profile data when loaded
   useEffect(() => {
     if (profile) {
@@ -504,8 +531,9 @@ export function PredictorPage() {
         sub="Grounded in real MCC/state counselling data — AI explains, never invents"
       />
 
-      {/* ── Form ── */}
-      <form onSubmit={run} className={`rounded-2xl border p-5 space-y-4 mb-5 ${s.card}`}>
+      {/* ── Form or Recalculate State ── */}
+      {!aiResponse ? (
+        <form onSubmit={run} className={`rounded-2xl border p-5 space-y-4 mb-5 ${s.card}`}>
 
         {/* Exam Track */}
         <div>
@@ -658,6 +686,19 @@ export function PredictorPage() {
           )}
         </button>
       </form>
+      ) : (
+        <div className={`rounded-2xl border p-5 mb-5 flex flex-col sm:flex-row items-center justify-between gap-4 ${s.card}`}>
+          <div>
+            <h3 className="text-sm font-bold">Prediction Active</h3>
+            <p className={`text-xs mt-1 ${s.muted}`}>
+              Showing results for {examTrack === 'MBBS_BDS' ? 'MBBS/BDS' : 'AYUSH'} · {mode === 'rank' ? `AIR ${rank}` : `Score ${score}`} · {category} · {quotas.join(', ')}
+            </p>
+          </div>
+          <button onClick={handleRecalculate} className="zn-cta border border-white/10 text-sm whitespace-nowrap hover:bg-white/5">
+            🔄 Recalculate
+          </button>
+        </div>
+      )}
 
       {/* ── Results ── */}
       {aiResponse && (
