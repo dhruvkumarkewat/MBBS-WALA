@@ -68,6 +68,22 @@ function ErrorBox({ message }: { message: string }) {
 }
 
 /* ---------------- AI Assistant (local guidance; no fake API) ---------------- */
+function formatChatMarkdown(text: string) {
+  // Escape HTML to prevent XSS
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+    
+  return escaped
+    // Render **bold**
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    // Render * bullet points (if they are at the start of a line or after a space)
+    .replace(/(?:^|\n)\* (.*?)(?=\n|$)/g, '<li class="ml-4 list-disc marker:text-primary/70">$1</li>')
+    // Wrap consecutive <li>s in <ul> (simple hack)
+    .replace(/(<li.*?>.*?<\/li>(\s*<li.*?>.*?<\/li>)*)/g, '<ul class="my-1.5 space-y-1 block">$1</ul>');
+}
+
 export function AiAssistantPage() {
   const s = useShell();
   const { isPremium } = usePremium();
@@ -150,7 +166,7 @@ export function AiAssistantPage() {
                     <Bot className="w-3 h-3" /> MBBSWala AI
                   </span>
                 )}
-                <p>{m.text}</p>
+                <div className="whitespace-pre-wrap text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: formatChatMarkdown(m.text) }} />
               </div>
             </div>
           ))}
