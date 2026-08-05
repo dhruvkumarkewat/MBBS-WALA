@@ -64,6 +64,12 @@ export async function retrieveContext(query) {
     .eq('category', category)
     .limit(500);
 
+  if (examTrack === 'MBBS_BDS') {
+    cutoffQuery = cutoffQuery.in('course_name', ['MBBS', 'BDS']);
+  } else if (examTrack === 'AYUSH') {
+    cutoffQuery = cutoffQuery.in('course_name', ['BAMS', 'BUMS', 'BHMS', 'BSMS', 'BNYS']);
+  }
+
   if (quotas.includes('State') && domicileState && !quotas.includes('AIQ')) {
     cutoffQuery = cutoffQuery.ilike('state', `%${domicileState}%`);
   }
@@ -71,10 +77,18 @@ export async function retrieveContext(query) {
   const { data: directCutoffs } = await cutoffQuery;
 
   // 4. Also fetch from colleges table to ensure full 1,000 college database coverage
-  const { data: allColleges } = await supabase
+  let collegesQuery = supabase
     .from('colleges')
-    .select('id, name, state, type, feeGovt, feePvt, seats, cutoff, hospital_beds, established, bond, counselling')
+    .select('id, name, state, type, feeGovt, feePvt, seats, cutoff, hospital_beds, established, bond, counselling, course')
     .limit(1000);
+
+  if (examTrack === 'MBBS_BDS') {
+    collegesQuery = collegesQuery.in('course', ['MBBS', 'BDS']);
+  } else if (examTrack === 'AYUSH') {
+    collegesQuery = collegesQuery.in('course', ['BAMS', 'BUMS', 'BHMS', 'BSMS', 'BNYS']);
+  }
+
+  const { data: allColleges } = await collegesQuery;
 
 const DEEMED_KEYWORDS = [
   'patil', 'd.y. patil', 'd. y. patil', 'dy patil', 'manipal', 'kasturba', 'kmc',
