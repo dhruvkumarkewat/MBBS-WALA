@@ -53,9 +53,6 @@ const sections: { title: string; items: Item[] }[] = [
     items: [
       { label: 'Counselling', path: '/dashboard/counselling', icon: CalendarCheck2 },
       { label: 'Seat Matrix', path: '/dashboard/seat-matrix', icon: Grid3x3 },
-      { label: 'Documents', path: '/dashboard/documents', icon: FolderOpen },
-      { label: 'Downloads', path: '/dashboard/downloads', icon: CloudDownload },
-      { label: 'Applications', path: '/dashboard/applications', icon: ClipboardList },
     ],
   },
   {
