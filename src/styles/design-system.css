@@ -1316,6 +1316,37 @@ body {
   color: #0e1117 !important;
 }
 
+/* Auth portal selector tabs */
+.auth-portal-track {
+  background: rgba(226, 232, 240, 0.95);
+  border: 1px solid rgba(203, 213, 225, 0.9);
+}
+[data-theme='dark'] .auth-portal-track {
+  background: rgba(21, 25, 35, 0.9);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.auth-portal-tab-inactive {
+  color: #1e293b !important;
+  -webkit-text-fill-color: #1e293b !important;
+}
+[data-theme='dark'] .auth-portal-tab-inactive {
+  color: #e2e8f0 !important;
+  -webkit-text-fill-color: #e2e8f0 !important;
+}
+
+.auth-portal-tab-active-student {
+  background: #0e1117 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.auth-portal-tab-active-admin {
+  background: linear-gradient(to right, #f97316, #f59e0b) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
 /* Never let theme force white-on-white on solid dark CTAs */
 .landing-shell button.bg-primary-dark,
 .landing-shell a.bg-primary-dark,

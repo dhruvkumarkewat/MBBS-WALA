@@ -522,18 +522,24 @@ export default function Login({ defaultPortal }: LoginProps) {
         >
           <div className="mx-auto w-full max-w-[460px]">
             {/* ── Portal Selector Tabs (Student vs Admin/Counselor) ── */}
-            <div className="mb-4 bg-slate-200/70 dark:bg-white/10 p-1.5 rounded-2xl grid grid-cols-2 gap-1 border border-black/5 dark:border-white/10 shadow-inner">
+            <div className="auth-portal-track mb-4 p-1.5 rounded-2xl grid grid-cols-2 gap-1.5 shadow-sm backdrop-blur-sm">
               <button
                 type="button"
                 onClick={() => switchPortal('student')}
                 className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all ${
                   portal === 'student'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-md'
-                    : 'text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white'
+                    ? 'auth-portal-tab-active-student shadow-md'
+                    : 'auth-portal-tab-inactive hover:bg-black/5 dark:hover:bg-white/10'
                 }`}
               >
-                <GraduationCap className="h-4 w-4 text-orange-500 shrink-0" />
-                <span>Student Login</span>
+                <GraduationCap
+                  className={`h-4 w-4 shrink-0 ${
+                    portal === 'student' ? 'text-orange-400' : 'text-slate-600 dark:text-slate-400'
+                  }`}
+                />
+                <span className={portal === 'student' ? 'text-white' : 'text-slate-800 dark:text-slate-200'}>
+                  Student Login
+                </span>
               </button>
 
               <button
@@ -541,12 +547,18 @@ export default function Login({ defaultPortal }: LoginProps) {
                 onClick={() => switchPortal('admin')}
                 className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all ${
                   portal === 'admin'
-                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/20'
-                    : 'text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white'
+                    ? 'auth-portal-tab-active-admin shadow-md shadow-orange-500/25'
+                    : 'auth-portal-tab-inactive hover:bg-black/5 dark:hover:bg-white/10'
                 }`}
               >
-                <Shield className="h-4 w-4 text-white shrink-0" />
-                <span>Admin & Counsellor</span>
+                <Shield
+                  className={`h-4 w-4 shrink-0 ${
+                    portal === 'admin' ? 'text-white' : 'text-slate-600 dark:text-slate-400'
+                  }`}
+                />
+                <span className={portal === 'admin' ? 'text-white' : 'text-slate-800 dark:text-slate-200'}>
+                  Admin & Counsellor
+                </span>
               </button>
             </div>
 
