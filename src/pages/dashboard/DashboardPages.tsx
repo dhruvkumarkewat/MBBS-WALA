@@ -215,6 +215,7 @@ interface CollegePrediction {
   quota: string;
   category: string;
   chance_tier: 'High' | 'Moderate' | 'Reach' | 'Unlikely';
+  admission_chance_percentage?: number;
   closing_rank_reference: { year: number; round: string; rank: number }[];
   fee: { amount_min: number; amount_max: number; currency: string; year: number; quota_tier: string } | null;
   source_ids: string[];
@@ -989,6 +990,11 @@ export function PredictorPage() {
                               <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${style.badge}`}>
                                 {style.icon} {c.chance_tier}
                               </span>
+                              {c.admission_chance_percentage && (
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20`}>
+                                  ⭐ {c.admission_chance_percentage}% Match
+                                </span>
+                              )}
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20`}>
                                 🎯 {c.quota} Quota
                               </span>

@@ -166,7 +166,7 @@ const DEEMED_KEYWORDS = [
   // Deduplicate and strictly enforce Quota & Domicile isolation
   const seenNames = new Set();
   const deduplicated = [];
-  const onlyStateQuota = quotas.includes('State') && !quotas.includes('AIQ');
+  const onlyStateQuota = quotas.includes('State') && quotas.length === 1;
 
   for (const item of combined) {
     if (!item.college_name || item.college_name === '-' || item.college_name.length < 3) continue;

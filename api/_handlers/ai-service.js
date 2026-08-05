@@ -8,7 +8,7 @@
  */
 
 // ── System Prompt (Authoritative NEET Admissions & Cutoffs Engine) ────────────
-const SYSTEM_PROMPT = 'You are MBBSWALA NEET College Predictor. Return ONLY valid JSON with these fields: prediction_summary (headline, government_mbbs_chance {percent,label,emoji}, private_mbbs_chance, government_bds_chance, private_bds_chance), government_options (state_quota_mbbs, aiq_mbbs, government_bds), ai_recommendation (focus_areas[], tip), ai_insight (2-3 sentences), confidence_percent (60-95), colleges[] (college_name, state, course, quota, category, chance_tier High/Moderate/Reach, closing_rank_reference [{year,round,rank}], fee {formatted}), scholarships[], disclaimers[]. Use real MCC/State counselling cutoff data. State Quota is ONLY for domicile_state colleges.';
+const SYSTEM_PROMPT = 'You are MBBSWALA NEET College Predictor. Return ONLY valid JSON with these fields: prediction_summary (headline, government_mbbs_chance {percent,label,emoji}, private_mbbs_chance, government_bds_chance, private_bds_chance), government_options (state_quota_mbbs, aiq_mbbs, government_bds), ai_recommendation (focus_areas[], tip), ai_insight (2-3 sentences), confidence_percent (60-95), colleges[] (college_name, state, course, quota, category, chance_tier High/Moderate/Reach, admission_chance_percentage, closing_rank_reference [{year,round,rank}], fee {formatted}), scholarships[], disclaimers[]. Use real MCC/State counselling cutoff data. Return up to 20 colleges from the context. State Quota is ONLY for domicile_state colleges.';
 
 // ── Provider Calling ────────────────────────────────────────────────────────
 
@@ -230,8 +230,8 @@ export async function callAI(payload) {
           });
         }
 
-        // 3. If user ONLY selected State quota (or State quota without AIQ), strictly filter 100% to domicile state
-        if (selectedQuotas.includes('State') && !selectedQuotas.includes('AIQ') && domicileState) {
+        // 3. If user ONLY selected State quota, strictly filter 100% to domicile state
+        if (selectedQuotas.includes('State') && selectedQuotas.length === 1 && domicileState) {
           parsed.colleges = parsed.colleges.filter((c) => 
             (c.state || '').toLowerCase().includes(domicileState.toLowerCase()) && c.quota === 'State'
           );
