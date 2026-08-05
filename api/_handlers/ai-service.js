@@ -110,7 +110,7 @@ const PROVIDER_CONFIGS = {
   gemini_fallback: {
     name: 'Gemini (Fallback Key)',
     buildRequest: (payload) => {
-      const key = process.env.GEMINI_API_KEY_2 || process.env.GEMINI_API_KEY_FALLBACK || ('AQ.Ab8RN6Ls_' + 'LDZeLv7SNIlQ7t' + '-k47js_6P5jQRR7puDzAiP6qSxg');
+      const key = process.env.GEMINI_API_KEY_2 || process.env.GEMINI_API_KEY_FALLBACK;
       if (!key) return null;
       return {
         url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,

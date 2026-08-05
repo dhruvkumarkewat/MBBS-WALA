@@ -38,13 +38,14 @@ export default async function (req, res) {
     const keys = [
       process.env.GEMINI_API_KEY,
       process.env.GEMINI_API_KEY_2,
-      process.env.GEMINI_API_KEY_FALLBACK,
-      // Fallback key provided by the user (split to avoid GitHub secret scanner blocks)
-      'AQ.Ab8RN6Ls_' + 'LDZeLv7SNIlQ7t' + '-k47js_6P5jQRR7puDzAiP6qSxg'
+      process.env.GEMINI_API_KEY_FALLBACK
     ].filter(Boolean);
 
     if (keys.length === 0) {
-      throw new Error('Missing GEMINI_API_KEY environment variable');
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ 
+        reply: "No Gemini API keys found! Please go to your Vercel Dashboard and add your Gemini API key (it should start with 'AIza...') as 'GEMINI_API_KEY' in the Environment Variables." 
+      }));
     }
 
     // Prepare contextual system prompt
@@ -129,7 +130,10 @@ export default async function (req, res) {
 
     if (!success) {
       console.error('All Gemini API keys failed. Last error:', lastError);
-      throw new Error(`Gemini API Error: All keys failed.`);
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ 
+        reply: "My AI brain isn't connected! Please go to your Vercel Dashboard and add your real Gemini API key (it should start with 'AIza...') as 'GEMINI_API_KEY' in the Environment Variables." 
+      }));
     }
 
     const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I couldn't process that request right now.";
