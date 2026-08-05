@@ -272,6 +272,9 @@ export async function callAI(payload) {
           if (quota === 'State' && (!domicileState || !isHomeState)) {
             quota = 'AIQ';
           }
+          if (isHomeState && selectedQuotas.includes('State') && quota !== 'Management' && quota !== 'Deemed-Central' && quota !== 'NRI') {
+            quota = 'State';
+          }
           return {
             ...c,
             quota,
@@ -282,22 +285,18 @@ export async function callAI(payload) {
         // 2. Strict Quota Enforcement: Drop any college whose quota is NOT in selected quotas
         if (selectedQuotas.length > 0) {
           parsed.colleges = parsed.colleges.filter((c) => {
+            // State quota is legally ONLY available in candidate's domicile state
+            if (c.quota === 'State' && !c._is_home_state) return false;
             if (selectedQuotas.includes(c.quota)) return true;
-            // Never allow Management quota if not selected
-            if (c.quota === 'Management' && !selectedQuotas.includes('Management')) return false;
-            // Never allow Deemed-Central quota if not selected
-            if (c.quota === 'Deemed-Central' && !selectedQuotas.includes('Deemed-Central')) return false;
-            // Never allow NRI quota if not selected
-            if (c.quota === 'NRI' && !selectedQuotas.includes('NRI')) return false;
-            // Never allow State quota if not selected
-            if (c.quota === 'State' && !selectedQuotas.includes('State')) return false;
             return false;
           });
         }
 
-        // 3. If user ONLY selected State quota (and has domicile_state), strictly filter to domicile state
-        if (selectedQuotas.length === 1 && selectedQuotas.includes('State') && domicileState) {
-          parsed.colleges = parsed.colleges.filter((c) => (c.state || '').toLowerCase().includes(domicileState.toLowerCase()));
+        // 3. If user ONLY selected State quota (or State quota without AIQ), strictly filter 100% to domicile state
+        if (selectedQuotas.includes('State') && !selectedQuotas.includes('AIQ') && domicileState) {
+          parsed.colleges = parsed.colleges.filter((c) => 
+            (c.state || '').toLowerCase().includes(domicileState.toLowerCase()) && c.quota === 'State'
+          );
         }
 
         // 4. If user selected State quota along with AIQ, boost domicile state colleges to the top of their chance tier
@@ -359,13 +358,13 @@ export function buildFallbackResponse(query, context, resolved) {
     
     // CRITICAL: A college can ONLY have quota 'State' if it matches candidate's domicile state
     let quotaCode = cr.quota_code || 'AIQ';
-    if (isHomeState && selectedQuotas.includes('State') && !selectedQuotas.includes('AIQ')) {
+    if (isHomeState && selectedQuotas.includes('State')) {
       quotaCode = 'State';
     } else if (quotaCode === 'State' && !isHomeState) {
       quotaCode = 'AIQ';
     }
 
-    const closingRank = cr.aiq_rank || cr.closing_rank || 0;
+    const closingRank = Number(cr.closing_rank || cr.aiq_rank || 0);
     let chance_tier = 'Unlikely';
 
     if (closingRank && rank > 0) {
@@ -387,7 +386,7 @@ export function buildFallbackResponse(query, context, resolved) {
       quota: quotaCode,
       category: cr.category || query.category,
       chance_tier,
-      closing_rank_reference: [{ year: cr.year || year, round: cr.round_name || 'Round 1', rank: closingRank }],
+      closing_rank_reference: [{ year: cr.year || year, round: cr.round_name || selectedRound, rank: closingRank }],
       fee: {
         quota_tier: cr.type && cr.type.toLowerCase().includes('govt') ? 'Govt/AIQ' : 'Private/Deemed',
         amount_min: feeAmount,
@@ -401,7 +400,9 @@ export function buildFallbackResponse(query, context, resolved) {
     };
   }).filter((c) => {
     if (c.chance_tier === 'Unlikely') return false;
-    if (onlyStateQuota && domicileState && !c._is_home_state) return false;
+    // Strict State Quota isolation:
+    if (c.quota === 'State' && !c._is_home_state) return false;
+    if (onlyStateQuota && domicileState && (!c._is_home_state || c.quota !== 'State')) return false;
     if (selectedQuotas.length > 0 && !selectedQuotas.includes(c.quota)) return false;
     return true;
   });
@@ -441,7 +442,7 @@ export function buildFallbackResponse(query, context, resolved) {
     meta: {
       exam_track: query.exam_track,
       authority: resolved.authority || 'MCC-AIQ',
-      round: resolved.available_rounds?.[0] || { round_id: 'r1', label: 'Round 1', status: 'upcoming' },
+      round: resolved.round || resolved.available_rounds?.[0] || { round_id: 'r1', label: selectedRound, status: 'open' },
       data_basis_year: year,
       qualifying_floor_met: qualifies,
     },

@@ -12,6 +12,7 @@ export type MatchRow = {
   chance_score: number;
   chance_tone: string;
   best_path: string;
+  round?: string;
   total_seats: number | null;
   open_seats: number | null;
   college_kind: string | null;
@@ -112,6 +113,13 @@ export default function CollegeMatchResults({
                     }`}>
                       via {m.best_path}
                     </span>
+                    {m.round && (
+                      <span className={`text-[11px] font-bold px-2 py-1 rounded-full ${
+                        dark ? 'bg-blue-500/15 text-blue-300 border border-blue-500/30' : 'bg-blue-50 text-blue-700 border border-blue-200'
+                      }`}>
+                        {m.round}
+                      </span>
+                    )}
                     {m.college_kind && (
                       <span className={`text-[11px] font-bold px-2 py-1 rounded-full ${
                         m.college_kind.includes('Private')

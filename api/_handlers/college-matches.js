@@ -1,5 +1,5 @@
 import supabase from './db-client.js';
-import { collegeNamesForCourse, MEDICAL_COURSES, normalizeCourse } from './_courses.js';
+import { collegeNamesForCourse, MEDICAL_COURSES, normalizeCourse, getRoundMultiplier } from './_courses.js';
 
 function extractCutoffData(cutoffJson, category) {
   if (!cutoffJson) return null;
@@ -62,6 +62,7 @@ export default async function handler(req, res) {
     const rank = Number(body.rank);
     const category = body.category || 'General';
     const state = body.state || null;
+    const round = body.round || 'Round 1';
     const course = normalizeCourse(body.course) || 'MBBS';
     const limit = Math.min(40, Math.max(5, Number(body.limit) || 18));
 
@@ -69,13 +70,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Valid rank is required' });
     }
 
+    const roundMultiplier = getRoundMultiplier(round);
     const courseNames = await collegeNamesForCourse(course);
+
+    const isStateQuota = Boolean(state && state !== 'All' && state !== 'All India (AIQ)');
 
     // Query the comprehensive colleges table instead of cutoffs
     let query = supabase.from('colleges').select('*');
     
-    if (state && state !== 'All') {
-      query = query.eq('state', state);
+    if (isStateQuota) {
+      query = query.ilike('state', `%${state}%`);
     }
     
     if (courseNames && courseNames.length && course !== 'MBBS') {
@@ -89,17 +93,24 @@ export default async function handler(req, res) {
 
     const validMatches = [];
     (colleges || []).forEach(c => {
+      // If state quota is active, strictly exclude any non-matching state colleges
+      if (isStateQuota && !(c.state || '').toLowerCase().includes(state.toLowerCase())) {
+        return;
+      }
+
       const cutoffData = extractCutoffData(c.cutoff, category);
       if (!cutoffData) return; // Skip if no cutoff data for this category
       
-      const chance = scoreChanceRealistic(rank, cutoffData.opening, cutoffData.closing);
+      const adjustedClosing = Math.round(cutoffData.closing * roundMultiplier);
+      const chance = scoreChanceRealistic(rank, cutoffData.opening, adjustedClosing);
       
       validMatches.push({
         college_name: c.name,
         state: c.state || 'Unknown',
         category: category,
         year: 2024,
-        aiq_rank: cutoffData.closing,
+        round: round,
+        aiq_rank: adjustedClosing,
         opening_rank: cutoffData.opening,
         aiq_score: null, 
         state_rank_range: null,
@@ -108,9 +119,9 @@ export default async function handler(req, res) {
         chance: chance.label,
         chance_score: chance.score,
         chance_tone: chance.tone,
-        best_path: 'AIQ',
+        best_path: isStateQuota ? 'State Quota (85%)' : 'AIQ',
         aiq_chance: chance.label,
-        state_chance: null,
+        state_chance: isStateQuota ? chance.label : null,
         total_seats: c.seats,
         open_seats: c.seats,
         college_kind: c.college_type,
@@ -175,6 +186,7 @@ export default async function handler(req, res) {
       category,
       course,
       state: state || 'All',
+      round: round || 'Round 1',
       supported_courses: MEDICAL_COURSES,
       summary,
       matches: pick,
@@ -183,7 +195,7 @@ export default async function handler(req, res) {
         moderate: moderate.slice(0, 8),
         reach: reach.slice(0, 8),
       },
-      note: `Estimates for ${course} use past closing ranks (AIQ / AACCC / state bands). Official allotment depends on seat matrix, preferences and round dynamics.`,
+      note: `Estimates for ${course} (${round}) use past closing ranks (AIQ / AACCC / state bands). Official allotment depends on seat matrix, preferences and round dynamics.`,
     });
   } catch (err) {
     console.error('college-matches error:', err);

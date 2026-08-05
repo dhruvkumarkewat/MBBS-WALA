@@ -6,6 +6,7 @@
  */
 import supabase from './db-client.js';
 import { callAI, verifyGrounding, buildFallbackResponse } from './ai-service.js';
+import { getRoundMultiplier } from './_courses.js';
 
 // ── Authority Resolution (deterministic, spec Section 3) ────────────────────
 
@@ -39,6 +40,8 @@ export async function retrieveContext(query) {
   const quotas = query.quotas || ['AIQ'];
   const domicileState = query.domicile_state || null;
   const candidateRank = query.score_or_rank?.value || 30000;
+  const selectedRound = query.round || query.round_id || 'Round 1';
+  const roundMultiplier = getRoundMultiplier(selectedRound);
 
   // 1. Qualifying cutoffs
   const { data: qualifyingCutoffs } = await supabase
@@ -86,8 +89,9 @@ const DEEMED_KEYWORDS = [
 
   // Map colleges into structured closing ranks
   const collegeCutoffs = (allColleges || []).map((col) => {
-    const closing = getCategoryClosing(col.cutoff, category);
-    if (!closing) return null;
+    const baseClosing = getCategoryClosing(col.cutoff, category);
+    if (!baseClosing) return null;
+    const closing = Math.round(baseClosing * roundMultiplier);
 
     const colType = (col.type || '').toLowerCase();
     const colName = (col.name || '').toLowerCase();
@@ -99,7 +103,7 @@ const DEEMED_KEYWORDS = [
     if (isDeemed) {
       quotaCode = 'Deemed-Central';
     } else if (isGovt) {
-      if (stateMatch && quotas.includes('State') && !quotas.includes('AIQ')) {
+      if (stateMatch && quotas.includes('State')) {
         quotaCode = 'State';
       } else {
         quotaCode = 'AIQ';
@@ -121,7 +125,7 @@ const DEEMED_KEYWORDS = [
       aiq_rank: closing,
       closing_rank: closing,
       category: category,
-      round_name: 'Round 1',
+      round_name: selectedRound === 'All Rounds' || selectedRound === 'All' ? 'Round 1' : selectedRound,
       year: year,
       course_name: examTrack === 'AYUSH' ? 'BAMS' : 'MBBS',
       quota_code: quotaCode,
@@ -135,13 +139,17 @@ const DEEMED_KEYWORDS = [
   const normalizedDirect = (directCutoffs || []).map((item) => {
     const stateMatch = Boolean(domicileState && (item.state || '').toLowerCase().includes(domicileState.toLowerCase()));
     let quotaCode = item.quota_code || 'AIQ';
-    if (stateMatch && quotas.includes('State') && !quotas.includes('AIQ')) {
+    if (stateMatch && quotas.includes('State')) {
       quotaCode = 'State';
     } else if (quotaCode === 'State' && !stateMatch) {
       quotaCode = 'AIQ';
     }
+    const closing = Math.round((item.closing_rank || item.aiq_rank || 50000) * roundMultiplier);
     return {
       ...item,
+      aiq_rank: closing,
+      closing_rank: closing,
+      round_name: selectedRound === 'All Rounds' || selectedRound === 'All' ? (item.round_name || 'Round 1') : selectedRound,
       quota_code: quotaCode,
       _state_match: stateMatch,
     };
@@ -164,7 +172,12 @@ const DEEMED_KEYWORDS = [
       continue;
     }
 
-    // 2. DOMICILE STATE FILTER: If only State Quota was selected, drop all colleges outside domicile state
+    // 2. STRICT STATE QUOTA DOMICILE ISOLATION: A State Quota seat is legally ONLY available in domicile state
+    if (item.quota_code === 'State' && (!domicileState || !item._state_match)) {
+      continue;
+    }
+
+    // 3. DOMICILE STATE FILTER: If only State Quota was selected, drop all colleges outside domicile state
     if (onlyStateQuota && domicileState && !item._state_match) {
       continue;
     }
@@ -260,9 +273,13 @@ const DEEMED_KEYWORDS = [
 // ── Build resolved (deterministic) values ───────────────────────────────────
 
 function buildResolved(query, context) {
+  const category = query.category || 'General';
   const quotas = query.quotas || ['AIQ'];
   const domicileState = query.domicile_state || null;
   const examTrack = query.exam_track || 'MBBS_BDS';
+  const year = query.score_or_rank?.neet_year || 2024;
+  const selectedRound = query.round || query.round_id || 'Round 1';
+  const roundMultiplier = getRoundMultiplier(selectedRound);
 
   const authority = resolveAuthority(examTrack, quotas[0], domicileState);
 
@@ -273,11 +290,21 @@ function buildResolved(query, context) {
     window: r.reg_start ? { start: r.reg_start, end: r.reg_end } : null,
   }));
 
+  const matchedRound = availableRounds.find(
+    (r) => r.label?.toLowerCase() === selectedRound.toLowerCase() || r.round_id === selectedRound
+  ) || {
+    round_id: 'selected_round',
+    label: selectedRound,
+    status: 'open',
+    window: null,
+  };
+
   return {
     authority,
+    round: matchedRound,
     available_rounds: availableRounds.length > 0
       ? availableRounds
-      : [{ round_id: 'default_r1', label: 'Round 1', status: 'upcoming', window: null }],
+      : [{ round_id: 'default_r1', label: selectedRound, status: 'open', window: null }],
     domicile_restrictions: Object.fromEntries(quotas.map((q) => [q, isDomicileRestricted(q)])),
   };
 }
@@ -306,6 +333,7 @@ export default async function handler(req, res) {
       quotas: body.quotas || (body.quota ? [body.quota] : ['AIQ']),
       domicile_state: body.domicile_state || body.state || null,
       preferred_states: body.preferred_states || null,
+      round: body.round || body.round_id || 'Round 1',
       round_id: body.round_id || null,
     };
 

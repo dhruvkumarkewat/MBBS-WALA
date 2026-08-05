@@ -2,28 +2,13 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Calculator, Loader2, Sparkles, Trophy, Award, MapPin, CheckCircle2 } from 'lucide-react';
 import CollegeMatchResults, { type MatchRow } from '../components/CollegeMatchResults';
-import { MEDICAL_COURSES, maxScoreForCourse } from '../lib/courses';
+import { MEDICAL_COURSES, maxScoreForCourse, INDIAN_STATES, COUNSELLING_ROUNDS } from '../lib/courses';
 
 const EXAMS = ['NEET UG', 'NEET PG', 'NEET MDS', 'INICET', 'NEET SS', 'DNB PDCET'];
 const CATEGORIES = ['General', 'OBC', 'EWS', 'SC', 'ST'];
 const POPULAR_STATES = [
   'All India (AIQ)',
-  'Madhya Pradesh',
-  'Maharashtra',
-  'Uttar Pradesh',
-  'Karnataka',
-  'Delhi',
-  'Rajasthan',
-  'Tamil Nadu',
-  'Gujarat',
-  'West Bengal',
-  'Kerala',
-  'Bihar',
-  'Andhra Pradesh',
-  'Telangana',
-  'Punjab',
-  'Haryana',
-  'Odisha',
+  ...INDIAN_STATES,
 ];
 
 const maxScores: Record<string, number> = {
@@ -59,6 +44,7 @@ export default function RankCalculator() {
   const [score, setScore] = useState('610');
   const [category, setCategory] = useState('General');
   const [state, setState] = useState('All India (AIQ)');
+  const [round, setRound] = useState('Round 1');
 
   const [result, setResult] = useState<{
     predicted_rank_min: number;
@@ -135,6 +121,7 @@ export default function RankCalculator() {
           rank: targetRank,
           category,
           state: state === 'All India (AIQ)' ? undefined : state,
+          round,
           course: showCourse ? course : 'MBBS',
           limit: 18,
         }),
@@ -353,6 +340,22 @@ export default function RankCalculator() {
               </select>
             </label>
 
+            {/* Counselling Round selector */}
+            <label className="block text-left">
+              <span className="text-xs font-bold uppercase tracking-wide text-white/50">Counselling Round</span>
+              <select
+                value={round}
+                onChange={(e) => setRound(e.target.value)}
+                className="mt-1.5 w-full border border-white/12 rounded-2xl px-3.5 py-3 font-semibold bg-[#0F1218] text-white focus:outline-none focus:ring-2 focus:ring-[#F97316]/35"
+              >
+                {COUNSELLING_ROUNDS.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </label>
+
             {/* State Domicile filter */}
             <label className="block text-left sm:col-span-2">
               <span className="text-xs font-bold uppercase tracking-wide text-white/50 flex items-center gap-1">
@@ -369,6 +372,11 @@ export default function RankCalculator() {
                   </option>
                 ))}
               </select>
+              {state !== 'All India (AIQ)' && (
+                <p className="mt-1.5 text-[11px] font-semibold text-orange-400/90 flex items-center gap-1">
+                  🎯 <strong>85% State Quota Filter Active:</strong> Only medical colleges located in <strong>{state}</strong> will be matched.
+                </p>
+              )}
             </label>
           </div>
 
@@ -425,6 +433,9 @@ export default function RankCalculator() {
                 <span className="px-3 py-1.5 rounded-full bg-orange-500/20 text-xs font-bold text-orange-300 border border-orange-500/30">
                   {course}
                 </span>
+                <span className="px-3 py-1.5 rounded-full bg-blue-500/20 text-xs font-bold text-blue-300 border border-blue-500/30">
+                  {round}
+                </span>
                 {result.score && (
                   <span className="px-3 py-1.5 rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-300 border border-emerald-500/30">
                     ~{result.score} Marks
@@ -454,6 +465,18 @@ export default function RankCalculator() {
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Live Cutoff Data
               </div>
             </div>
+
+            {state !== 'All India (AIQ)' && (
+              <div className="flex items-center gap-3 p-4 rounded-2xl bg-orange-500/10 border border-orange-500/30 text-orange-200">
+                <span className="text-xl">🏛️</span>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-orange-400">85% State Quota Filter Applied</p>
+                  <p className="text-sm font-semibold text-white/90">
+                    Showing medical colleges located strictly in <span className="text-orange-400 font-bold">{state}</span> under state quota eligibility.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <CollegeMatchResults
               matches={matches}

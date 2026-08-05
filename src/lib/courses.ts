@@ -73,3 +73,67 @@ export function maxScoreForCourse(_course: string, exam = 'NEET UG'): number {
   if (exam === 'NEET MDS') return 960;
   return 720;
 }
+
+/** Standard list of all 28 Indian States & 8 Union Territories */
+export const INDIAN_STATES = [
+  'Andaman and Nicobar Islands',
+  'Andhra Pradesh',
+  'Arunachal Pradesh',
+  'Assam',
+  'Bihar',
+  'Chandigarh',
+  'Chhattisgarh',
+  'Dadra and Nagar Haveli and Daman and Diu',
+  'Delhi (NCT)',
+  'Goa',
+  'Gujarat',
+  'Haryana',
+  'Himachal Pradesh',
+  'Jammu and Kashmir',
+  'Jharkhand',
+  'Karnataka',
+  'Kerala',
+  'Ladakh',
+  'Lakshadweep',
+  'Madhya Pradesh',
+  'Maharashtra',
+  'Manipur',
+  'Meghalaya',
+  'Mizoram',
+  'Nagaland',
+  'Odisha',
+  'Puducherry',
+  'Punjab',
+  'Rajasthan',
+  'Sikkim',
+  'Tamil Nadu',
+  'Telangana',
+  'Tripura',
+  'Uttar Pradesh',
+  'Uttarakhand',
+  'West Bengal',
+] as const;
+
+export type IndianState = typeof INDIAN_STATES[number];
+
+/** Standard NEET counselling allotment rounds */
+export const COUNSELLING_ROUNDS = [
+  'All Rounds',
+  'Round 1',
+  'Round 2',
+  'Round 3',
+  'Mop Up',
+  'Stray Vacancy',
+] as const;
+
+export type CounsellingRound = typeof COUNSELLING_ROUNDS[number];
+
+export function getRoundMultiplier(round?: string | null): number {
+  if (!round || round === 'All Rounds' || round === 'All' || round === 'Round 1') return 1.0;
+  const rLower = String(round).toLowerCase();
+  if (rLower.includes('2')) return 1.05;
+  if (rLower.includes('3') || rLower.includes('mop')) return 1.12;
+  if (rLower.includes('stray')) return 1.20;
+  return 1.0;
+}
+

@@ -4,13 +4,14 @@ import Table, { type Column } from '../components/ui/Table';
 import SearchInput from '../components/ui/SearchInput';
 import { SkeletonTable } from '../components/ui/Skeleton';
 import { staggerContainer, staggerItem } from '../lib/motion';
-import { MEDICAL_COURSES } from '../lib/courses';
+import { MEDICAL_COURSES, INDIAN_STATES, COUNSELLING_ROUNDS } from '../lib/courses';
 
 interface Cutoff {
   id: number;
   college_name: string;
   state: string;
   category: string;
+  round_name?: string;
   aiq_rank: number;
   aiq_score: number;
   state_rank_range: string;
@@ -23,6 +24,8 @@ export default function Cutoffs() {
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('All');
   const [course, setCourse] = useState('MBBS');
+  const [state, setState] = useState('All');
+  const [round, setRound] = useState('All');
   const [q, setQ] = useState('');
   const [error, setError] = useState('');
 
@@ -30,6 +33,8 @@ export default function Cutoffs() {
     const params = new URLSearchParams();
     if (category !== 'All') params.set('category', category);
     if (course && course !== 'All') params.set('course', course);
+    if (state && state !== 'All') params.set('state', state);
+    if (round && round !== 'All') params.set('round', round);
     if (q) params.set('q', q);
     setLoading(true);
     const t = window.setTimeout(() => {
@@ -40,7 +45,7 @@ export default function Cutoffs() {
         .finally(() => setLoading(false));
     }, q ? 220 : 0);
     return () => window.clearTimeout(t);
-  }, [category, course, q]);
+  }, [category, course, state, round, q]);
 
   const columns = useMemo<Column<Cutoff>[]>(
     () => [
@@ -55,6 +60,15 @@ export default function Cutoffs() {
         cell: (r) => (
           <span className="px-2 py-0.5 rounded-md bg-[var(--ds-bg-muted)] border border-[var(--ds-border)] font-bold text-xs">
             {r.category}
+          </span>
+        ),
+      },
+      {
+        id: 'round',
+        header: 'Round',
+        cell: (r) => (
+          <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-bold text-xs">
+            {r.round_name || 'Round 1'}
           </span>
         ),
       },
@@ -132,7 +146,27 @@ export default function Cutoffs() {
           <motion.div className="flex-1" variants={staggerItem}>
             <SearchInput value={q} onChange={setQ} loading={loading} placeholder="Search college…" />
           </motion.div>
-          <motion.div className="flex flex-wrap gap-2" variants={staggerItem}>
+          <motion.div className="flex flex-wrap gap-2 items-center" variants={staggerItem}>
+            <select
+              value={state}
+              onChange={(e) => setState(e.target.value)}
+              className="px-3.5 py-2 rounded-full border border-black/10 bg-white font-semibold text-sm text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
+            >
+              <option value="All">All States / AIQ</option>
+              {INDIAN_STATES.map((st) => (
+                <option key={st} value={st}>{st}</option>
+              ))}
+            </select>
+            <select
+              value={round}
+              onChange={(e) => setRound(e.target.value)}
+              className="px-3.5 py-2 rounded-full border border-black/10 bg-white font-semibold text-sm text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
+            >
+              <option value="All">All Rounds</option>
+              {COUNSELLING_ROUNDS.filter((r) => r !== 'All Rounds').map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
             {['All', 'General', 'OBC', 'SC', 'ST'].map((c) => (
               <button
                 key={c}

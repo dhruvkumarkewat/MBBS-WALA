@@ -28,6 +28,7 @@ import { useDashboard } from '../../contexts/DashboardContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiJson } from '../../lib/api';
 import { usePremium, UpgradePrompt, PremiumGate } from '../../lib/premium';
+import { INDIAN_STATES, COUNSELLING_ROUNDS } from '../../lib/courses';
 
 export { ProfilePage } from './ProfilePage';
 export { SubscriptionPage } from './SubscriptionPage';
@@ -202,13 +203,7 @@ const TIER_STYLES: Record<string, { badge: string; border: string; icon: string 
   Unlikely: { badge: 'bg-red-500/15 text-red-400 border-red-500/30', border: 'border-l-4 border-l-red-500/40', icon: '⚠️' },
 };
 
-const INDIA_STATES = [
-  'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat',
-  'Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh',
-  'Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab',
-  'Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh',
-  'Uttarakhand','West Bengal','Chandigarh','Delhi','Jammu and Kashmir','Puducherry',
-];
+const INDIA_STATES = INDIAN_STATES;
 
 const CATEGORIES = [
   'General','EWS','OBC-NCL','SC','ST',
@@ -236,6 +231,7 @@ export function PredictorPage() {
   const [category, setCategory] = useState(profile?.category || 'General');
   const [domicileState, setDomicileState] = useState(profile?.domicile_state || profile?.state || '');
   const [quotas, setQuotas] = useState<string[]>(['AIQ', 'State']);
+  const [round, setRound] = useState('Round 1');
   const [neetYear, setNeetYear] = useState(new Date().getFullYear());
 
   // ── Result state ──
@@ -244,6 +240,18 @@ export function PredictorPage() {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'colleges' | 'scholarships'>('colleges');
   const [tierFilter, setTierFilter] = useState<'ALL' | 'High' | 'Moderate' | 'Reach'>('ALL');
+  const [quotaFilter, setQuotaFilter] = useState<string>('ALL');
+
+  // Sync profile data when loaded
+  useEffect(() => {
+    if (profile) {
+      if (!rank && profile.neet_rank) setRank(profile.neet_rank.toString());
+      if (!score && profile.neet_score) setScore(profile.neet_score.toString());
+      if (profile.category) setCategory(profile.category);
+      const dom = profile.domicile_state || profile.domicile || profile.state;
+      if (dom && !domicileState) setDomicileState(dom);
+    }
+  }, [profile]);
 
   // Toggle a quota in the multi-select
   const toggleQuota = (v: string) =>
@@ -278,6 +286,7 @@ export function PredictorPage() {
           rank: mode === 'rank' ? rankNum : undefined,
           score: mode === 'score' ? scoreNum : undefined,
           neet_year: neetYear,
+          round,
           category,
           quotas,
           domicile_state: domicileState || null,
@@ -316,6 +325,7 @@ export function PredictorPage() {
           matches: Array<{
             college_name: string; state: string; chance: string;
             chance_score: number; chance_tone: string; best_path: string;
+            round?: string;
             aiq_rank: number; total_seats: number | null;
           }>;
           summary: { safe_count: number; moderate_count: number; reach_count: number };
@@ -324,6 +334,7 @@ export function PredictorPage() {
           body: JSON.stringify({
             rank: resolvedRank,
             category,
+            round,
             course: 'MBBS',
             state: quotas.includes('State') && !quotas.includes('AIQ') && domicileState ? domicileState : undefined,
             limit: 25,
@@ -353,7 +364,7 @@ export function PredictorPage() {
               quota: isHomeState && quotas.includes('State') ? 'State' : 'AIQ',
               category,
               chance_tier: toneToTier(m.chance_tone) as CollegePrediction['chance_tier'],
-              closing_rank_reference: m.aiq_rank ? [{ year: neetYear - 1, round: 'Round 1', rank: m.aiq_rank }] : [],
+              closing_rank_reference: m.aiq_rank ? [{ year: neetYear - 1, round: m.round || round || 'Round 1', rank: m.aiq_rank }] : [],
               fee: null,
               source_ids: [],
             };
@@ -377,7 +388,25 @@ export function PredictorPage() {
   const modCount  = colleges.filter((c) => c.chance_tier === 'Moderate').length;
   const reachCount = colleges.filter((c) => c.chance_tier === 'Reach').length;
 
-  const displayedColleges = colleges.filter((c) => tierFilter === 'ALL' ? true : c.chance_tier === tierFilter);
+  const isOnlyStateQuota = quotas.includes('State') && !quotas.includes('AIQ');
+
+  const displayedColleges = colleges.filter((c) => {
+    if (tierFilter !== 'ALL' && c.chance_tier !== tierFilter) return false;
+    if (quotaFilter !== 'ALL' && c.quota !== quotaFilter) return false;
+    // Strict State Quota Isolation: State quota seats can ONLY be in candidate's domicile state
+    if (c.quota === 'State' && domicileState && !(c.state || '').toLowerCase().includes(domicileState.toLowerCase())) {
+      return false;
+    }
+    // If only state quota was selected in form, only domicile state colleges are valid
+    if (isOnlyStateQuota && domicileState && (!(c.state || '').toLowerCase().includes(domicileState.toLowerCase()) || c.quota !== 'State')) {
+      return false;
+    }
+    return true;
+  });
+
+  const availableQuotas = useMemo(() => {
+    return Array.from(new Set(colleges.map((c) => c.quota).filter(Boolean)));
+  }, [colleges]);
 
   return (
     <div className="max-w-3xl">
@@ -456,8 +485,8 @@ export function PredictorPage() {
           </label>
         </div>
 
-        {/* Category + Domicile */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Category + Counselling Round + Domicile */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <label className="block">
             <span className={`text-xs font-bold uppercase ${s.muted}`}>Category</span>
             <select
@@ -469,8 +498,18 @@ export function PredictorPage() {
             </select>
           </label>
           <label className="block">
+            <span className={`text-xs font-bold uppercase ${s.muted}`}>Counselling Round</span>
+            <select
+              value={round}
+              onChange={(e) => setRound(e.target.value)}
+              className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
+            >
+              {COUNSELLING_ROUNDS.map((r) => <option key={r}>{r}</option>)}
+            </select>
+          </label>
+          <label className="block">
             <span className={`text-xs font-bold uppercase ${quotas.includes('State') ? 'text-primary' : s.muted}`}>
-              Domicile State {quotas.includes('State') ? '(Required for State Quota *)' : ''}
+              Domicile State {quotas.includes('State') ? '(State Quota *)' : ''}
             </span>
             <select
               value={domicileState}
@@ -501,6 +540,19 @@ export function PredictorPage() {
               </button>
             ))}
           </div>
+
+          {quotas.includes('State') && domicileState && (
+            <div className="flex items-center gap-2 text-xs font-semibold text-primary bg-primary/10 border border-primary/20 rounded-xl px-3.5 py-2 mt-2.5">
+              <span>📍</span>
+              <span>
+                {isOnlyStateQuota ? (
+                  <><strong>State Quota Only:</strong> Only medical colleges in <strong>{domicileState}</strong> with 85% state quota will be shown.</>
+                ) : (
+                  <><strong>State Quota Included:</strong> 85% state quota colleges will be shown for <strong>{domicileState}</strong> alongside other selected quotas.</>
+                )}
+              </span>
+            </div>
+          )}
         </div>
 
         {error && (
@@ -588,7 +640,7 @@ export function PredictorPage() {
                       onClick={() => setActiveTab('colleges')}
                       className={`text-xs px-3 py-1.5 rounded-full font-bold transition-all ${activeTab === 'colleges' ? 'bg-primary text-white' : `${s.muted} border border-white/10`}`}
                     >
-                      🏥 Colleges ({colleges.length})
+                      🏥 Colleges ({displayedColleges.length})
                     </button>
                     {scholarships.length > 0 && (
                       <button
@@ -617,13 +669,61 @@ export function PredictorPage() {
                               : `${s.muted} hover:text-white border border-transparent`
                           }`}
                         >
-                          {t === 'ALL' ? 'All' : t}
+                          {t === 'ALL' ? 'All Tiers' : t}
                         </button>
                       ))}
                     </div>
                   )}
                 </div>
+
+                {/* Quota Sub-filter when multiple quotas are present */}
+                {activeTab === 'colleges' && availableQuotas.length > 1 && (
+                  <div className="mt-3 pt-3 border-t border-white/10 flex flex-wrap items-center gap-1.5">
+                    <span className={`text-[11px] font-bold uppercase mr-1 ${s.muted}`}>Quota Filter:</span>
+                    <button
+                      type="button"
+                      onClick={() => setQuotaFilter('ALL')}
+                      className={`text-[11px] px-2.5 py-1 rounded-lg font-semibold transition-all ${
+                        quotaFilter === 'ALL'
+                          ? 'bg-white/20 text-white border border-white/30'
+                          : `${s.muted} hover:text-white border border-transparent`
+                      }`}
+                    >
+                      All Quotas ({colleges.length})
+                    </button>
+                    {availableQuotas.map((q) => {
+                      const count = colleges.filter((c) => c.quota === q).length;
+                      return (
+                        <button
+                          key={q}
+                          type="button"
+                          onClick={() => setQuotaFilter(q)}
+                          className={`text-[11px] px-2.5 py-1 rounded-lg font-semibold transition-all ${
+                            quotaFilter === q
+                              ? 'bg-primary text-white border border-primary'
+                              : `${s.muted} hover:text-white border border-transparent`
+                          }`}
+                        >
+                          {q === 'State' ? `🎯 State Quota (${domicileState || 'Domicile'})` : q} ({count})
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
+
+              {/* ── State Quota Domicile Notice ── */}
+              {(isOnlyStateQuota || quotaFilter === 'State') && domicileState && (
+                <div className="rounded-2xl border border-primary/30 bg-primary/10 p-3.5 flex items-center gap-3 text-xs font-semibold text-primary">
+                  <span className="text-xl">🏛️</span>
+                  <div>
+                    <p className="font-bold uppercase tracking-wider text-[11px]">85% Domicile State Quota Enforced</p>
+                    <p className="text-white/90 text-xs">
+                      Showing medical colleges located strictly in <span className="font-bold text-white underline">{domicileState}</span> under 85% state quota. Non-domicile state colleges are excluded.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* ── Fraud Warning ── */}
               {aiResponse.fraud_warning && (
@@ -650,6 +750,11 @@ export function PredictorPage() {
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20`}>
                                 🎯 {c.quota} Quota
                               </span>
+                              {latestRef?.round && (
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30`}>
+                                  {latestRef.round}
+                                </span>
+                              )}
                               <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${s.chip}`}>
                                 {c.category}
                               </span>

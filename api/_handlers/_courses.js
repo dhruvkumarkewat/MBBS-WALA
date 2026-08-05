@@ -89,3 +89,21 @@ export function applyCourseFilterOnCollegesQuery(query, course) {
   }
   return query.eq('course', c);
 }
+
+export const COUNSELLING_ROUNDS = [
+  'All Rounds',
+  'Round 1',
+  'Round 2',
+  'Round 3',
+  'Mop Up',
+  'Stray Vacancy',
+];
+
+export function getRoundMultiplier(round) {
+  if (!round || round === 'All Rounds' || round === 'All' || round === 'Round 1') return 1.0;
+  const rLower = String(round).toLowerCase();
+  if (rLower.includes('2')) return 1.05;
+  if (rLower.includes('3') || rLower.includes('mop')) return 1.12;
+  if (rLower.includes('stray')) return 1.20;
+  return 1.0;
+}

@@ -10,7 +10,7 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const { category, q, state, course, paginate } = req.query;
+      const { category, q, state, course, round, paginate } = req.query;
       const usePaging = paginate === '1' || paginate === 'true' || req.query.page;
 
       let query = supabase
@@ -19,7 +19,8 @@ export default async function handler(req, res) {
         .order('aiq_rank', { ascending: true });
 
       if (category && category !== 'All') query = query.eq('category', category);
-      if (state) query = query.eq('state', state);
+      if (state && state !== 'All') query = query.ilike('state', `%${state}%`);
+      if (round && round !== 'All' && round !== 'All Rounds') query = query.ilike('round_name', `%${round}%`);
       if (q) query = query.ilike('college_name', `%${q}%`);
 
       const c = normalizeCourse(course);
