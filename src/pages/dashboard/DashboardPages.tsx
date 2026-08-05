@@ -371,7 +371,7 @@ export function PredictorPage() {
   const [domicileState, setDomicileState] = useState(profile?.domicile_state || profile?.state || '');
   const [quotas, setQuotas] = useState<string[]>(['AIQ', 'State']);
   const [round, setRound] = useState('Round 1');
-  const neetYear = new Date().getFullYear();
+  const [neetYear, setNeetYear] = useState(new Date().getFullYear());
 
   // State for AI form
   const [aiResponse, setAiResponse] = useState<PredictorResponse | null>(null);
@@ -525,30 +525,32 @@ export function PredictorPage() {
           return true;
         });
 
+        const fallbackColleges = filteredMatches.map((m) => {
+          const isHomeState = Boolean(domicileState && (m.state || '').toLowerCase().includes(domicileState.toLowerCase()));
+          const tier = toneToTier(m.chance_tone);
+          return {
+            name: m.college_name,
+            probability: tier,
+            expected_round: m.round || round || 'Round 1',
+            fees: (m as any).fee ? `₹${Number((m as any).fee).toLocaleString('en-IN')}/yr` : 'N/A',
+            quota: (m as any).quota || (isHomeState && quotas.includes('State') ? 'State' : 'AIQ'),
+            opening_rank: '-',
+            closing_rank: m.aiq_rank?.toString() || '-',
+            reason: 'Legacy fallback match',
+          };
+        });
+
         setAiResponse({
           meta: { exam_track: examTrack, qualifying_floor_met: true },
-          colleges: filteredMatches.map((m) => {
-            const isHomeState = Boolean(domicileState && (m.state || '').toLowerCase().includes(domicileState.toLowerCase()));
-            return {
-              college_name: m.college_name,
-              state: m.state,
-              course: (m as any).course || 'MBBS',
-              quota: (m as any).quota || (isHomeState && quotas.includes('State') ? 'State' : 'AIQ'),
-              category,
-              chance_tier: toneToTier(m.chance_tone) as CollegePrediction['chance_tier'],
-              closing_rank_reference: m.aiq_rank ? [{ year: neetYear - 1, round: m.round || round || 'Round 1', rank: m.aiq_rank }] : [],
-              fee: ((m as any).fee ? { formatted: `₹${Number((m as any).fee).toLocaleString('en-IN')}/yr` } : null) as any,
-              source_ids: [],
-            };
-          }),
-          scholarships: (legacy.scholarships || []).map((s) => ({
-            name: s.name,
-            provider: s.provider,
-            match_reason: s.match_reason,
-            estimated_amount: s.estimated_amount,
-            official_portal: s.official_portal,
-            source_id: s.source_id || '',
-          })),
+          college_predictions: {
+            safe: fallbackColleges.filter(c => c.probability === 'High'),
+            moderate: fallbackColleges.filter(c => c.probability === 'Moderate'),
+            reach: fallbackColleges.filter(c => c.probability === 'Reach'),
+          },
+          scholarships: {
+            government: (legacy.scholarships || []).map((s: any) => s.name),
+            state: [], private: [], minority: [], category: [], income_based: [],
+          },
           disclaimers: ['Data from official counselling cutoffs.'],
           _provider_used: 'legacy-fallback',
         });
@@ -561,31 +563,6 @@ export function PredictorPage() {
   };
 
   const floorMet = aiResponse?.meta?.qualifying_floor_met !== false;
-  const colleges = aiResponse?.colleges || [];
-  const scholarships = aiResponse?.scholarships || [];
-  const highCount = colleges.filter((c) => c.chance_tier === 'High').length;
-  const modCount  = colleges.filter((c) => c.chance_tier === 'Moderate').length;
-  const reachCount = colleges.filter((c) => c.chance_tier === 'Reach').length;
-
-  const isOnlyStateQuota = quotas.includes('State') && !quotas.includes('AIQ');
-
-  const displayedColleges = colleges.filter((c) => {
-    if (tierFilter !== 'ALL' && c.chance_tier !== tierFilter) return false;
-    if (quotaFilter !== 'ALL' && c.quota !== quotaFilter) return false;
-    // Strict State Quota Isolation: State quota seats can ONLY be in candidate's domicile state
-    if (c.quota === 'State' && domicileState && !(c.state || '').toLowerCase().includes(domicileState.toLowerCase())) {
-      return false;
-    }
-    // If only state quota was selected in form, only domicile state colleges are valid
-    if (isOnlyStateQuota && domicileState && (!(c.state || '').toLowerCase().includes(domicileState.toLowerCase()) || c.quota !== 'State')) {
-      return false;
-    }
-    return true;
-  });
-
-  const availableQuotas = useMemo(() => {
-    return Array.from(new Set(colleges.map((c) => c.quota).filter(Boolean)));
-  }, [colleges]);
 
   return (
     <div className="w-full">
