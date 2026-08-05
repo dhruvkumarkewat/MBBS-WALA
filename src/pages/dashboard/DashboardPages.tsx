@@ -32,6 +32,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { apiJson } from '../../lib/api';
 import { usePremium, UpgradePrompt, PremiumGate } from '../../lib/premium';
 import { INDIAN_STATES, COUNSELLING_ROUNDS } from '../../lib/courses';
+import Cutoffs from '../../pages/Cutoffs';
 
 export { ProfilePage } from './ProfilePage';
 export { SubscriptionPage } from './SubscriptionPage';
@@ -2063,7 +2064,7 @@ export function CounsellingPage() {
           <Link to="/dashboard/seat-matrix" className="zn-cta text-sm py-2">
             Seat matrix
           </Link>
-          <Link to="/cutoffs" className="zn-cta text-sm py-2">
+          <Link to="/dashboard/cutoffs" className="zn-cta text-sm py-2">
             Public cutoffs
           </Link>
           <Link to="/dashboard/predictor" className="zn-cta zn-cta-primary text-sm py-2">
@@ -2076,6 +2077,10 @@ export function CounsellingPage() {
       </div>
     </div>
   );
+}
+
+export function DashCutoffsPage() {
+  return <Cutoffs />;
 }
 
 export function DashSeatMatrixPage() {
@@ -2471,7 +2476,7 @@ export function DownloadsPage() {
   const files = [
     { t: 'Seat Matrix (live table)', to: '/dashboard/seat-matrix' },
     { t: 'College directory', to: '/dashboard/finder' },
-    { t: 'Public cutoffs page', to: '/cutoffs' },
+    { t: 'Public cutoffs page', to: '/dashboard/cutoffs' },
     { t: 'Packages', to: '/packages' },
   ];
   return (

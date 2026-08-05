@@ -53,7 +53,22 @@ export default async function handler(req, res) {
         });
       }
 
-      if (req.query.limit) query = query.limit(Number(req.query.limit));
+      const limitVal = req.query.limit ? Number(req.query.limit) : 0;
+      if (limitVal > 1000) {
+        let allData = [];
+        let from = 0;
+        let step = 999;
+        while (true) {
+          const { data, error } = await query.range(from, from + step);
+          if (error) throw error;
+          if (data) allData = allData.concat(data);
+          if (!data || data.length <= step) break;
+          from += step + 1;
+        }
+        return res.status(200).json(allData);
+      }
+
+      if (limitVal > 0) query = query.limit(limitVal);
       const { data, error } = await query;
       if (error) throw error;
       return res.status(200).json(data || []);
