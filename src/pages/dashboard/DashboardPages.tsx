@@ -331,6 +331,7 @@ interface PredictorResponse {
   _provider_used?: string;
   _response_time_ms?: number;
   _data_summary?: { colleges_in_context: number; scholarships_matched: number };
+  disclaimers_fraud_warnings?: string[];
 }
 
 /* ── Chance tier styling ── */
@@ -551,7 +552,7 @@ export function PredictorPage() {
             government: (legacy.scholarships || []).map((s: any) => s.name),
             state: [], private: [], minority: [], category: [], income_based: [],
           },
-          disclaimers: ['Data from official counselling cutoffs.'],
+          disclaimers_fraud_warnings: ['Data from official counselling cutoffs.'],
           _provider_used: 'legacy-fallback',
         });
       }
@@ -563,6 +564,7 @@ export function PredictorPage() {
   };
 
   const floorMet = aiResponse?.meta?.qualifying_floor_met !== false;
+  const isOnlyStateQuota = quotas.includes('State') && !quotas.includes('AIQ');
 
   return (
     <div className="w-full">
