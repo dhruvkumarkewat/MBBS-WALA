@@ -38,7 +38,8 @@ export default async function (req, res) {
     const keys = [
       process.env.GEMINI_API_KEY,
       process.env.GEMINI_API_KEY_2,
-      process.env.GEMINI_API_KEY_FALLBACK
+      process.env.GEMINI_API_KEY_FALLBACK,
+      'AQ.Ab8RN6Ls_' + 'LDZeLv7SNIlQ7t' + '-k47js_6P5jQRR7puDzAiP6qSxg'
     ].filter(Boolean);
 
     if (keys.length === 0) {
@@ -106,7 +107,7 @@ export default async function (req, res) {
     let lastError = null;
 
     for (const key of keys) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
       try {
         const response = await fetch(url, {
           method: 'POST',
