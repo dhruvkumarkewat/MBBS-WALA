@@ -50,11 +50,8 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
         payment_status?: string;
       }>('/api/profile', {}, true);
 
-      let premium = Boolean(res?.is_premium) || 
-                    res?.subscription_status === 'active' || 
-                    res?.payment_status === 'Paid' ||
-                    Boolean(user.user_metadata?.is_premium);
-      let subStatus = (res?.subscription_status as any) || (premium ? 'active' : 'free');
+      let premium = Boolean(res?.is_premium) && res?.subscription_status === 'active';
+      let subStatus: 'free' | 'active' | 'expired' | 'cancelled' = (res?.subscription_status as any) || (premium ? 'active' : 'free');
       let subPlan = res?.subscription_plan && res.subscription_plan !== 'Free Plan'
         ? res.subscription_plan
         : (premium ? 'NEET Counselling Pro' : 'Free Plan');
@@ -71,7 +68,7 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
             payments?: any[];
           }>('/api/payment', {}, true);
 
-          if (payRes?.is_premium || payRes?.payments?.some((p: any) => p.status === 'captured' || p.status === 'success' || p.status === 'paid')) {
+          if (payRes?.is_premium && payRes?.subscription_status === 'active') {
             premium = true;
             subStatus = 'active';
             subPlan = payRes.subscription_plan || payRes.subscription?.plan_name || 'NEET Counselling Pro';
@@ -87,11 +84,10 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
       setPlan(subPlan);
       setEndDate(subEndDate);
     } catch {
-      // Fallback to user metadata check
-      const metaPrem = Boolean(user.user_metadata?.is_premium);
-      setIsPremium(metaPrem);
-      setStatus(metaPrem ? 'active' : 'free');
-      setPlan(metaPrem ? 'NEET Counselling Pro' : 'Free Plan');
+      setIsPremium(false);
+      setStatus('free');
+      setPlan('Free Plan');
+      setEndDate(null);
     } finally {
       setLoading(false);
     }

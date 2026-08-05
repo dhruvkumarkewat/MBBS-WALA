@@ -130,103 +130,133 @@ export default async function handler(req, res) {
           .eq('id', user.id);
       }
 
-      // Comprehensive Premium Verification across all related tables
-      let isPremium = Boolean(data?.is_premium) || 
-                      data?.subscription_status === 'active' || 
-                      data?.payment_status === 'Paid' || 
-                      Boolean(user.user_metadata?.is_premium);
-      let planName = data?.subscription_plan && data.subscription_plan !== 'Free Plan' ? data.subscription_plan : 'NEET Counselling Pro';
-      let subStatus = data?.subscription_status === 'active' ? 'active' : (isPremium ? 'active' : 'free');
-      let endDate = data?.premium_end_date || null;
+      // ── Strict & Accurate Premium Verification across all linked tables ──
+      let isPremium = false;
+      let planName = 'Free Plan';
+      let subStatus = 'free';
+      let endDate = null;
 
+      // 1. Check subscriptions table with strict 'active' status and non-expired date
+      try {
+        let subQuery = supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('status', 'active');
+        
+        if (user.email && user.email.trim()) {
+          subQuery = subQuery.or(`user_id.eq.${user.id},user_id.eq.${user.email.trim()}`);
+        } else {
+          subQuery = subQuery.eq('user_id', user.id);
+        }
+
+        const { data: subData } = await subQuery.order('id', { ascending: false }).limit(1);
+
+        if (subData && subData.length > 0) {
+          const sub = subData[0];
+          const isExpired = sub.end_date && new Date(sub.end_date).getTime() < Date.now();
+          if (!isExpired) {
+            isPremium = true;
+            subStatus = 'active';
+            planName = sub.plan_name || sub.plan_slug || 'NEET Counselling Pro';
+            endDate = sub.end_date || null;
+          }
+        }
+      } catch (subErr) {
+        console.warn('Subscriptions check error:', subErr.message);
+      }
+
+      // 2. Check payments table strictly for captured / paid transactions
       if (!isPremium) {
-        // 1. Check subscriptions table
         try {
-          const { data: subData } = await supabase
-            .from('subscriptions')
+          let payQuery = supabase
+            .from('payments')
             .select('*')
-            .or(`user_id.eq.${user.id},user_id.eq.${user.email || ''}`)
-            .order('id', { ascending: false })
-            .limit(1);
+            .in('status', ['captured', 'success', 'paid', 'complete']);
 
-          if (subData && subData.length > 0) {
-            const sub = subData[0];
-            if (sub.status === 'active' || sub.status === 'completed' || !sub.status) {
-              isPremium = true;
-              subStatus = 'active';
-              planName = sub.plan_name || sub.plan_slug || planName;
-              endDate = sub.end_date || endDate;
-            }
+          if (user.email && user.email.trim()) {
+            payQuery = payQuery.or(`user_id.eq.${user.id},user_id.eq.${user.email.trim()}`);
+          } else {
+            payQuery = payQuery.eq('user_id', user.id);
           }
-        } catch (subErr) {
-          console.warn('Subscriptions check error:', subErr.message);
-        }
 
-        // 2. Check payments table
-        if (!isPremium) {
-          try {
-            const { data: payData } = await supabase
-              .from('payments')
-              .select('*')
-              .or(`user_id.eq.${user.id},user_id.eq.${user.email || ''}`)
-              .in('status', ['captured', 'success', 'paid', 'complete'])
-              .order('id', { ascending: false })
-              .limit(1);
+          const { data: payData } = await payQuery.order('id', { ascending: false }).limit(1);
 
-            if (payData && payData.length > 0) {
-              const pay = payData[0];
-              isPremium = true;
-              subStatus = 'active';
-              planName = pay.meta?.plan_name || pay.plan_slug || planName;
-            }
-          } catch (payErr) {
-            console.warn('Payments check error:', payErr.message);
+          if (payData && payData.length > 0) {
+            const pay = payData[0];
+            isPremium = true;
+            subStatus = 'active';
+            planName = pay.meta?.plan_name || pay.plan_slug || 'NEET Counselling Pro';
           }
+        } catch (payErr) {
+          console.warn('Payments check error:', payErr.message);
         }
+      }
 
-        // 3. Check student_counselling table
-        if (!isPremium) {
-          try {
-            const { data: scData } = await supabase
-              .from('student_counselling')
-              .select('*')
-              .or(`user_id.eq.${user.id},email.eq.${user.email || ''}`)
-              .eq('payment_status', 'Paid')
-              .limit(1);
+      // 3. Check student_counselling table strictly for confirmed payment
+      if (!isPremium) {
+        try {
+          let scQuery = supabase
+            .from('student_counselling')
+            .select('*')
+            .eq('payment_status', 'Paid');
 
-            if (scData && scData.length > 0) {
-              isPremium = true;
-              subStatus = 'active';
-              planName = scData[0].purchased_course || planName;
-            }
-          } catch (scErr) {
-            console.warn('Student counselling payment check error:', scErr.message);
+          if (user.email && user.email.trim()) {
+            scQuery = scQuery.or(`user_id.eq.${user.id},email.eq.${user.email.trim()}`);
+          } else {
+            scQuery = scQuery.eq('user_id', user.id);
           }
-        }
 
-        // Auto-heal and sync profile row if premium found in any linked table
-        if (isPremium) {
-          data.is_premium = true;
-          data.subscription_status = 'active';
-          data.subscription_plan = planName;
-          data.payment_status = 'Paid';
-          data.premium_end_date = endDate;
-          
-          try {
-            await supabase
-              .from('profiles')
-              .update({
-                is_premium: true,
-                subscription_status: 'active',
-                subscription_plan: planName,
-                payment_status: 'Paid',
-                premium_end_date: endDate,
-              })
-              .eq('id', user.id);
-          } catch (healErr) {
-            console.warn('Profile auto-heal update warning:', healErr.message);
+          const { data: scData } = await scQuery.limit(1);
+
+          if (scData && scData.length > 0) {
+            isPremium = true;
+            subStatus = 'active';
+            planName = scData[0].purchased_course || 'NEET Counselling Pro';
           }
+        } catch (scErr) {
+          console.warn('Student counselling payment check error:', scErr.message);
         }
+      }
+
+      // 4. Fallback to profile table flags if explicitly active and not expired
+      if (!isPremium && Boolean(data?.is_premium) && data?.subscription_status === 'active') {
+        const isExpired = data.premium_end_date && new Date(data.premium_end_date).getTime() < Date.now();
+        if (!isExpired) {
+          isPremium = true;
+          subStatus = 'active';
+          planName = (data.subscription_plan && data.subscription_plan !== 'Free Plan') ? data.subscription_plan : 'NEET Counselling Pro';
+          endDate = data.premium_end_date || null;
+        }
+      }
+
+      // Sync and enforce state
+      if (isPremium) {
+        data.is_premium = true;
+        data.subscription_status = 'active';
+        data.subscription_plan = planName;
+        data.payment_status = 'Paid';
+        data.premium_end_date = endDate;
+        
+        // Auto-heal profile row in DB
+        try {
+          await supabase
+            .from('profiles')
+            .update({
+              is_premium: true,
+              subscription_status: 'active',
+              subscription_plan: planName,
+              payment_status: 'Paid',
+              premium_end_date: endDate,
+            })
+            .eq('id', user.id);
+        } catch (healErr) {
+          console.warn('Profile auto-heal update warning:', healErr.message);
+        }
+      } else {
+        data.is_premium = false;
+        data.subscription_status = 'free';
+        data.subscription_plan = 'Free Plan';
+        data.payment_status = data.payment_status === 'Paid' ? 'Unpaid' : (data.payment_status || 'Unpaid');
       }
 
       // Attach wallet summary & saved colleges count

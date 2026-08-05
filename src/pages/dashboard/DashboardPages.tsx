@@ -23,6 +23,8 @@ import {
   Phone,
   ChevronLeft,
   ChevronRight,
+  Crown,
+  Sparkles,
 } from 'lucide-react';
 import { useDashboard } from '../../contexts/DashboardContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -68,6 +70,7 @@ function ErrorBox({ message }: { message: string }) {
 /* ---------------- AI Assistant (local guidance; no fake API) ---------------- */
 export function AiAssistantPage() {
   const s = useShell();
+  const { isPremium } = usePremium();
   type ChatMsg = { role: 'assistant' | 'user'; text: string };
   const [messages, setMessages] = useState<ChatMsg[]>([
     {
@@ -77,6 +80,7 @@ export function AiAssistantPage() {
   ]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
+  const [userQueryCount, setUserQueryCount] = useState(0);
 
   const send = async (e: FormEvent) => {
     e.preventDefault();
@@ -84,6 +88,19 @@ export function AiAssistantPage() {
     const q = input.trim();
     setInput('');
     setMessages((m) => [...m, { role: 'user', text: q }]);
+
+    if (!isPremium && userQueryCount >= 3) {
+      setMessages((m) => [
+        ...m,
+        {
+          role: 'assistant',
+          text: "🔒 You've used your free AI Assistant trial queries. Upgrade to NEET Counselling Pro to unlock 24/7 unlimited AI counselling, round analysis, and cutoff recommendations!",
+        },
+      ]);
+      return;
+    }
+
+    setUserQueryCount((c) => c + 1);
     setBusy(true);
     await new Promise((r) => setTimeout(r, 400));
     const lower = q.toLowerCase();
@@ -132,6 +149,14 @@ export function AiAssistantPage() {
           {busy && (
             <div className={`inline-flex items-center gap-2 text-xs font-semibold ${s.muted}`}>
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> Thinking…
+            </div>
+          )}
+          {!isPremium && userQueryCount >= 3 && (
+            <div className="p-4 rounded-xl border border-orange-500/25 bg-orange-500/10 text-center">
+              <p className="text-xs font-bold text-orange-400 mb-2">Free AI trial queries completed</p>
+              <Link to="/packages" className="btn-orange inline-flex px-4 py-1.5 text-xs font-bold shadow-md">
+                Upgrade to Pro
+              </Link>
             </div>
           )}
         </div>
@@ -222,6 +247,7 @@ const QUOTA_OPTIONS = [
 export function PredictorPage() {
   const s = useShell();
   const { profile } = useAuth();
+  const { isPremium } = usePremium();
 
   // ── Form state ──
   const [mode, setMode] = useState<'rank' | 'score'>('rank');
@@ -748,7 +774,7 @@ export function PredictorPage() {
               {/* ── College Cards ── */}
               {activeTab === 'colleges' && displayedColleges.length > 0 && (
                 <div className="space-y-3">
-                  {displayedColleges.map((c, i) => {
+                  {(isPremium ? displayedColleges : displayedColleges.slice(0, 3)).map((c, i) => {
                     const style = TIER_STYLES[c.chance_tier] || TIER_STYLES.Unlikely;
                     const latestRef = c.closing_rank_reference?.[0];
                     return (
@@ -814,6 +840,44 @@ export function PredictorPage() {
                     );
                   })}
 
+                  {/* Non-Premium Locked College Predictor Teaser */}
+                  {!isPremium && displayedColleges.length > 3 && (
+                    <div className="relative mt-3 rounded-2xl overflow-hidden">
+                      <div className="space-y-3 filter blur-sm pointer-events-none select-none opacity-40">
+                        {displayedColleges.slice(3, 6).map((c, i) => (
+                          <div key={i} className={`rounded-xl border p-4 ${s.card}`}>
+                            <p className="font-bold text-sm">{c.college_name}</p>
+                            <p className="text-xs text-gray-400 mt-1">{c.state} · {c.course} · 🎯 {c.quota} Quota</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
+                        <div className={`w-full max-w-lg rounded-2xl p-6 text-center border shadow-2xl backdrop-blur-xl ${
+                          s.dark ? 'bg-[#0f172a]/95 border-orange-500/30 text-white' : 'bg-white/95 border-orange-500/20 text-slate-900'
+                        }`}>
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-500 to-orange-500 text-white mx-auto flex items-center justify-center mb-3 shadow-lg shadow-orange-500/30">
+                            <Crown className="w-6 h-6" />
+                          </div>
+                          <h4 className="text-lg font-black tracking-tight mb-1">
+                            Unlock {displayedColleges.length - 3}+ More Matching Colleges
+                          </h4>
+                          <p className="text-xs font-medium text-slate-400 dark:text-slate-300 max-w-md mx-auto mb-4 leading-relaxed">
+                            Upgrade to NEET Counselling Pro to view all AI-predicted colleges, official round cutoffs, fee structures, and state quota analysis.
+                          </p>
+                          <div className="flex items-center justify-center gap-3">
+                            <Link
+                              to="/packages"
+                              className="btn-orange inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold shadow-lg shadow-orange-500/25"
+                            >
+                              <Sparkles className="w-3.5 h-3.5" /> Upgrade to Pro
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Fallback Message */}
                   {aiResponse.fallback && (
                     <div className={`rounded-xl border p-4 ${s.card}`}>
@@ -845,32 +909,74 @@ export function PredictorPage() {
                     <div className={`rounded-xl border p-4 text-center ${s.card}`}>
                       <p className={`text-sm ${s.muted}`}>No specific scholarships matched for your profile. Check the National Scholarship Portal (scholarships.gov.in) for more schemes.</p>
                     </div>
-                  ) : scholarships.map((sch, i) => (
-                    <div key={i} className={`rounded-xl border p-4 ${s.card}`}>
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="font-bold text-sm">{sch.name}</p>
-                          <p className={`text-xs mt-0.5 ${s.muted}`}>{sch.provider}</p>
+                  ) : (
+                    <>
+                      {(isPremium ? scholarships : scholarships.slice(0, 1)).map((sch, i) => (
+                        <div key={i} className={`rounded-xl border p-4 ${s.card}`}>
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="font-bold text-sm">{sch.name}</p>
+                              <p className={`text-xs mt-0.5 ${s.muted}`}>{sch.provider}</p>
+                            </div>
+                            {sch.estimated_amount && (
+                              <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full whitespace-nowrap shrink-0">
+                                {sch.estimated_amount}
+                              </span>
+                            )}
+                          </div>
+                          <p className={`text-xs mt-2 leading-relaxed ${s.muted}`}>{sch.match_reason}</p>
+                          {sch.official_portal && (
+                            <a
+                              href={sch.official_portal}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+                            >
+                              🔗 Apply at official portal →
+                            </a>
+                          )}
                         </div>
-                        {sch.estimated_amount && (
-                          <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full whitespace-nowrap shrink-0">
-                            {sch.estimated_amount}
-                          </span>
-                        )}
-                      </div>
-                      <p className={`text-xs mt-2 leading-relaxed ${s.muted}`}>{sch.match_reason}</p>
-                      {sch.official_portal && (
-                        <a
-                          href={sch.official_portal}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
-                        >
-                          🔗 Apply at official portal →
-                        </a>
+                      ))}
+
+                      {/* Non-Premium Locked Scholarships */}
+                      {!isPremium && scholarships.length > 1 && (
+                        <div className="relative mt-3 rounded-2xl overflow-hidden">
+                          <div className="space-y-3 filter blur-sm pointer-events-none select-none opacity-40">
+                            {scholarships.slice(1, 3).map((sch, i) => (
+                              <div key={i} className={`rounded-xl border p-4 ${s.card}`}>
+                                <p className="font-bold text-sm">{sch.name}</p>
+                                <p className="text-xs text-gray-400 mt-1">{sch.provider} · {sch.estimated_amount || 'Govt Grant'}</p>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
+                            <div className={`w-full max-w-lg rounded-2xl p-6 text-center border shadow-2xl backdrop-blur-xl ${
+                              s.dark ? 'bg-[#0f172a]/95 border-orange-500/30 text-white' : 'bg-white/95 border-orange-500/20 text-slate-900'
+                            }`}>
+                              <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 text-white mx-auto flex items-center justify-center mb-3 shadow-lg shadow-emerald-500/30">
+                                <Crown className="w-6 h-6" />
+                              </div>
+                              <h4 className="text-lg font-black tracking-tight mb-1">
+                                Unlock All Eligible Scholarships ({scholarships.length})
+                              </h4>
+                              <p className="text-xs font-medium text-slate-400 dark:text-slate-300 max-w-md mx-auto mb-4 leading-relaxed">
+                                Get access to all matched central, state, and private medical scholarships for your category and state.
+                              </p>
+                              <div className="flex items-center justify-center gap-3">
+                                <Link
+                                  to="/packages"
+                                  className="btn-orange inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold shadow-lg shadow-orange-500/25"
+                                >
+                                  <Sparkles className="w-3.5 h-3.5" /> Unlock All Scholarships
+                                </Link>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       )}
-                    </div>
-                  ))}
+                    </>
+                  )}
                 </div>
               )}
 

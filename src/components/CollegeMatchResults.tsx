@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { MapPin, ArrowRight, Shield, Target, Flame, Sparkles } from 'lucide-react';
+import { MapPin, ArrowRight, Shield, Target, Flame, Sparkles, Lock, Crown } from 'lucide-react';
+import { usePremium } from '../lib/premium';
 
 export type MatchRow = {
   college_name: string;
@@ -50,6 +51,8 @@ export default function CollegeMatchResults({
   rank?: number;
   category?: string;
 }) {
+  const { isPremium } = usePremium();
+
   if (!matches?.length) {
     return (
       <div className={`rounded-2xl border p-8 text-center ${
@@ -61,6 +64,8 @@ export default function CollegeMatchResults({
       </div>
     );
   }
+
+  const visibleMatches = isPremium ? matches : matches.slice(0, 4);
 
   return (
     <div className="space-y-5">
@@ -88,7 +93,7 @@ export default function CollegeMatchResults({
       )}
 
       <div className="space-y-3">
-        {matches.map((m) => {
+        {visibleMatches.map((m) => {
           const Icon = toneIcon[m.chance_tone] || Target;
           return (
             <div
@@ -167,6 +172,52 @@ export default function CollegeMatchResults({
           );
         })}
       </div>
+
+      {/* ── Non-Premium Locked Teaser ── */}
+      {!isPremium && matches.length > 4 && (
+        <div className="relative mt-3 rounded-2xl overflow-hidden">
+          <div className="space-y-3 filter blur-sm pointer-events-none select-none opacity-40">
+            {matches.slice(4, 7).map((m, i) => (
+              <div key={i} className={`rounded-2xl border p-4 ${dark ? 'border-white/10 bg-[#171B24]' : 'border-black/8 bg-white'}`}>
+                <p className="font-bold text-base">{m.college_name}</p>
+                <p className="text-xs text-gray-400 mt-1">{m.state} · Fit Score: {m.chance_score}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
+            <div className={`w-full max-w-lg rounded-2xl p-6 text-center border shadow-2xl backdrop-blur-xl ${
+              dark ? 'bg-[#0f172a]/95 border-orange-500/30 text-white' : 'bg-white/95 border-orange-500/20 text-slate-900'
+            }`}>
+              <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-500 to-orange-500 text-white mx-auto flex items-center justify-center mb-3 shadow-lg shadow-orange-500/30">
+                <Crown className="w-6 h-6" />
+              </div>
+              <h4 className="text-lg font-black tracking-tight mb-1">
+                Unlock {matches.length - 4}+ More Matching Colleges
+              </h4>
+              <p className="text-xs font-medium text-slate-400 dark:text-slate-300 max-w-md mx-auto mb-4 leading-relaxed">
+                Upgrade to MBBSWala NEET Pro to view all college predictions, quota-wise cutoff breakdowns, official state quotas, and personalised choice-filling lists.
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                <Link
+                  to="/packages"
+                  className="btn-orange inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold shadow-lg shadow-orange-500/25"
+                >
+                  <Sparkles className="w-3.5 h-3.5" /> View NEET Packages
+                </Link>
+                <Link
+                  to="/login"
+                  className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-bold border ${
+                    dark ? 'border-white/20 text-white hover:bg-white/10' : 'border-slate-300 text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  Sign In
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {note && (
         <p className={`text-xs font-medium leading-relaxed ${dark ? 'text-white/40' : 'text-gray-500'}`}>{note}</p>

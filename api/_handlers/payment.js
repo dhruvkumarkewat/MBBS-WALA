@@ -17,17 +17,29 @@ export default async function handler(req, res) {
 
     // ── 1. GET or POST action=sync-subscription: Fetch payment history and verify subscription ──
     if (req.method === 'GET' || action === 'sync-subscription' || action === 'restore') {
-      const { data: paymentsList } = await supabase
+      let paymentsQuery = supabase
         .from('payments')
-        .select('*')
-        .or(`user_id.eq.${user.id},user_id.eq.${user.email || ''}`)
-        .order('id', { ascending: false });
+        .select('*');
 
-      const { data: subList } = await supabase
+      if (user.email && user.email.trim()) {
+        paymentsQuery = paymentsQuery.or(`user_id.eq.${user.id},user_id.eq.${user.email.trim()}`);
+      } else {
+        paymentsQuery = paymentsQuery.eq('user_id', user.id);
+      }
+
+      const { data: paymentsList } = await paymentsQuery.order('id', { ascending: false });
+
+      let subsQuery = supabase
         .from('subscriptions')
-        .select('*')
-        .or(`user_id.eq.${user.id},user_id.eq.${user.email || ''}`)
-        .order('id', { ascending: false });
+        .select('*');
+
+      if (user.email && user.email.trim()) {
+        subsQuery = subsQuery.or(`user_id.eq.${user.id},user_id.eq.${user.email.trim()}`);
+      } else {
+        subsQuery = subsQuery.eq('user_id', user.id);
+      }
+
+      const { data: subList } = await subsQuery.order('id', { ascending: false });
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -35,23 +47,41 @@ export default async function handler(req, res) {
         .eq('id', user.id)
         .maybeSingle();
 
-      const hasActiveSub = subList?.some(s => s.status === 'active' || s.status === 'completed' || !s.status);
-      const hasCapturedPay = paymentsList?.some(p => p.status === 'captured' || p.status === 'success' || p.status === 'paid' || p.status === 'complete');
-      
-      let isPrem = Boolean(profile?.is_premium) || 
-                   profile?.subscription_status === 'active' || 
-                   profile?.payment_status === 'Paid' || 
-                   Boolean(hasActiveSub) || 
-                   Boolean(hasCapturedPay) ||
-                   Boolean(user.user_metadata?.is_premium);
+      const validActiveSub = subList?.find(s => {
+        if (s.status !== 'active') return false;
+        if (s.end_date && new Date(s.end_date).getTime() < Date.now()) return false;
+        return true;
+      }) || null;
 
-      const activeSub = subList?.[0] || null;
-      const latestPay = paymentsList?.[0] || null;
-      const planName = profile?.subscription_plan && profile.subscription_plan !== 'Free Plan'
-        ? profile.subscription_plan
-        : (activeSub?.plan_name || latestPay?.meta?.plan_name || 'NEET Counselling Pro');
+      const validCapturedPay = paymentsList?.find(p => 
+        ['captured', 'success', 'paid', 'complete'].includes(p.status)
+      ) || null;
 
-      // Auto-heal profile if premium is verified from payments/subs but not marked in profiles
+      let isPrem = Boolean(validActiveSub) || Boolean(validCapturedPay);
+      let planName = 'Free Plan';
+      let subStatus = 'free';
+      let endDate = null;
+
+      if (validActiveSub) {
+        isPrem = true;
+        subStatus = 'active';
+        planName = validActiveSub.plan_name || validActiveSub.plan_slug || 'NEET Counselling Pro';
+        endDate = validActiveSub.end_date || null;
+      } else if (validCapturedPay) {
+        isPrem = true;
+        subStatus = 'active';
+        planName = validCapturedPay.meta?.plan_name || validCapturedPay.plan_slug || 'NEET Counselling Pro';
+      } else if (Boolean(profile?.is_premium) && profile?.subscription_status === 'active') {
+        const isExpired = profile.premium_end_date && new Date(profile.premium_end_date).getTime() < Date.now();
+        if (!isExpired) {
+          isPrem = true;
+          subStatus = 'active';
+          planName = (profile.subscription_plan && profile.subscription_plan !== 'Free Plan') ? profile.subscription_plan : 'NEET Counselling Pro';
+          endDate = profile.premium_end_date || null;
+        }
+      }
+
+      // Auto-heal or sync profile if needed
       if (isPrem && (!profile?.is_premium || profile?.subscription_status !== 'active')) {
         try {
           await supabase
@@ -61,6 +91,7 @@ export default async function handler(req, res) {
               subscription_status: 'active',
               subscription_plan: planName,
               payment_status: 'Paid',
+              premium_end_date: endDate,
             })
             .eq('id', user.id);
         } catch (pErr) {
@@ -72,13 +103,15 @@ export default async function handler(req, res) {
         profile: {
           ...(profile || {}),
           is_premium: isPrem,
-          subscription_status: isPrem ? 'active' : (profile?.subscription_status || 'free'),
-          subscription_plan: isPrem ? planName : 'Free Plan',
+          subscription_status: subStatus,
+          subscription_plan: planName,
+          premium_end_date: endDate,
         },
         is_premium: isPrem,
-        subscription_status: isPrem ? 'active' : (profile?.subscription_status || 'free'),
-        subscription_plan: isPrem ? planName : 'Free Plan',
-        subscription: activeSub,
+        subscription_status: subStatus,
+        subscription_plan: planName,
+        premium_end_date: endDate,
+        subscription: validActiveSub,
         subscriptions: subList || [],
         payments: paymentsList || [],
       });
