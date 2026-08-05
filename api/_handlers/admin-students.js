@@ -236,14 +236,7 @@ export default async function handler(req, res) {
           .eq('status', 'paid');
       }
 
-      await supabase
-        .from('staff_profiles')
-        .update({
-          active_student_id: String(id),
-          current_activity: `Working on ${data.full_name}`,
-          last_activity: new Date().toISOString(),
-        })
-        .eq('user_id', user.id);
+      // Removed invalid staff_profiles update with missing columns
 
       return res.status(200).json(data);
     }

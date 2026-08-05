@@ -102,20 +102,14 @@ export default async function handler(req, res) {
         .from('staff_profiles')
         .insert({
           user_id: uid,
-          employee_id: empId,
-          full_name,
+          name: full_name,
           email: email.trim(),
           phone: phone || '',
-          photo_url: photo_url || '',
           role: 'sub_admin',
           is_active: true,
-          presence: 'offline',
           total_sessions: 0,
           successful_admissions: 0,
-          student_rating: 4.8,
-          current_activity: 'Account created',
           created_at: now,
-          last_activity: now,
         })
         .select()
         .single();
@@ -189,7 +183,7 @@ export default async function handler(req, res) {
 
       await supabase
         .from('staff_profiles')
-        .update({ is_active: false, presence: 'offline', current_activity: 'Deleted' })
+        .update({ is_active: false })
         .eq('user_id', user_id);
 
       try {
