@@ -23,6 +23,7 @@ import {
   Phone,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Crown,
   Sparkles,
 } from 'lucide-react';
@@ -1428,6 +1429,69 @@ export function FinderPage() {
   );
 }
 
+function SearchableCollegeSelect({ value, onChange, colleges, placeholder }: { value: string, onChange: (v: string) => void, colleges: any[], placeholder?: string }) {
+  const [inputValue, setInputValue] = useState('');
+  const [open, setOpen] = useState(false);
+  const s = useShell();
+
+  useEffect(() => {
+    if (!open) {
+      const selected = colleges.find(c => String(c.id) === value);
+      setInputValue(selected ? selected.name : '');
+    }
+  }, [value, colleges, open]);
+
+  const filtered = colleges.filter(c => c.name.toLowerCase().includes(inputValue.toLowerCase())).slice(0, 50);
+
+  return (
+    <div className="relative">
+      <div 
+        className={`rounded-xl border px-3 py-2.5 text-sm font-semibold flex items-center justify-between ${s.input}`}
+        onClick={() => setOpen(true)}
+      >
+        <input 
+          className="w-full bg-transparent outline-none truncate"
+          value={open ? inputValue : (colleges.find(c => String(c.id) === value)?.name || '')}
+          onChange={(e) => {
+            setInputValue(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => {
+            setOpen(true);
+            setInputValue('');
+          }}
+          placeholder={placeholder || 'Search college...'}
+        />
+        <ChevronDown className="w-4 h-4 opacity-50 shrink-0 cursor-pointer" />
+      </div>
+      
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className={`absolute z-50 top-full left-0 right-0 mt-1 rounded-xl border shadow-xl overflow-hidden flex flex-col max-h-[300px] ${s.card}`}>
+            <div className="overflow-y-auto zn-scroll py-1">
+              {filtered.length === 0 && <div className="p-3 text-sm opacity-50 text-center">No results</div>}
+              {filtered.map(c => (
+                <div 
+                  key={c.id} 
+                  className={`px-3 py-2 text-sm cursor-pointer ${s.dark ? 'hover:bg-white/5' : 'hover:bg-black/5'} ${String(c.id) === value ? 'font-bold text-orange-500' : ''}`}
+                  onClick={() => {
+                    onChange(String(c.id));
+                    setInputValue(c.name);
+                    setOpen(false);
+                  }}
+                >
+                  {c.name}
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 /* ---------------- Compare → enriched seats + cutoffs ---------------- */
 export function ComparePage() {
   const s = useShell();
@@ -1451,7 +1515,7 @@ export function ComparePage() {
   } | null>(null);
 
   useEffect(() => {
-    apiJson<College[]>('/api/colleges?limit=300')
+    apiJson<College[]>('/api/colleges?limit=9999')
       .then((d) => {
         const list = Array.isArray(d) ? d : [];
         setColleges(list);
@@ -1489,28 +1553,18 @@ export function ComparePage() {
       ) : (
         <>
           <div className="grid sm:grid-cols-2 gap-3 mb-4">
-            <select
+            <SearchableCollegeSelect
               value={a}
-              onChange={(e) => setA(e.target.value)}
-              className={`rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
-            >
-              {colleges.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <select
+              onChange={setA}
+              colleges={colleges}
+              placeholder="Select first college"
+            />
+            <SearchableCollegeSelect
               value={b}
-              onChange={(e) => setB(e.target.value)}
-              className={`rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
-            >
-              {colleges.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+              onChange={setB}
+              colleges={colleges}
+              placeholder="Select second college"
+            />
           </div>
 
           {a === b && (
