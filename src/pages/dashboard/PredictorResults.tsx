@@ -291,11 +291,11 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
       )}
       
       {/* ── Disclaimers ── */}
-      {aiResponse.disclaimers && aiResponse.disclaimers.length > 0 && (
+      {aiResponse.disclaimers_fraud_warnings && aiResponse.disclaimers_fraud_warnings.length > 0 && (
         <div className={`rounded-xl border p-4 ${s.dark ? 'border-white/5 bg-white/3' : 'border-slate-200 bg-slate-50'}`}>
           <p className={`text-[10px] font-bold uppercase mb-2 ${s.muted}`}>⚖️ Important Disclaimers</p>
           <ul className="space-y-1.5">
-            {aiResponse.disclaimers.map((d: string, i: number) => (
+            {aiResponse.disclaimers_fraud_warnings.map((d: string, i: number) => (
               <li key={i} className={`text-xs leading-relaxed ${s.muted}`}>• {d}</li>
             ))}
           </ul>
