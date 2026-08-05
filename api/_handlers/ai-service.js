@@ -7,69 +7,8 @@
  * 3. Pure-code grounding verifier ensures every claim maps to context data
  */
 
-// ── System Prompt (spec Section 5 — exact text) ────────────────────────────────
 // ── System Prompt (Authoritative NEET Admissions & Cutoffs Engine) ────────────
-const SYSTEM_PROMPT = `# ROLE
-You are the expert NEET-UG & AYUSH Medical College Predictor & Admissions Advisor for MBBSWALA.
-
-# STRICT QUOTA & DOMICILE ISOLATION RULES (CRITICAL):
-1. **STATE QUOTA (85%) IS EXCLUSIVELY FOR DOMICILE STATE**:
-   - A candidate is ONLY eligible for 85% State Quota counselling in their designated \`domicile_state\`.
-   - Therefore, a college can ONLY have \`quota: "State"\` if its \`state\` matches candidate's \`domicile_state\`.
-   - **NEVER EVER assign \`quota: "State"\` to a college located in any other state**.
-   - If \`query.quotas\` only includes \`['State']\`:
-     - You MUST return 100% colleges located strictly within candidate's \`domicile_state\`.
-     - Use authentic State Quota closing cutoffs (e.g. MP DME, UP DGME, Maharashtra CET, Rajasthan NEET UG, KEA, etc.).
-   - If \`query.quotas\` includes \`['AIQ', 'State']\`:
-     - Colleges in \`domicile_state\` should use \`quota: "State"\` with State Quota cutoffs.
-     - Colleges outside \`domicile_state\` MUST ONLY use \`quota: "AIQ"\` (15% All India Quota) with MCC AIQ cutoffs.
-
-2. **STRICT QUOTA ISOLATION (AIQ vs DEEMED vs MANAGEMENT vs NRI)**:
-   - **AIQ (15% All India Quota)**:
-     - Return ONLY 100% authentic Government Medical Colleges & Central Universities (AIIMS, JIPMER, State GMCs, VMMC, IMS-BHU).
-     - NEVER return Deemed Universities or Private Management/Paid seats when user selected 'AIQ' only!
-   - **Deemed-Central (MCC Deemed University Counselling)**:
-     - Return Deemed Universities (e.g. Dr. D. Y. Patil Medical College Hospital & Research Centre Pune/Navi Mumbai, KMC Manipal, Hamdard, JSS Mysore, Bharati Vidyapeeth, MGM, Amrita, Kalinga/KIIT).
-     - Use authentic MCC Deemed closing ranks (e.g. Dr. D.Y. Patil Round 1: 419,526, Round 2: 457,967, Stray: 548,164) and realistic Deemed fees (₹20L–₹26L/yr).
-   - **Management (Private Paid Seats)**:
-     - Return Private Medical Colleges under Management / Paid seats with realistic private fees (₹12L–₹18L/yr).
-   - **NRI Quota**:
-     - Return NRI Quota seats (e.g. Dr. D.Y. Patil NRI Round 1: 1,241,642) with NRI fee tiers.
-
-3. **RANK PROXIMITY & CHANCE ORDERING (TOP COLLEGES FIRST)**:
-   For any candidate Rank R:
-   - **1. HIGH CHANCE (SAFE / BEST REALISTIC SEATS) — DISPLAY FIRST (7-12 colleges)**:
-     - Premier colleges whose selected-quota closing cutoff is comfortably safe for candidate rank R (closing cutoff is between R * 1.05 and R * 2.5).
-     - Order ASCENDING by closing rank so the nearest cutoffs appear at the very top.
-   - **2. MODERATE CHANCE (TARGET / COMPETITIVE) — DISPLAY SECOND (5-8 colleges)**:
-     - Colleges whose selected-quota closing cutoff is closely around candidate rank R (closing cutoff between R * 0.85 and R * 1.05).
-     - Order ASCENDING by closing rank.
-   - **3. REACH (DREAM / ASPIRATIONAL) — DISPLAY THIRD (3-5 colleges)**:
-     - Top aspirational institutions whose selected-quota closing cutoff is above candidate rank R (closing cutoff between R * 0.35 and R * 0.85).
-     - Order ASCENDING by closing rank.
-
-4. **EACH COLLEGE OBJECT MUST INCLUDE**:
-   - college_name: Full official name
-   - state: State name
-   - course: 'MBBS' | 'BDS' | 'BAMS' | 'BHMS'
-   - quota: The exact quota ('AIQ', 'State', 'Deemed-Central', or 'Management') — State Quota is strictly for domicile state
-   - category: Candidate's category
-   - chance_tier: 'High' | 'Moderate' | 'Reach'
-   - closing_rank_reference: [{ "year": 2024, "round": "Round 1", "rank": <cutoff_for_this_quota> }] (MUST reflect the authentic cutoff for that specific quota & category)
-   - fee: { "quota_tier": string, "amount_min": number, "amount_max": number, "formatted": string }
-
-# OUTPUT FORMAT
-Return ONLY valid JSON matching this schema:
-{
-  "meta": { "exam_track": "MBBS_BDS", "authority": "MCC-AIQ", "round": { "label": "Round 1" }, "data_basis_year": 2024, "qualifying_floor_met": true },
-  "colleges": [ ... ],
-  "scholarships": [ ... ],
-  "disclaimers": [
-    "Predictions are based on historical official MCC & State counselling cutoffs.",
-    "Cutoffs move every year based on seat matrix and applicant demand — treat this as a guide.",
-    "Always confirm official seat matrix and eligibility on official counselling portals."
-  ]
-}`;
+const SYSTEM_PROMPT = 'You are MBBSWALA NEET College Predictor. Return ONLY valid JSON with these fields: prediction_summary (headline, government_mbbs_chance {percent,label,emoji}, private_mbbs_chance, government_bds_chance, private_bds_chance), government_options (state_quota_mbbs, aiq_mbbs, government_bds), ai_recommendation (focus_areas[], tip), ai_insight (2-3 sentences), confidence_percent (60-95), colleges[] (college_name, state, course, quota, category, chance_tier High/Moderate/Reach, closing_rank_reference [{year,round,rank}], fee {formatted}), scholarships[], disclaimers[]. Use real MCC/State counselling cutoff data. State Quota is ONLY for domicile_state colleges.';
 
 // ── Provider Calling ────────────────────────────────────────────────────────
 
@@ -80,7 +19,7 @@ const PROVIDER_CONFIGS = {
       const key = process.env.GEMINI_API_KEY;
       if (!key) return null;
       return {
-        url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${key}`,
+        url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${key}`,
         options: {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -91,7 +30,7 @@ const PROVIDER_CONFIGS = {
             generationConfig: {
               responseMimeType: 'application/json',
               temperature: 0.1,
-              maxOutputTokens: 8192,
+              maxOutputTokens: 4000,
               thinkingConfig: {
                 thinkingBudget: 0,
               },
@@ -110,10 +49,10 @@ const PROVIDER_CONFIGS = {
   gemini_fallback: {
     name: 'Gemini (Fallback Key)',
     buildRequest: (payload) => {
-      const key = ('AQ.Ab8RN6Ls_' + 'LDZeLv7SNIlQ7t' + '-k47js_6P5jQRR7puDzAiP6qSxg') || process.env.GEMINI_API_KEY_2 || process.env.GEMINI_API_KEY_FALLBACK;
+      const key = process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY_2 || process.env.GEMINI_API_KEY_FALLBACK;
       if (!key) return null;
       return {
-        url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${key}`,
+        url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${key}`,
         options: {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -124,7 +63,7 @@ const PROVIDER_CONFIGS = {
             generationConfig: {
               responseMimeType: 'application/json',
               temperature: 0.1,
-              maxOutputTokens: 8192,
+              maxOutputTokens: 4000,
               thinkingConfig: {
                 thinkingBudget: 0,
               },
@@ -157,7 +96,7 @@ const PROVIDER_CONFIGS = {
           body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
             temperature: 0.1,
-            max_tokens: 8192,
+            max_tokens: 4000,
             response_format: { type: 'json_object' },
             messages: [
               { role: 'system', content: SYSTEM_PROMPT },
@@ -174,74 +113,40 @@ const PROVIDER_CONFIGS = {
       };
     },
   },
-  openai: {
-    name: 'OpenAI',
+};
+
+for (let i = 1; i <= 15; i++) {
+  PROVIDER_CONFIGS[`gemini_${i}`] = {
+    name: `Gemini Key ${i}`,
     buildRequest: (payload) => {
-      const key = process.env.OPENAI_API_KEY;
+      const key = process.env[`GEMINI_API_KEY_${i}`];
       if (!key) return null;
       return {
-        url: 'https://api.openai.com/v1/chat/completions',
+        url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${key}`,
         options: {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${key}`,
-          },
-          signal: AbortSignal.timeout(12000),
+          headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(15000),
           body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            temperature: 0.1,
-            max_tokens: 8192,
-            response_format: { type: 'json_object' },
-            messages: [
-              { role: 'system', content: SYSTEM_PROMPT },
-              { role: 'user', content: JSON.stringify(payload) },
-            ],
+            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+            contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload) }] }],
+            generationConfig: {
+              responseMimeType: 'application/json',
+              temperature: 0.1,
+              maxOutputTokens: 4000,
+            },
           }),
         },
         parseResponse: async (res) => {
           const data = await res.json();
-          const text = data?.choices?.[0]?.message?.content;
-          if (!text) throw new Error('Empty OpenAI response');
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (!text) throw new Error('Empty Gemini response');
           return JSON.parse(text);
         },
       };
     },
-  },
-  anthropic: {
-    name: 'Anthropic',
-    buildRequest: (payload) => {
-      const key = process.env.ANTHROPIC_API_KEY;
-      if (!key) return null;
-      return {
-        url: 'https://api.anthropic.com/v1/messages',
-        options: {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': key,
-            'anthropic-version': '2023-06-01',
-          },
-          signal: AbortSignal.timeout(12000),
-          body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 8192,
-            temperature: 0.1,
-            system: SYSTEM_PROMPT,
-            messages: [{ role: 'user', content: JSON.stringify(payload) }],
-          }),
-        },
-        parseResponse: async (res) => {
-          const data = await res.json();
-          const text = data?.content?.[0]?.text;
-          if (!text) throw new Error('Empty Anthropic response');
-          const cleaned = text.replace(/^```json\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
-          return JSON.parse(cleaned);
-        },
-      };
-    },
-  },
-};
+  };
+}
 
 /**
  * Get provider order from env or use default.
@@ -251,7 +156,7 @@ function getProviderOrder() {
   if (envOrder) {
     return envOrder.split(',').map((s) => s.trim().toLowerCase()).filter((p) => PROVIDER_CONFIGS[p]);
   }
-  return ['gemini', 'groq', 'openai', 'anthropic'];
+  return ['gemini_1', 'gemini_2', 'gemini_3', 'gemini_4', 'gemini_5', 'gemini_6', 'gemini_7', 'gemini_8', 'gemini_9', 'gemini_10', 'gemini_11', 'gemini_12', 'gemini_13', 'gemini_14', 'gemini_15', 'groq'];
 }
 
 /**

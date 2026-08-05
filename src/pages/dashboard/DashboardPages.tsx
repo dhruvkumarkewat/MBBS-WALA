@@ -226,6 +226,27 @@ interface ScholarshipMatch {
   official_portal: string;
   source_id: string;
 }
+interface ChanceInfo {
+  percent: number;
+  label: string;
+  emoji: string;
+}
+interface PredictionSummary {
+  headline: string;
+  government_mbbs_chance: ChanceInfo;
+  private_mbbs_chance: ChanceInfo;
+  government_bds_chance: ChanceInfo;
+  private_bds_chance: ChanceInfo;
+}
+interface GovernmentOptions {
+  state_quota_mbbs: string;
+  aiq_mbbs: string;
+  government_bds: string;
+}
+interface AiRecommendation {
+  focus_areas: string[];
+  tip: string;
+}
 interface PredictorResponse {
   meta?: {
     exam_track?: string;
@@ -234,6 +255,11 @@ interface PredictorResponse {
     data_basis_year?: number;
     qualifying_floor_met?: boolean;
   };
+  prediction_summary?: PredictionSummary;
+  government_options?: GovernmentOptions;
+  ai_recommendation?: AiRecommendation;
+  ai_insight?: string;
+  confidence_percent?: number;
   colleges?: CollegePrediction[];
   scholarships?: ScholarshipMatch[];
   fallback?: { tier_reached: string; message: string; alternative_courses?: string[] } | null;
@@ -774,6 +800,117 @@ export function PredictorPage() {
                   </div>
                 )}
               </div>
+
+              {/* ── 🎯 AI Prediction Summary ── */}
+              {aiResponse.prediction_summary && (
+                <div className={`rounded-2xl border p-5 ${s.card}`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-lg">🎯</span>
+                    <h3 className="font-black text-sm uppercase tracking-wider">Prediction Summary</h3>
+                    {aiResponse.confidence_percent && (
+                      <span className="ml-auto text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                        {aiResponse.confidence_percent}% Confidence
+                      </span>
+                    )}
+                  </div>
+                  <p className={`text-sm leading-relaxed mb-4 ${s.muted}`}>
+                    {aiResponse.prediction_summary.headline}
+                  </p>
+
+                  {/* Chance Meter Bars */}
+                  <div className="space-y-3">
+                    {[
+                      { label: 'Government MBBS', data: aiResponse.prediction_summary.government_mbbs_chance, color: 'from-red-500 to-orange-500', bg: 'bg-red-500/10', text: 'text-red-400' },
+                      { label: 'Private MBBS', data: aiResponse.prediction_summary.private_mbbs_chance, color: 'from-emerald-500 to-teal-500', bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
+                      { label: 'Government BDS', data: aiResponse.prediction_summary.government_bds_chance, color: 'from-amber-500 to-yellow-500', bg: 'bg-amber-500/10', text: 'text-amber-400' },
+                      { label: 'Private BDS', data: aiResponse.prediction_summary.private_bds_chance, color: 'from-blue-500 to-cyan-500', bg: 'bg-blue-500/10', text: 'text-blue-400' },
+                    ].map((meter) => (
+                      <div key={meter.label}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-bold">{meter.label}</span>
+                          <span className={`text-xs font-bold ${meter.text}`}>
+                            {meter.data.emoji} {meter.data.label} ({meter.data.percent}%)
+                          </span>
+                        </div>
+                        <div className={`w-full h-2.5 rounded-full ${s.dark ? 'bg-white/5' : 'bg-slate-100'} overflow-hidden`}>
+                          <div
+                            className={`h-full rounded-full bg-gradient-to-r ${meter.color} transition-all duration-1000 ease-out`}
+                            style={{ width: `${Math.max(meter.data.percent, 2)}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── 🏛️ Government Options ── */}
+              {aiResponse.government_options && (
+                <div className={`rounded-2xl border p-5 ${s.card}`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-lg">🏛️</span>
+                    <h3 className="font-black text-sm uppercase tracking-wider">Government Options</h3>
+                  </div>
+                  <p className={`text-xs mb-3 ${s.muted}`}>Based on previous counselling trends:</p>
+                  <div className="space-y-2">
+                    {[
+                      { label: 'Government MBBS through State Quota', value: aiResponse.government_options.state_quota_mbbs },
+                      { label: 'Government MBBS through AIQ', value: aiResponse.government_options.aiq_mbbs },
+                      { label: 'Government BDS', value: aiResponse.government_options.government_bds },
+                    ].map((opt) => (
+                      <div key={opt.label} className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 ${s.dark ? 'bg-white/5' : 'bg-slate-50'}`}>
+                        <span className="text-xs font-semibold">{opt.label}</span>
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                          opt.value?.toLowerCase().includes('high') || opt.value?.toLowerCase().includes('safe')
+                            ? 'bg-emerald-500/15 text-emerald-400'
+                            : opt.value?.toLowerCase().includes('moderate') || opt.value?.toLowerCase().includes('possible')
+                            ? 'bg-amber-500/15 text-amber-400'
+                            : 'bg-red-500/15 text-red-400'
+                        }`}>
+                          {opt.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── ✅ AI Recommendation ── */}
+              {aiResponse.ai_recommendation && (
+                <div className={`rounded-2xl border p-5 ${s.card} border-l-4 border-l-emerald-500/60`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-lg">✅</span>
+                    <h3 className="font-black text-sm uppercase tracking-wider">AI Recommendation</h3>
+                  </div>
+                  <p className={`text-xs mb-2 font-semibold ${s.muted}`}>If your goal is MBBS in {neetYear}, focus on:</p>
+                  <ul className="space-y-2 mb-3">
+                    {aiResponse.ai_recommendation.focus_areas.map((area, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm">
+                        <span className="text-emerald-400 mt-0.5 shrink-0">✅</span>
+                        <span className="font-semibold">{area}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {aiResponse.ai_recommendation.tip && (
+                    <p className={`text-xs leading-relaxed ${s.muted} italic border-t border-white/10 pt-2.5 mt-2.5`}>
+                      💡 {aiResponse.ai_recommendation.tip}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* ── 🤖 AI Insight ── */}
+              {aiResponse.ai_insight && (
+                <div className={`rounded-2xl border p-5 ${s.card} border-l-4 border-l-blue-500/60`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-lg">🤖</span>
+                    <h3 className="font-black text-sm uppercase tracking-wider">AI Insight</h3>
+                  </div>
+                  <blockquote className={`text-sm leading-relaxed ${s.dark ? 'text-white/80' : 'text-slate-600'} italic border-l-2 border-blue-500/40 pl-4`}>
+                    "{aiResponse.ai_insight}"
+                  </blockquote>
+                </div>
+              )}
 
               {/* ── State Quota Domicile Notice ── */}
               {(isOnlyStateQuota || quotaFilter === 'State') && domicileState && (

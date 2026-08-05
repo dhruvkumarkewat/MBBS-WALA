@@ -375,7 +375,23 @@ export default async function handler(req, res) {
     const resolved = buildResolved(query, context);
 
     // Step 3: Prepare payload for AI
-    const aiPayload = { query, context, resolved };
+    // Strip massive arrays (fees, seat_matrix) to fit inside Groq's 12k token limit
+    // Also limit closing_ranks and scholarships to reduce payload size
+    const trimmedClosingRanks = (context.closing_ranks || []).slice(0, 15).map(r => ({
+      college_name: r.college_name,
+      state: r.state,
+      closing_rank: r.closing_rank,
+      category: r.category,
+      quota_code: r.quota_code,
+    }));
+    const aiPayload = { 
+      query, 
+      context: {
+        closing_ranks: trimmedClosingRanks,
+        scholarships: (context.scholarships || []).slice(0, 5)
+      }, 
+      resolved 
+    };
 
     let response;
 
