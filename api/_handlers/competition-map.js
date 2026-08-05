@@ -69,7 +69,11 @@ export default async function handler(req, res) {
       max_fees,
     } = req.query;
 
-    const yearNum = Number(year) || 2024;
+    let yearNum = Number(year) || 2024;
+    // Fallback to latest available data year (2024) for future years since new cutoffs aren't released yet
+    if (yearNum > 2024) {
+      yearNum = 2024;
+    }
 
     async function fetchAll(table, select, modifier = q => q, maxPages = 1) {
       const pageSize = 1000;
