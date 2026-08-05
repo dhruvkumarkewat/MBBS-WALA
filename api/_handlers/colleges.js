@@ -18,29 +18,32 @@ export default async function handler(req, res) {
         return res.status(200).json({ courses: MEDICAL_COURSES });
       }
 
-      let query = supabase
-        .from('colleges')
-        .select('*', usePaging ? { count: 'exact' } : undefined)
-        .order('name', { ascending: true });
+      const buildQuery = () => {
+        let q = supabase
+          .from('colleges')
+          .select('*', usePaging ? { count: 'exact' } : undefined)
+          .order('name', { ascending: true });
 
-      if (country && country !== 'All') {
-        query = query.ilike('country', country);
-      } else if (!country) {
-        query = query.ilike('country', 'INDIA');
-      }
+        if (country && country !== 'All') {
+          q = q.ilike('country', country);
+        } else if (!country) {
+          q = q.ilike('country', 'INDIA');
+        }
 
-      if (state && state !== 'All') query = query.eq('state', state);
-      if (type && type !== 'All') query = query.eq('college_type', type);
-      query = applyCourseFilterOnCollegesQuery(query, course);
-      if (q) query = query.or(`name.ilike.%${q}%,city.ilike.%${q}%,state.ilike.%${q}%,course.ilike.%${q}%`);
+        if (state && state !== 'All') q = q.eq('state', state);
+        if (type && type !== 'All') q = q.eq('college_type', type);
+        q = applyCourseFilterOnCollegesQuery(q, course);
+        if (req.query.q) q = q.or(`name.ilike.%${req.query.q}%,city.ilike.%${req.query.q}%,state.ilike.%${req.query.q}%,course.ilike.%${req.query.q}%`);
+        
+        return q;
+      };
 
       if (usePaging) {
         const { page, limit, from, to } = parsePagination(req.query, {
           defaultLimit: 24,
           maxLimit: 100,
         });
-        query = query.range(from, to);
-        const { data, error, count } = await query;
+        const { data, error, count } = await buildQuery().range(from, to);
         if (error) throw error;
         return res.status(200).json({
           data: data || [],
@@ -59,7 +62,7 @@ export default async function handler(req, res) {
         let from = 0;
         let step = 999;
         while (true) {
-          const { data, error } = await query.range(from, from + step);
+          const { data, error } = await buildQuery().range(from, from + step);
           if (error) throw error;
           if (data) allData = allData.concat(data);
           if (!data || data.length <= step) break;
@@ -68,8 +71,9 @@ export default async function handler(req, res) {
         return res.status(200).json(allData);
       }
 
-      if (limitVal > 0) query = query.limit(limitVal);
-      const { data, error } = await query;
+      let finalQuery = buildQuery();
+      if (limitVal > 0) finalQuery = finalQuery.limit(limitVal);
+      const { data, error } = await finalQuery;
       if (error) throw error;
       return res.status(200).json(data || []);
     }
