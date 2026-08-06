@@ -153,79 +153,118 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
 
                         {Array.isArray(c.historical_trend) && c.historical_trend.length > 0 && (
                           <div className="mt-4">
-                             <h5 className={`text-[10px] uppercase font-bold mb-2 flex items-center ${s.muted}`}>
-                               Historical Trends
-                               <span className="text-[8px] font-normal opacity-60 ml-2 lowercase tracking-normal">(taller bar = better rank)</span>
-                             </h5>
-                             {(() => {
-                               // Sort trends by year so the histogram goes from old to new
-                               const trendData = [...c.historical_trend].sort((a, b) => parseInt(a.year) - parseInt(b.year));
-                               const rankValues = [
-                                 candidateRank,
-                                 ...trendData.map(x => parseInt(String(x.closing_rank).replace(/\D/g, '')) || 0)
-                               ].filter(v => v > 0);
-                               const rawMax = Math.max(...rankValues, 100);
-                               const maxVal = rawMax * 1.25; // 25% padding at top
+                             {/* Modern Glassmorphic Historical Trends Chart */}
+                             <div className="mt-5 p-5 rounded-2xl bg-gradient-to-b from-slate-900/60 to-slate-950/80 backdrop-blur-xl border border-white/10 shadow-xl">
+                               {/* Header & Legend */}
+                               <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-3 border-b border-white/10">
+                                 <div>
+                                   <h5 className="text-xs uppercase tracking-wider font-extrabold text-slate-200 flex items-center gap-1.5">
+                                     <span>📈</span> Historical Cutoff Trends
+                                   </h5>
+                                   <p className="text-[10px] text-slate-400 mt-0.5">
+                                     Taller bar = Higher / Better rank (closer to AIR 1)
+                                   </p>
+                                 </div>
+                                 <div className="flex items-center gap-3 text-[10px] font-bold">
+                                   {candidateRank > 0 && (
+                                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300">
+                                       <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]"></span>
+                                       <span>Your Rank ({candidateRank})</span>
+                                     </div>
+                                   )}
+                                   <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300">
+                                     <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]"></span>
+                                     <span>Closing Cutoff</span>
+                                   </div>
+                                 </div>
+                               </div>
 
-                               return (
-                                 <div className="relative h-48 mt-8 mb-6 rounded-xl bg-black/5 border border-white/10 p-4">
-                                   {/* Chart Area */}
-                                   <div className="relative w-full h-full flex items-end justify-around gap-2 pb-6">
-                                     {/* Histogram Bars */}
+                               {(() => {
+                                 const trendData = [...c.historical_trend].sort((a, b) => parseInt(a.year) - parseInt(b.year));
+                                 const allRanks = [
+                                   candidateRank,
+                                   ...trendData.map(x => parseInt(String(x.closing_rank).replace(/\D/g, '')) || 0)
+                                 ].filter(v => v > 0);
+                                 
+                                 const minR = Math.min(...allRanks, 1);
+                                 const maxR = Math.max(...allRanks, 100);
+                                 const spread = (maxR - minR) + (maxR * 0.25) || 1;
+
+                                 // Lower rank number = Taller bar
+                                 const getBarHeight = (r: number) => {
+                                   if (!r || r <= 0) return 0;
+                                   const normalized = (r - minR) / spread;
+                                   return Math.max(18, Math.min(95, 92 - (normalized * 68)));
+                                 };
+
+                                 return (
+                                   <div className="relative h-56 w-full pt-4 pb-8 flex items-end justify-around gap-2">
+                                     {/* Background Grid Lines */}
+                                     <div className="absolute inset-x-0 top-6 bottom-10 flex flex-col justify-between pointer-events-none opacity-15">
+                                       <div className="w-full border-b border-dashed border-white"></div>
+                                       <div className="w-full border-b border-dashed border-white"></div>
+                                       <div className="w-full border-b border-dashed border-white"></div>
+                                     </div>
+
+                                     {/* Bars Grouped by Year */}
                                      {trendData.map((t, idx) => {
-                                        const val = parseInt(String(t.closing_rank).replace(/\D/g, '')) || 0;
-                                        // Invert scale: lower rank number = taller bar (better standing)
-                                        const pct = maxVal > 0 && val > 0 ? Math.max(8, ((maxVal - val) / maxVal) * 100) : 0;
-                                        const candPct = maxVal > 0 && candidateRank > 0 ? Math.max(8, ((maxVal - candidateRank) / maxVal) * 100) : 0;
+                                        const closeVal = parseInt(String(t.closing_rank).replace(/\D/g, '')) || 0;
+                                        const candHeight = getBarHeight(candidateRank);
+                                        const closeHeight = getBarHeight(closeVal);
+
                                         return (
-                                          <div key={idx} className="relative flex flex-col justify-end items-center group w-full max-w-[90px] h-full z-10">
+                                          <div key={idx} className="relative flex flex-col justify-end items-center group w-full max-w-[110px] h-full z-10">
                                             
-                                            {/* Double Bars Container */}
-                                            <div className="flex items-end justify-center w-full h-full gap-1.5 sm:gap-2">
+                                            {/* Side by Side Bars */}
+                                            <div className="flex items-end justify-center w-full h-full gap-2 sm:gap-3 px-1">
                                               
-                                              {/* Your Rank Bar */}
+                                              {/* Candidate Rank Bar */}
                                               {candidateRank > 0 && (
-                                                <div className="relative flex flex-col justify-end items-center group/bar w-full max-w-[32px] h-full">
-                                                  <div className="absolute -top-6 text-[9px] font-bold opacity-80 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap text-amber-400">
+                                                <div className="relative flex flex-col justify-end items-center group/cand w-full max-w-[34px] h-full">
+                                                  {/* Badge Value */}
+                                                  <div className="absolute -top-7 text-[10px] font-black text-amber-300 bg-amber-950/80 px-1.5 py-0.5 rounded-md border border-amber-500/40 shadow-sm opacity-90 group-hover/cand:opacity-100 group-hover/cand:scale-110 transition-all whitespace-nowrap">
                                                     {candidateRank}
                                                   </div>
+                                                  {/* Bar Pillar */}
                                                   <div 
-                                                    className="w-full bg-amber-500/40 hover:bg-amber-500/80 transition-all duration-500 rounded-t-sm border-x border-t border-amber-500/60 relative overflow-hidden group-hover/bar:shadow-[0_0_15px_rgba(245,158,11,0.4)]"
-                                                    style={{ height: `${candPct}%` }}
+                                                    className="w-full bg-gradient-to-t from-amber-600 via-amber-500 to-amber-300 rounded-t-lg shadow-[0_0_15px_rgba(245,158,11,0.35)] group-hover/cand:shadow-[0_0_25px_rgba(245,158,11,0.7)] transition-all duration-500 relative overflow-hidden"
+                                                    style={{ height: `${candHeight}%` }}
                                                   >
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
+                                                    <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/cand:opacity-100 transition-opacity"></div>
                                                   </div>
-                                                  <div className="absolute -bottom-4 text-[8px] font-semibold text-amber-400">You</div>
+                                                  <span className="absolute -bottom-4 text-[9px] font-bold text-amber-400/90 uppercase tracking-tighter">You</span>
                                                 </div>
                                               )}
 
-                                              {/* Closing Rank Bar */}
-                                              <div className="relative flex flex-col justify-end items-center group/bar w-full max-w-[32px] h-full">
-                                                <div className={`absolute -top-6 text-[9px] font-bold opacity-80 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap ${s.dark ? 'text-white' : 'text-slate-800'}`}>
+                                              {/* Closing Cutoff Bar */}
+                                              <div className="relative flex flex-col justify-end items-center group/close w-full max-w-[34px] h-full">
+                                                {/* Badge Value */}
+                                                <div className="absolute -top-7 text-[10px] font-black text-cyan-300 bg-cyan-950/80 px-1.5 py-0.5 rounded-md border border-cyan-500/40 shadow-sm opacity-90 group-hover/close:opacity-100 group-hover/close:scale-110 transition-all whitespace-nowrap">
                                                   {t.closing_rank}
                                                 </div>
+                                                {/* Bar Pillar */}
                                                 <div 
-                                                  className="w-full bg-primary/40 hover:bg-primary/80 transition-all duration-500 rounded-t-sm border-x border-t border-primary/60 relative overflow-hidden group-hover/bar:shadow-[0_0_15px_rgba(var(--color-primary),0.4)]"
-                                                  style={{ height: `${pct}%` }}
+                                                  className="w-full bg-gradient-to-t from-blue-600 via-cyan-500 to-cyan-300 rounded-t-lg shadow-[0_0_15px_rgba(6,182,212,0.35)] group-hover/close:shadow-[0_0_25px_rgba(6,182,212,0.7)] transition-all duration-500 relative overflow-hidden"
+                                                  style={{ height: `${closeHeight}%` }}
                                                 >
-                                                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
+                                                  <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/close:opacity-100 transition-opacity"></div>
                                                 </div>
-                                                <div className="absolute -bottom-4 text-[8px] font-semibold text-primary">Close</div>
+                                                <span className="absolute -bottom-4 text-[9px] font-bold text-cyan-400/90 uppercase tracking-tighter">Cutoff</span>
                                               </div>
 
                                             </div>
                                             
-                                            {/* X-Axis Label */}
-                                            <div className={`absolute -bottom-9 text-[10px] font-bold ${s.muted}`}>
+                                            {/* Year Label */}
+                                            <div className="absolute -bottom-10 px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[10px] font-bold text-slate-300 group-hover:text-white group-hover:bg-white/10 transition-all">
                                               {t.year}
                                             </div>
                                           </div>
                                         );
                                      })}
                                    </div>
-                                 </div>
-                               );
-                             })()}
+                                 );
+                               })()}
+                             </div>
                             
                             <div className="overflow-x-auto rounded border border-white/10 hidden md:block">
                               <table className="w-full text-left text-[10px] border-collapse bg-black/10">
