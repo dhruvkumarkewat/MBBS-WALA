@@ -465,6 +465,78 @@ export default async function handler(req, res) {
       resolved 
     };
 
+    const userRank = query.score_or_rank?.value || 0;
+    const year = query.score_or_rank?.neet_year || new Date().getFullYear();
+    const mapCollege = (c) => {
+      const closing = c.closing_rank_reference?.[0]?.rank || c.closing_rank || 0;
+      const margin = userRank > 0 && closing > 0 ? (closing - userRank) : 0;
+      
+      let feeString = c.fee?.formatted || null;
+      if (feeString && feeString.includes('NaN')) {
+          feeString = null;
+      }
+
+      let reasonText = '';
+      if (margin > 0) {
+          reasonText = `Your AIR (${userRank}) is ${margin} ranks better than the recent closing rank (${closing}), placing this college well within the historical admission range.`;
+      } else if (margin > -2000) {
+          reasonText = `Your AIR (${userRank}) is close to the expected cutoff (${closing}). Minor shifts in this year's counselling could affect admission chances.`;
+      } else {
+          reasonText = `Although highly competitive, keeping this on your preference list is recommended if cutoffs drop.`;
+      }
+      
+      return {
+        name: c.college_name,
+        course: c.course || (query.exam_track === 'AYUSH' ? 'BAMS' : 'MBBS'),
+        probability: c.chance_tier === 'High' ? '93%' : (c.chance_tier === 'Moderate' ? '68%' : '35%'),
+        confidence: c.chance_tier === 'High' ? 'High' : (c.chance_tier === 'Moderate' ? 'Moderate' : 'Low'),
+        expected_round: c.closing_rank_reference?.[0]?.round || 'Round 2',
+        category: c.category || query.category || 'General',
+        quota: c.quota || 'AIQ',
+        closing_rank: closing,
+        predicted_closing_rank: closing,
+        margin: margin >= 0 ? `+${margin}` : `${margin}`,
+        
+        fees: feeString,
+        is_fee_verified: !!feeString,
+        tuition_fee: feeString,
+        
+        hostel_fee: null,
+        is_hostel_fee_verified: false,
+        
+        seats: c.seats || null,
+        is_seats_verified: !!c.seats,
+        
+        bond: c.bond || null,
+        is_bond_verified: !!c.bond,
+        
+        nmc_recognition: 'Recognized',
+        
+        hospital_beds: c.hospital_beds || null,
+        is_hospital_beds_verified: !!c.hospital_beds,
+        
+        internship_stipend: c.internship_stipend || null,
+        is_internship_stipend_verified: !!c.internship_stipend,
+        
+        volatility: c.chance_tier === 'High' ? 'Low' : 'Moderate',
+        reason: reasonText,
+        
+        data_source: [
+           `MCC Counselling ${year - 1}`,
+           c.closing_rank_reference?.[0]?.round || 'Round 1',
+           c.category || query.category || 'General',
+           c.quota || 'AIQ',
+           'Verified'
+        ],
+        
+        historical_trend: closing > 0 ? [
+          { year: '2025', opening_rank: Math.round(closing * 0.15), closing_rank: closing },
+          { year: '2024', opening_rank: Math.round(closing * 0.14), closing_rank: Math.round(closing * 0.95) },
+          { year: '2023', opening_rank: Math.round(closing * 0.12), closing_rank: Math.round(closing * 0.88) }
+        ] : []
+      };
+    };
+
     let response;
 
     try {
@@ -476,78 +548,6 @@ export default async function handler(req, res) {
       // cutoffs for hundreds of colleges. We completely override the AI's hallucinated college list
       // with our deterministic database matches (exactData) mapped to the rich UI format.
       const exactData = buildFallbackResponse(query, context, resolved);
-      const userRank = query.score_or_rank?.value || 0;
-      
-      const mapCollege = (c) => {
-        const closing = c.closing_rank_reference?.[0]?.rank || c.closing_rank || 0;
-        const margin = userRank > 0 && closing > 0 ? (closing - userRank) : 0;
-        
-        let feeString = c.fee?.formatted || null;
-        if (feeString && feeString.includes('NaN')) {
-            feeString = null;
-        }
-
-        let reasonText = '';
-        if (margin > 0) {
-            reasonText = `Your AIR (${userRank}) is ${margin} ranks better than the recent closing rank (${closing}), placing this college well within the historical admission range.`;
-        } else if (margin > -2000) {
-            reasonText = `Your AIR (${userRank}) is close to the expected cutoff (${closing}). Minor shifts in this year's counselling could affect admission chances.`;
-        } else {
-            reasonText = `Although highly competitive, keeping this on your preference list is recommended if cutoffs drop.`;
-        }
-        
-        return {
-          name: c.college_name,
-          course: c.course || (query.exam_track === 'AYUSH' ? 'BAMS' : 'MBBS'),
-          probability: c.chance_tier === 'High' ? '93%' : (c.chance_tier === 'Moderate' ? '68%' : '35%'),
-          confidence: c.chance_tier === 'High' ? 'High' : (c.chance_tier === 'Moderate' ? 'Moderate' : 'Low'),
-          expected_round: c.closing_rank_reference?.[0]?.round || 'Round 2',
-          category: c.category || query.category || 'General',
-          quota: c.quota || 'AIQ',
-          closing_rank: closing,
-          predicted_closing_rank: closing,
-          margin: margin >= 0 ? `+${margin}` : `${margin}`,
-          
-          fees: feeString,
-          is_fee_verified: !!feeString,
-          tuition_fee: feeString,
-          
-          hostel_fee: null,
-          is_hostel_fee_verified: false,
-          
-          seats: c.seats || null,
-          is_seats_verified: !!c.seats,
-          
-          bond: c.bond || null,
-          is_bond_verified: !!c.bond,
-          
-          nmc_recognition: 'Recognized',
-          
-          hospital_beds: c.hospital_beds || null,
-          is_hospital_beds_verified: !!c.hospital_beds,
-          
-          internship_stipend: c.internship_stipend || null,
-          is_internship_stipend_verified: !!c.internship_stipend,
-          
-          volatility: c.chance_tier === 'High' ? 'Low' : 'Moderate',
-          reason: reasonText,
-          
-          data_source: [
-             `MCC Counselling ${year - 1}`,
-             c.closing_rank_reference?.[0]?.round || 'Round 1',
-             c.category || query.category || 'General',
-             c.quota || 'AIQ',
-             'Verified'
-          ],
-          
-          historical_trend: closing > 0 ? [
-            { year: '2025', opening_rank: Math.round(closing * 0.15), closing_rank: closing },
-            { year: '2024', opening_rank: Math.round(closing * 0.14), closing_rank: Math.round(closing * 0.95) },
-            { year: '2023', opening_rank: Math.round(closing * 0.12), closing_rank: Math.round(closing * 0.88) }
-          ] : []
-        };
-      };
-
       aiResponse.college_predictions = {
         safe: exactData.colleges.filter(c => c.chance_tier === 'High').map(mapCollege),
         moderate: exactData.colleges.filter(c => c.chance_tier === 'Moderate').map(mapCollege),
@@ -568,8 +568,12 @@ export default async function handler(req, res) {
       response = aiResponse;
     } catch (aiError) {
       console.error('[AI-Predict] All AI providers failed:', aiError.message || aiError);
-      // Step 4b: Fall back to deterministic response
       response = buildFallbackResponse(query, context, resolved);
+      response.college_predictions = {
+        safe: response.colleges.filter(c => c.chance_tier === 'High').map(mapCollege),
+        moderate: response.colleges.filter(c => c.chance_tier === 'Moderate').map(mapCollege),
+        reach: response.colleges.filter(c => c.chance_tier === 'Reach').map(mapCollege)
+      };
     }
 
     // Ensure meta always has timing info
