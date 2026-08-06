@@ -159,7 +159,7 @@ function NewsWidget({ dark }: { dark: boolean }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('https://newsdata.io/api/1/news?apikey=pub_cff7c67139b447a58b649e9cc2d292ac&q=neet OR "medical college"&country=in&language=en')
+    fetch('https://newsdata.io/api/1/news?apikey=pub_cff7c67139b447a58b649e9cc2d292ac&q=NEET%20OR%20%22MBBS%20admission%22%20OR%20%22medical%20college%20admission%22%20OR%20%22MCC%20counselling%22&country=in&language=en')
       .then(r => r.json())
       .then(d => {
         if (d && d.results && d.results.length > 0) {

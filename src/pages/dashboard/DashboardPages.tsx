@@ -2328,7 +2328,7 @@ export function NotificationsPage() {
   const loadNews = useCallback(async () => {
     setNewsLoading(true);
     try {
-      const res = await fetch('https://newsdata.io/api/1/news?apikey=pub_cff7c67139b447a58b649e9cc2d292ac&q=neet OR "medical college" OR "medical admission"&country=in&language=en');
+      const res = await fetch('https://newsdata.io/api/1/news?apikey=pub_cff7c67139b447a58b649e9cc2d292ac&q=NEET%20OR%20%22MBBS%20admission%22%20OR%20%22medical%20college%20admission%22%20OR%20%22MCC%20counselling%22&country=in&language=en');
       const data = await res.json();
       if (data && data.results) {
         setNews(data.results.slice(0, 10)); // Top 10 news
