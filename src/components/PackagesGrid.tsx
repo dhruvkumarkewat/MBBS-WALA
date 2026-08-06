@@ -90,7 +90,7 @@ export default function PackagesGrid({ limit }: { limit?: number }) {
         return (
           <motion.div key={pkg.id} variants={staggerItem}>
             <Link
-              to={`/${pkg.slug}`}
+              to="/login"
               className={`group relative flex flex-col min-h-[260px] sm:min-h-[300px] overflow-hidden rounded-2xl sm:rounded-[1.75rem] bg-gradient-to-br ${a.gradient} force-white border border-white/10 shadow-[0_24px_60px_rgba(12,18,34,0.18)] transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_32px_80px_rgba(12,18,34,0.28)] touch-manipulation`}
             >
               <div className={`pointer-events-none absolute -right-8 -top-8 w-40 h-40 rounded-full blur-3xl opacity-50 group-hover:opacity-80 transition-opacity ${a.glow}`} />
