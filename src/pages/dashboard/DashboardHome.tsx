@@ -297,10 +297,10 @@ export default function DashboardHome() {
       img: '/images/mbbswala/tools-data.jpg',
     },
     {
-      t: 'Documents',
-      d: 'Upload & track admission docs',
-      to: '/dashboard/documents',
-      icon: FolderOpen,
+      t: 'Counselling',
+      d: 'Track your counselling rounds',
+      to: '/dashboard/counselling',
+      icon: CalendarCheck2,
       accent: 'from-slate-600 to-slate-800',
       img: '/images/mbbswala/feat-04-docs.jpg',
     },
@@ -329,12 +329,10 @@ export default function DashboardHome() {
       img: '/images/mbbswala/tools-data.jpg',
     },
     {
-      l: 'Docs ready',
-      v: loading
-        ? '…'
-        : `${summary?.documents?.uploaded ?? 0}/${summary?.documents?.total ?? 0}`,
-      to: '/dashboard/documents',
-      icon: FileCheck2,
+      l: 'Counselling',
+      v: loading ? '…' : 'Open',
+      to: '/dashboard/counselling',
+      icon: CalendarCheck2,
       img: '/images/mbbswala/feat-04-docs.jpg',
     },
   ];
