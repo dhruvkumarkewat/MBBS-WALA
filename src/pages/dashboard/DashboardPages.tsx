@@ -532,7 +532,7 @@ export function PredictorPage() {
           return {
             name: m.college_name,
             probability: tier,
-            expected_round: m.round || round?.label || 'Round 1',
+            expected_round: m.round || round || 'Round 1',
             fees: (m as any).fee ? `₹${Number((m as any).fee).toLocaleString('en-IN')}/yr` : 'N/A',
             quota: (m as any).quota || (isHomeState && quotas.includes('State') ? 'State' : 'AIQ'),
             opening_rank: '-',
