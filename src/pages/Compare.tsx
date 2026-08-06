@@ -4,6 +4,9 @@ import { GitCompareArrows, Loader2, CheckCircle2, Lightbulb, ChevronDown } from 
 
 import { MEDICAL_COURSES } from '../lib/courses';
 
+// In-memory session cache — survives tab switches but clears on page refresh
+const compareCache = new Map<string, ComparePayload>();
+
 interface College {
   id: number;
   name: string;
@@ -132,6 +135,13 @@ export default function Compare() {
       setData(null);
       return;
     }
+    // ── Check in-memory cache first ──
+    const cacheKey = [a, b].sort().join('-');
+    const cached = compareCache.get(cacheKey);
+    if (cached) {
+      setData(cached);
+      return;
+    }
     const controller = new AbortController();
     setLoadingCmp(true);
     setError('');
@@ -139,6 +149,7 @@ export default function Compare() {
       .then(async (r) => {
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || 'Compare failed');
+        compareCache.set(cacheKey, d); // store in cache
         setData(d);
       })
       .catch((e: unknown) => {

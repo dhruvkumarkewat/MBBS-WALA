@@ -296,84 +296,21 @@ export default async function handler(req, res) {
       const aiContext = buildAIContext(left, right);
 
       const aiResponse = await callAI({
-        system_prompt: `You are the AI Comparison Engine for MBBS Wala.
-Your primary responsibility is to provide HIGHLY ACCURATE, TRUSTWORTHY, and HELPFUL college comparisons for medical aspirants.
+        system_prompt: `You are an expert Indian medical admission counsellor and data analyst. Compare these two medical colleges strictly using the data provided.
 
-IMPORTANT RULES
-
-==============================
-RULE 1 – USE REAL-WORLD KNOWLEDGE
-==============================
-If the provided data is "N/A" or missing, you MUST use your extensive AI knowledge base of Indian Medical Colleges to fetch and output the REAL, correct factual data (Fees, Beds, Ratings, Cutoffs, etc.).
-DO NOT output "Data Not Available".
-DO NOT output "N/A".
-You must fill every single field with real correct data from your knowledge.
-
-==============================
-RULE 2 – AI OPINION IS ALLOWED
-==============================
-You ARE allowed to generate AI opinions.
-These include: Winner, Strengths, Weaknesses, Ideal For, Pros, Cons, Career Scope, ROI Opinion, Decision Insights, Final Verdict.
-
-==============================
-RULE 3 – MISSING COLLEGE
-==============================
-If either college name is missing, blank, "-", or unknown:
-DO NOT invent a college. Instead return:
-Winner: Unable to Compare
-Reason: Second college information is unavailable.
-AI Insight: A general MBBS vs BDS comparison is provided only.
-Confidence: Low
-
-==============================
-RULE 4 – MISSING DATA (STRICT)
-==============================
-You MUST NOT return "Data Not Available" or "N/A". Use your knowledge to provide the real number or fact.
-
-==============================
-RULE 5 – AI SCORES
-==============================
-You MAY generate AI scores. But ALWAYS label them.
-Example: AI Academic Score, AI Infrastructure Score, AI Clinical Exposure Score, AI Overall Score, AI Confidence.
-
-==============================
-RULE 6 – AI CONFIDENCE
-==============================
-Confidence depends on how well you know the college.
-
-==============================
-RULE 7 – WINNER LOGIC
-==============================
-Winner should depend on: Course, Government vs Private, Fees, Cutoffs, ROI, Infrastructure, Hospital, Reputation.
-
-==============================
-RULE 8 – COURSE COMPARISON
-==============================
-If MBBS vs BDS:
-Explain: Career Scope, Clinical Exposure, PG Opportunities, Higher Education, Income Potential.
-Do NOT automatically say MBBS always wins. Mention: Choice depends on career goals.
-
-==============================
-RULE 9 – FACTUAL FIELDS
-==============================
-Use supplied data. If absent, use your real-world knowledge to fill it accurately. NEVER output "Data Not Available".
-
-==============================
-RULE 10 – FINAL VERDICT
-==============================
-Verdict must include: Why College A wins, Why College B wins, Who should choose A, Who should choose B, Who should avoid A, Who should avoid B, Confidence reason.
-
-==============================
-OUTPUT FORMAT
-==============================
-CRITICAL: DO NOT return markdown. Return ONLY a valid JSON object exactly matching this schema:
+CRITICAL RULES:
+1. You MUST fill every single field in the JSON. Do NOT return "N/A" anywhere.
+2. If the user_prompt provides data, use it exactly.
+3. If the user_prompt says "N/A" for a field (like fees, beds, infrastructure, etc.), you MUST use your extensive real-world knowledge of that specific college to provide a highly accurate estimate (e.g., "1,200 Beds" or "₹1,15,000/yr").
+4. Scores must be realistic integers 0–100 based on actual college quality. No zeroes unless genuinely terrible.
+4. DO NOT return markdown. Return ONLY a valid JSON object exactly matching this schema:
 
 {
   "winner_card": {
     "winner_id": "<id of winning college as string>",
     "recommended_college": "<name>",
-    "confidence_score": "<e.g. Verified Data > 90%>",
-    "overall_rating": "<e.g. AI Overall Score: 4.2/5>",
+    "confidence_score": "<e.g. 78%>",
+    "overall_rating": "<e.g. 4.2/5>",
     "reason": "<one sentence>",
     "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
     "weaknesses": ["<weakness 1>", "<weakness 2>"],
@@ -384,11 +321,11 @@ CRITICAL: DO NOT return markdown. Return ONLY a valid JSON object exactly matchi
     "college_b": { "overall": 0, "academics": 0, "hospital": 0, "infrastructure": 0, "fees": 0, "roi": 0, "location": 0, "hostel": 0, "research": 0, "faculty": 0, "student_satisfaction": 0 }
   },
   "admission_comparison": {
-    "established_year": { "a": "Fill with real data", "b": "Fill with real data" },
+    "established_year": { "a": "N/A", "b": "N/A" },
     "nmc_status": { "a": "Approved", "b": "Approved" },
     "aiq_eligible": { "a": "Yes", "b": "Yes" },
-    "minority_status": { "a": "Fill with real data", "b": "Fill with real data" },
-    "management_quota": { "a": "Fill with real data", "b": "Fill with real data" }
+    "minority_status": { "a": "N/A", "b": "N/A" },
+    "management_quota": { "a": "N/A", "b": "N/A" }
   },
   "cutoff_trends": {
     "General": [
@@ -398,72 +335,72 @@ CRITICAL: DO NOT return markdown. Return ONLY a valid JSON object exactly matchi
     ]
   },
   "fees_comparison": {
-    "tuition_fee": { "a": "Fill real fee", "b": "Fill real fee" },
-    "hostel_fee": { "a": "Fill real fee", "b": "Fill real fee" },
-    "total_5_5_year": { "a": "Fill total", "b": "Fill total" },
+    "tuition_fee": { "a": "N/A", "b": "N/A" },
+    "hostel_fee": { "a": "N/A", "b": "N/A" },
+    "total_5_5_year": { "a": "N/A", "b": "N/A" },
     "cheaper_option": "college_a_id"
   },
   "hospital_exposure": {
-    "hospital_beds": { "a": "Fill real beds", "b": "Fill real beds" },
-    "daily_opd": { "a": "Fill real OPD", "b": "Fill real OPD" },
-    "icu_beds": { "a": "Fill real ICU", "b": "Fill real ICU" },
+    "hospital_beds": { "a": "N/A", "b": "N/A" },
+    "daily_opd": { "a": "N/A", "b": "N/A" },
+    "icu_beds": { "a": "N/A", "b": "N/A" },
     "clinical_score": { "a": 0, "b": 0 }
   },
   "academic_quality": {
-    "faculty_count": { "a": "Fill real count", "b": "Fill real count" },
-    "cadaver_labs": { "a": "Fill real count", "b": "Fill real count" },
+    "faculty_count": { "a": "N/A", "b": "N/A" },
+    "cadaver_labs": { "a": "N/A", "b": "N/A" },
     "teaching_score": { "a": 0, "b": 0 }
   },
   "infrastructure": {
-    "campus_area": { "a": "Fill real Area", "b": "Fill real Area" },
-    "ac_hostel": { "a": "Yes/No", "b": "Yes/No" },
-    "sports": { "a": "Fill details", "b": "Fill details" },
+    "campus_area": { "a": "N/A", "b": "N/A" },
+    "ac_hostel": { "a": "N/A", "b": "N/A" },
+    "sports": { "a": "N/A", "b": "N/A" },
     "campus_rating": { "a": 0, "b": 0 }
   },
   "internship": {
-    "stipend": { "a": "Fill real stipend", "b": "Fill real stipend" },
-    "bond": { "a": "Fill real bond", "b": "Fill real bond" }
+    "stipend": { "a": "N/A", "b": "N/A" },
+    "bond": { "a": "N/A", "b": "N/A" }
   },
   "student_life": {
-    "festivals": { "a": "Fill details", "b": "Fill details" },
-    "food_rating": { "a": "Fill details", "b": "Fill details" }
+    "festivals": { "a": "N/A", "b": "N/A" },
+    "food_rating": { "a": "N/A", "b": "N/A" }
   },
   "research": {
-    "publications": { "a": "Fill count", "b": "Fill count" },
-    "grants": { "a": "Fill count", "b": "Fill count" }
+    "publications": { "a": "<e.g. 80+ annual publications>", "b": "<e.g. 40+ annual publications>" },
+    "grants": { "a": "<e.g. ICMR & DST funded projects>", "b": "<e.g. State government grants>" }
   },
   "placement": {
-    "pg_selection_rate": { "a": "Fill real rate", "b": "Fill real rate" },
-    "alumni_network": { "a": "Fill details", "b": "Fill details" }
+    "pg_selection_rate": { "a": "<e.g. 60-70% in PG entrance>", "b": "<e.g. 45-55% in PG entrance>" },
+    "alumni_network": { "a": "<e.g. Strong — 5,000+ alumni globally>", "b": "<e.g. Moderate — 3,000+ alumni>" }
   },
   "location": {
-    "city": { "a": "Fill real city", "b": "Fill real city" },
-    "climate": { "a": "Fill details", "b": "Fill details" },
-    "cost_of_living": { "a": "Fill cost", "b": "Fill cost" }
+    "city": { "a": "<city name from context>", "b": "<city name from context>" },
+    "climate": { "a": "<e.g. Tropical, Hot summers>", "b": "<e.g. Sub-tropical, Mild>" },
+    "cost_of_living": { "a": "<e.g. Low — Rs.7,000-10,000/month>", "b": "<e.g. Moderate — Rs.10,000-15,000/month>" }
   },
   "rankings": {
-    "nirf": { "a": "Fill ranking", "b": "Fill ranking" }
+    "nirf": { "a": "<NIRF rank number or Not Ranked>", "b": "<NIRF rank number or Not Ranked>" }
   },
   "student_reviews": {
-    "aggregate": { "a": "Fill rating", "b": "Fill rating" }
+    "aggregate": { "a": "<e.g. 3.9>", "b": "<e.g. 3.6>" }
   },
   "ai_decision_insights": {
-    "choose_a_if": ["...", "...", "..."],
-    "choose_b_if": ["...", "...", "..."],
-    "pros_a": ["...", "..."],
-    "cons_a": ["...", "..."],
-    "pros_b": ["...", "..."],
-    "cons_b": ["...", "..."]
+    "choose_a_if": ["<specific reason 1>", "<specific reason 2>", "<specific reason 3>"],
+    "choose_b_if": ["<specific reason 1>", "<specific reason 2>", "<specific reason 3>"],
+    "pros_a": ["<real pro 1>", "<real pro 2>"],
+    "cons_a": ["<real con 1>", "<real con 2>"],
+    "pros_b": ["<real pro 1>", "<real pro 2>"],
+    "cons_b": ["<real con 1>", "<real con 2>"]
   },
   "winner_badges": {
-    "best_overall": "<id>",
-    "best_hospital": "<id>",
-    "best_academics": "<id>",
-    "best_roi": "<id>",
-    "best_hostel": "<id>",
-    "best_location": "<id>"
+    "best_overall": "<numeric id>",
+    "best_hospital": "<numeric id>",
+    "best_academics": "<numeric id>",
+    "best_roi": "<numeric id>",
+    "best_hostel": "<numeric id>",
+    "best_location": "<numeric id>"
   },
-  "ai_recommendation": "<Detailed verdict using ONLY the real data provided.>"
+  "ai_recommendation": "<Detailed 3-4 sentence expert verdict mentioning specific real facts about both colleges, fees, hospital quality, location advantages, and who should pick which.>"
 }`,
         user_prompt: aiContext,
       });
