@@ -58,6 +58,7 @@ export interface CompetitionSummary {
   highest_chance?: Array<{ state_name: string; competition_score: number | string }>;
   moderate_chance?: Array<{ state_name: string; competition_score: number | string }>;
   very_difficult?: Array<{ state_name: string; competition_score: number | string }>;
+  ai_analysis?: string;
 }
 
 export interface MapPathState {
