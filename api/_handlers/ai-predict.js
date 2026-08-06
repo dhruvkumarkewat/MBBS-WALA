@@ -251,12 +251,11 @@ const DEEMED_KEYWORDS = [
     const closing = c.aiq_rank || c.closing_rank || 0;
     let tier = 'Unlikely';
     if (closing && candidateRank > 0) {
-      const diff = closing - candidateRank;
-      if (diff >= closing * 0.10) { // High/Safe: Closes > 10% above candidate rank
-        tier = 'High';
-      } else if (diff >= 0 && diff < closing * 0.10) { // Moderate: 0-10% difference
+      if (closing >= candidateRank) {
+        tier = 'High'; // Safe
+      } else if (closing >= candidateRank * 0.70) {
         tier = 'Moderate';
-      } else if (diff < 0 && diff >= -(closing * 0.20)) { // Reach: Up to 20% worse than closing
+      } else if (closing >= candidateRank * 0.20) {
         tier = 'Reach';
       }
     }
@@ -287,20 +286,23 @@ const DEEMED_KEYWORDS = [
 
   // Filter to eligible tiers and prioritize closest ranks
   const eligible = scored.filter((c) => c._tier !== 'Unlikely');
-  const highTier = eligible
+  let highTier = eligible
     .filter((c) => c._tier === 'High')
     .sort((a, b) => a._closing - b._closing) // Absolute best colleges they can get
-    .slice(0, 30);
-  const modTier = eligible
+    .slice(0, 40);
+  let modTier = eligible
     .filter((c) => c._tier === 'Moderate')
     .sort((a, b) => a._diff - b._diff) // Most achievable moderate
-    .slice(0, 20);
-  const reachTier = eligible
+    .slice(0, 25);
+  let reachTier = eligible
     .filter((c) => c._tier === 'Reach')
     .sort((a, b) => a._diff - b._diff) // Most achievable reach
-    .slice(0, 15);
+    .slice(0, 25);
 
-  const finalClosingRanks = [...highTier, ...modTier, ...reachTier];
+  let finalClosingRanks = [...highTier, ...modTier, ...reachTier];
+  if (finalClosingRanks.length < 15 && deduplicated.length > 0) {
+    finalClosingRanks = deduplicated.slice(0, 40);
+  }
 
   // 5. Fee structures
   const { data: fees } = await supabase

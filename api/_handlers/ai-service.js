@@ -278,12 +278,12 @@ export function buildFallbackResponse(query, context, resolved) {
     let chance_tier = 'Unlikely';
 
     if (closingRank && rank > 0) {
-      if (closingRank >= rank * 1.05 && closingRank <= rank * 3.0) {
-        chance_tier = 'High';
-      } else if (closingRank >= rank * 0.85 && closingRank < rank * 1.05) {
-        chance_tier = 'Moderate';
-      } else if (closingRank >= rank * 0.35 && closingRank < rank * 0.85) {
-        chance_tier = 'Reach';
+      if (closingRank >= rank) {
+        chance_tier = 'High'; // Safe: Rank easily beats or matches cutoff
+      } else if (closingRank >= rank * 0.70) {
+        chance_tier = 'Moderate'; // Moderate: Within achievable striking distance
+      } else if (closingRank >= rank * 0.20) {
+        chance_tier = 'Reach'; // Reach: Tougher cutoff, dream options
       }
     }
 
@@ -337,7 +337,6 @@ export function buildFallbackResponse(query, context, resolved) {
       _is_home_state: isHomeState,
     };
   }).filter((c) => {
-    if (c.chance_tier === 'Unlikely') return false;
     // Strict State Quota isolation:
     if (c.quota === 'State' && !c._is_home_state) return false;
     if (onlyStateQuota && domicileState && (!c._is_home_state || c.quota !== 'State')) return false;
@@ -346,25 +345,42 @@ export function buildFallbackResponse(query, context, resolved) {
   });
 
   // Sort High chances by closest cutoffs right above candidate rank (ascending cutoff)
-  const highTier = scoredColleges
+  let highTier = scoredColleges
     .filter((c) => c.chance_tier === 'High')
     .sort((a, b) => a._closing - b._closing)
     .slice(0, 30);
 
   // Sort Moderate by proximity to candidate rank
-  const modTier = scoredColleges
+  let modTier = scoredColleges
     .filter((c) => c.chance_tier === 'Moderate')
     .sort((a, b) => a._diff - b._diff)
-    .slice(0, 30);
+    .slice(0, 20);
 
   // Sort Reach by proximity to candidate rank (closest dream colleges first)
-  const reachTier = scoredColleges
+  let reachTier = scoredColleges
     .filter((c) => c.chance_tier === 'Reach')
     .sort((a, b) => b._closing - a._closing)
-    .slice(0, 30);
+    .slice(0, 20);
 
-  // Assemble with TOP HIGH CHANCE COLLEGES FIRST
-  const colleges = [...highTier, ...modTier, ...reachTier];
+  // GUARANTEE MINIMUM 12 COLLEGES: If safe/mod/reach are sparse, auto-distribute from all valid scored colleges
+  let colleges = [...highTier, ...modTier, ...reachTier];
+  if (colleges.length < 12 && scoredColleges.length > 0) {
+    const remaining = scoredColleges.filter(sc => !colleges.some(c => c.college_name === sc.college_name));
+    for (const r of remaining) {
+      if (colleges.length >= 15) break;
+      if (r._closing >= rank) {
+        r.chance_tier = 'High';
+        highTier.push(r);
+      } else if (r._closing >= rank * 0.6) {
+        r.chance_tier = 'Moderate';
+        modTier.push(r);
+      } else {
+        r.chance_tier = 'Reach';
+        reachTier.push(r);
+      }
+      colleges.push(r);
+    }
+  }
 
   // Match scholarships with rich eligibility explanations
   const scholarships = (context.scholarships || []).map((s) => {
