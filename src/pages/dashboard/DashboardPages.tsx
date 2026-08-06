@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { useDashboard } from '../../contexts/DashboardContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { CollegeInfoModal } from '../../components/ui/CollegeInfoModal';
 import { apiJson } from '../../lib/api';
 import { usePremium, UpgradePrompt, PremiumGate } from '../../lib/premium';
 import { INDIAN_STATES, COUNSELLING_ROUNDS } from '../../lib/courses';
@@ -765,6 +766,7 @@ export function FinderPage() {
   const [total, setTotal] = useState(0);
   const [savedIds, setSavedIds] = useState<Set<number>>(new Set());
   const [error, setError] = useState('');
+  const [selectedCollegeInfo, setSelectedCollegeInfo] = useState<string | null>(null);
 
   const loadSaved = useCallback(async () => {
     try {
@@ -889,7 +891,12 @@ export function FinderPage() {
               return (
                 <div key={c.id} className={`rounded-2xl border p-4 flex flex-col gap-2 ${s.card}`}>
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-bold text-sm leading-snug">{c.name}</h3>
+                    <button 
+                      onClick={() => setSelectedCollegeInfo(c.name)}
+                      className="font-bold text-sm leading-snug hover:underline decoration-orange-500 underline-offset-4 text-left transition-all hover:text-orange-400"
+                    >
+                      {c.name}
+                    </button>
                     <button
                       type="button"
                       onClick={() => toggleSave(c.id)}
@@ -963,6 +970,11 @@ export function FinderPage() {
           </div>
         </>
       )}
+      <CollegeInfoModal 
+        collegeName={selectedCollegeInfo} 
+        isOpen={!!selectedCollegeInfo} 
+        onClose={() => setSelectedCollegeInfo(null)} 
+      />
     </div>
   );
 }
@@ -1649,6 +1661,7 @@ export function DashSeatMatrixPage() {
   const [error, setError] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [selectedCollegeInfo, setSelectedCollegeInfo] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -1766,7 +1779,14 @@ export function DashSeatMatrixPage() {
                   key={String(r.id)}
                   className={`border-t ${s.dark ? 'border-white/5' : 'border-primary-dark/5'}`}
                 >
-                  <td className="p-3 font-semibold">{String(r.college_name)}</td>
+                  <td className="p-3 font-semibold">
+                    <button 
+                      onClick={() => setSelectedCollegeInfo(String(r.college_name))}
+                      className="hover:underline decoration-orange-500 underline-offset-4 text-left transition-all hover:text-orange-400"
+                    >
+                      {String(r.college_name)}
+                    </button>
+                  </td>
                   <td className="p-3">
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${s.chip}`}>
                       {String(r.college_kind)}
@@ -1838,6 +1858,11 @@ export function DashSeatMatrixPage() {
           </button>
         </div>
       )}
+      <CollegeInfoModal 
+        collegeName={selectedCollegeInfo} 
+        isOpen={!!selectedCollegeInfo} 
+        onClose={() => setSelectedCollegeInfo(null)} 
+      />
     </div>
   );
 }

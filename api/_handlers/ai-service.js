@@ -51,8 +51,8 @@ const PROVIDER_CONFIGS = {
           headers: { 'Content-Type': 'application/json' },
           signal: AbortSignal.timeout(15000),
           body: JSON.stringify({
-            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-            contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload) }] }],
+            systemInstruction: { parts: [{ text: payload.system_prompt || SYSTEM_PROMPT }] },
+            contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload.user_prompt || payload) }] }],
             generationConfig: {
               responseMimeType: 'application/json',
               temperature: 0.1,
@@ -84,8 +84,8 @@ const PROVIDER_CONFIGS = {
           headers: { 'Content-Type': 'application/json' },
           signal: AbortSignal.timeout(15000),
           body: JSON.stringify({
-            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-            contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload) }] }],
+            systemInstruction: { parts: [{ text: payload.system_prompt || SYSTEM_PROMPT }] },
+            contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload.user_prompt || payload) }] }],
             generationConfig: {
               responseMimeType: 'application/json',
               temperature: 0.1,
@@ -125,8 +125,8 @@ const PROVIDER_CONFIGS = {
             max_tokens: 4000,
             response_format: { type: 'json_object' },
             messages: [
-              { role: 'system', content: SYSTEM_PROMPT },
-              { role: 'user', content: JSON.stringify(payload) },
+              { role: 'system', content: payload.system_prompt || SYSTEM_PROMPT },
+              { role: 'user', content: JSON.stringify(payload.user_prompt || payload) },
             ],
           }),
         },
@@ -154,8 +154,8 @@ for (let i = 1; i <= 15; i++) {
           headers: { 'Content-Type': 'application/json' },
           signal: AbortSignal.timeout(15000),
           body: JSON.stringify({
-            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-            contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload) }] }],
+            systemInstruction: { parts: [{ text: payload.system_prompt || SYSTEM_PROMPT }] },
+            contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload.user_prompt || payload) }] }],
             generationConfig: {
               responseMimeType: 'application/json',
               temperature: 0.1,

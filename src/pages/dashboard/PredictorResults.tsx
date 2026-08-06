@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Crown, Sparkles, AlertTriangle, FileText, IndianRupee, MapPin, Search } from 'lucide-react';
-import React from 'react';
+import React, { useState } from 'react';
+import { CollegeInfoModal } from '../../../components/ui/CollegeInfoModal';
 
 // Interfaces mapping to PredictorResponse
 interface PredictorResultsProps {
@@ -26,7 +27,7 @@ const getQuotaStyle = (quota: string) => {
   return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
 };
 
-const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borderClass, isReach }: any) => {
+const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borderClass, isReach, onCollegeClick }: any) => {
   if (!colleges || colleges.length === 0) return null;
   const displayColleges = isPremium ? colleges : colleges.slice(0, maxFreeCount);
   const grouped = displayColleges.reduce((acc: any, c: any) => {
@@ -51,7 +52,12 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
           </h4>
           {grouped[quota].map((c: any, i: number) => (
             <div key={i} className={`rounded-xl border ${bgClass} ${borderClass} p-4`}>
-              <Link to={`/colleges/${encodeURIComponent(c.name)}`} className="font-bold text-sm mb-1 hover:underline decoration-orange-500 underline-offset-4">{c.name}</Link>
+              <button 
+                onClick={() => onCollegeClick(c.name)} 
+                className="font-bold text-sm mb-1 hover:underline decoration-orange-500 underline-offset-4 text-left transition-all hover:text-orange-400"
+              >
+                {c.name}
+              </button>
               {!isReach ? (
                 <>
                   <div className="flex flex-wrap gap-2 mb-2">
@@ -92,6 +98,8 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
 };
 
 export function PredictorResults({ aiResponse, s, isPremium, domicileState }: PredictorResultsProps) {
+  const [selectedCollegeInfo, setSelectedCollegeInfo] = useState<string | null>(null);
+
   if (!aiResponse) return null;
 
   return (
@@ -156,7 +164,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             <span className="text-lg">✅</span>
             <h3 className="font-black text-sm uppercase tracking-wider">Safe Colleges (High Chance)</h3>
           </div>
-          <CollegeGroupList colleges={aiResponse.college_predictions?.safe} s={s} isPremium={true} maxFreeCount={100} bgClass="bg-emerald-500/5" borderClass="border-emerald-500/20" isReach={false} />
+          <CollegeGroupList colleges={aiResponse.college_predictions?.safe} s={s} isPremium={true} maxFreeCount={100} bgClass="bg-emerald-500/5" borderClass="border-emerald-500/20" isReach={false} onCollegeClick={setSelectedCollegeInfo} />
         </div>
       )}
 
@@ -167,7 +175,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             <span className="text-lg">🟡</span>
             <h3 className="font-black text-sm uppercase tracking-wider">Moderate Colleges</h3>
           </div>
-          <CollegeGroupList colleges={aiResponse.college_predictions?.moderate} s={s} isPremium={true} maxFreeCount={100} bgClass="bg-amber-500/5" borderClass="border-amber-500/20" isReach={false} />
+          <CollegeGroupList colleges={aiResponse.college_predictions?.moderate} s={s} isPremium={true} maxFreeCount={100} bgClass="bg-amber-500/5" borderClass="border-amber-500/20" isReach={false} onCollegeClick={setSelectedCollegeInfo} />
         </div>
       )}
 
@@ -178,7 +186,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             <span className="text-lg">🔴</span>
             <h3 className="font-black text-sm uppercase tracking-wider">Reach Colleges</h3>
           </div>
-          <CollegeGroupList colleges={aiResponse.college_predictions?.reach} s={s} isPremium={isPremium} maxFreeCount={1} bgClass="bg-orange-500/5" borderClass="border-orange-500/20" isReach={true} />
+          <CollegeGroupList colleges={aiResponse.college_predictions?.reach} s={s} isPremium={isPremium} maxFreeCount={1} bgClass="bg-orange-500/5" borderClass="border-orange-500/20" isReach={true} onCollegeClick={setSelectedCollegeInfo} />
           
           {!isPremium && aiResponse.college_predictions.reach.length > 1 && (
              <div className="mt-4 p-4 rounded-xl border border-primary/20 bg-primary/5 text-center">
@@ -241,7 +249,12 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
                 {(aiResponse.management_quota_opportunities || []).map((mq: any, i: number) => (
                   <tr key={i} className={`border-b ${s.dark ? 'border-white/5' : 'border-slate-100'}`}>
                     <td className="py-2 font-semibold pr-4">
-                      <Link to={`/colleges/${encodeURIComponent(mq.college)}`} className="hover:underline decoration-orange-500 underline-offset-4">{mq.college}</Link>
+                      <button 
+                        onClick={() => setSelectedCollegeInfo(mq.college)} 
+                        className="hover:underline decoration-orange-500 underline-offset-4 text-left transition-all hover:text-orange-400"
+                      >
+                        {mq.college}
+                      </button>
                     </td>
                     <td className="py-2 pr-4">{mq.expected_rank}</td>
                     <td className="py-2 pr-4">{mq.approx_fees}</td>
@@ -325,6 +338,11 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
         </div>
       )}
 
+      <CollegeInfoModal 
+        collegeName={selectedCollegeInfo} 
+        isOpen={!!selectedCollegeInfo} 
+        onClose={() => setSelectedCollegeInfo(null)} 
+      />
     </div>
   );
 }
