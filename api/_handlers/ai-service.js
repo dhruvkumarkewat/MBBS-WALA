@@ -13,9 +13,9 @@ Return ONLY valid JSON exactly matching this structure (be concise to avoid time
 {
   "admission_summary": { "status": "Excellent Chances|High Chances|Moderate Chances|Low Chances|Very Low Chances", "overall_confidence": "90%", "ai_prediction_confidence": "95%", "expected_probability": "85%", "explanation": "2-3 sentences explaining why" },
   "college_predictions": {
-    "safe": [{ "name": "...", "probability": "High", "expected_round": "Round 1", "fees": "...", "quota": "...", "opening_rank": "...", "closing_rank": "...", "reason": "..." }],
-    "moderate": [{ "name": "...", "probability": "Moderate", "expected_round": "Round 2", "fees": "...", "quota": "...", "opening_rank": "...", "closing_rank": "...", "reason": "..." }],
-    "reach": [{ "name": "...", "probability": "Low", "expected_round": "Stray", "fees": "...", "quota": "...", "opening_rank": "...", "closing_rank": "...", "reason": "..." }]
+    "safe": [{ "name": "...", "probability": "High", "expected_round": "Round 1", "fees": "...", "quota": "MUST BE EXACTLY 'AIQ' OR 'State' OR 'Management Quota'", "opening_rank": "...", "closing_rank": "...", "reason": "..." }],
+    "moderate": [{ "name": "...", "probability": "Moderate", "expected_round": "Round 2", "fees": "...", "quota": "MUST BE EXACTLY 'AIQ' OR 'State' OR 'Management Quota'", "opening_rank": "...", "closing_rank": "...", "reason": "..." }],
+    "reach": [{ "name": "...", "probability": "Low", "expected_round": "Stray", "fees": "...", "quota": "MUST BE EXACTLY 'AIQ' OR 'State' OR 'Management Quota'", "opening_rank": "...", "closing_rank": "...", "reason": "..." }]
   },
   "unlikely_mbbs_guidance": { "active": true, "message": "...", "private_options": [{ "name": "...", "state": "...", "fees": "...", "probability": "...", "rounds": "...", "management_quota": true, "nri_seats": true }] },
   "management_quota_opportunities": [{ "college": "...", "expected_rank": "...", "approx_fees": "...", "hostel_fees": "...", "bond": "...", "total_cost": "...", "chances": "...", "donation_expected": true }],

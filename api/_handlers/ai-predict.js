@@ -203,7 +203,9 @@ const DEEMED_KEYWORDS = [
     if (seenNames.has(normalizedName)) continue;
     
     // 1. STRICT QUOTA FILTER: If user specified quotas, NEVER include colleges of unselected quotas
-    if (quotas.length > 0 && !quotas.includes(item.quota_code)) {
+    // EXCEPTION: If candidate rank is poor (> 150000), allow Management/Deemed colleges as a fallback so the AI can suggest them
+    const isFallbackOption = candidateRank > 150000 && (item.quota_code === 'Management' || item.quota_code === 'Deemed-Central');
+    if (quotas.length > 0 && !quotas.includes(item.quota_code) && !isFallbackOption) {
       continue;
     }
 

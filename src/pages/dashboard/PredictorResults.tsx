@@ -11,6 +11,21 @@ interface PredictorResultsProps {
 }
 
 
+const getQuotaStyle = (quota: string) => {
+  if (!quota) return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+  const q = quota.toLowerCase();
+  if (q.includes('management') || q.includes('deemed') || q.includes('nri') || q.includes('private')) {
+    return 'bg-pink-500/10 text-pink-500 border-pink-500/20';
+  }
+  if (q.includes('aiq') || q.includes('all india')) {
+    return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+  }
+  if (q.includes('state')) {
+    return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+  }
+  return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+};
+
 const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borderClass, isReach }: any) => {
   if (!colleges || colleges.length === 0) return null;
   const displayColleges = isPremium ? colleges : colleges.slice(0, maxFreeCount);
@@ -42,7 +57,7 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                   <div className="flex flex-wrap gap-2 mb-2">
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${borderClass} bg-white/5`}>{c.probability} Probability</span>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">{c.expected_round}</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-400 border border-slate-500/20">{c.quota}</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getQuotaStyle(c.quota)}`}>{c.quota}</span>
                   </div>
                   <div className="grid grid-cols-2 text-xs gap-2 mt-3">
                     <div>
