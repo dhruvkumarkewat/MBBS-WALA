@@ -114,24 +114,29 @@ export default function Compare() {
         const qa = params.get('a');
         const qb = params.get('b');
         if (list.length) {
-          // Generate valid options array first (same logic as in useMemo)
+          // Generate valid options array first
           const validList = list.filter((c: College) => c.name && c.name.trim().length > 2 && c.name.trim() !== 'N/A');
           
-          // Find two different AIIMS colleges to set as defaults
+          // Fallbacks (AIIMS or first valid)
           const aiimsList = validList.filter((c: College) =>
             c.name?.toLowerCase().includes('aiims')
           );
-          
-          // Fallback to first two valid options if AIIMS not found
           const defaultA = aiimsList[0] || validList[0];
           const defaultB = aiimsList[1] || validList[Math.min(1, validList.length - 1)];
 
-          // Ignore url params if they point to an invalid/filtered college
-          const isAValid = qa && validList.some((c: College) => String(c.id) === qa);
-          const isBValid = qb && validList.some((c: College) => String(c.id) === qb);
+          // Try to restore from session storage if url params are missing
+          const sessionA = sessionStorage.getItem('compare_a');
+          const sessionB = sessionStorage.getItem('compare_b');
+          
+          const targetA = qa || sessionA || String(defaultA?.id || '');
+          const targetB = qb || sessionB || String(defaultB?.id || '');
 
-          setA(isAValid ? qa : String(defaultA?.id || ''));
-          setB(isBValid ? qb : String(defaultB?.id || ''));
+          // Ignore if they point to an invalid/filtered college
+          const isAValid = validList.some((c: College) => String(c.id) === targetA);
+          const isBValid = validList.some((c: College) => String(c.id) === targetB);
+
+          setA(isAValid ? targetA : String(defaultA?.id || ''));
+          setB(isBValid ? targetB : String(defaultB?.id || ''));
         } else {
           setA('');
           setB('');
@@ -178,6 +183,12 @@ export default function Compare() {
       const qs = new URLSearchParams();
       if (a) qs.set('a', a);
       if (b) qs.set('b', b);
+      if (course !== 'All') qs.set('course', course);
+      setParams(qs, { replace: true });
+      sessionStorage.setItem('compare_a', a);
+      sessionStorage.setItem('compare_b', b);
+    } else {
+      const qs = new URLSearchParams();
       if (course !== 'All') qs.set('course', course);
       setParams(qs, { replace: true });
     }
