@@ -125,7 +125,13 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                               <span className={s.muted}>Tuition Fee: </span>
                               {c.is_fee_verified ? <span className="text-emerald-400">✔ Verified</span> : <span className="text-yellow-500">⚠ Not Verified</span>}
                             </div>
-                            <div className="font-bold">{c.tuition_fee || c.fees || 'See official prospectus'}</div>
+                            <div className="font-bold">
+                              {(c.tuition_fee && c.tuition_fee !== 'N/A') 
+                                ? c.tuition_fee 
+                                : (c.fees && c.fees !== 'N/A') 
+                                  ? c.fees 
+                                  : 'Check Govt/State Portal'}
+                            </div>
                           </div>
                           
                           <div className="col-span-2 md:col-span-1">
@@ -276,7 +282,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
       name: c.college_name,
       probability: c.chance_tier,
       expected_round: c.closing_rank_reference?.[0]?.round || 'Round 1',
-      fees: c.fee?.formatted || 'N/A',
+      fees: (c.fee?.formatted && c.fee?.formatted !== 'N/A') ? c.fee.formatted : 'Check Govt/State Portal',
       quota: c.quota,
       closing_rank: c.closing_rank_reference?.[0]?.rank || c.closing_rank || 'N/A',
       reason: 'Based on historical cutoffs',
