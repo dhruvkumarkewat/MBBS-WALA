@@ -31,6 +31,7 @@ import { useDashboard } from '../../contexts/DashboardContext';
 import { apiJson } from '../../lib/api';
 import { BarChart } from '../../components/ui/Charts';
 import Progress from '../../components/ui/Progress';
+import { usePremium } from '../../lib/premium';
 
 function useShell() {
   const { dark } = useDashboard();
@@ -1165,6 +1166,7 @@ export function EarningsAnalyticsPage() {
 /* ===================== WITHDRAWALS ===================== */
 export function WithdrawalsPage() {
   const s = useShell();
+  const { isPremium } = usePremium();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
@@ -1299,8 +1301,8 @@ export function WithdrawalsPage() {
         </label>
         <button
           type="submit"
-          disabled={submitting || balance < 500}
-          title={balance < 500 ? "Minimum balance of ₹500 required" : ""}
+          disabled={submitting || balance < 500 || !isPremium}
+          title={!isPremium ? "Premium subscription required to withdraw" : balance < 500 ? "Minimum balance of ₹500 required" : ""}
           className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Banknote className="w-4 h-4" />}

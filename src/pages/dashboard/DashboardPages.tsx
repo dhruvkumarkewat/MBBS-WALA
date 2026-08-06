@@ -884,6 +884,13 @@ export function FinderPage() {
             <div key={i} className={`h-28 rounded-2xl animate-pulse ${s.chip}`} />
           ))}
         </div>
+      ) : (!isPremium && (page > 1 || q.trim() !== '')) ? (
+        <div className="col-span-full p-12 text-center rounded-3xl border min-h-[400px] flex flex-col items-center justify-center border-primary/20 bg-primary/5">
+          <Crown className="w-12 h-12 text-primary mx-auto mb-4" />
+          <h3 className="text-xl font-black mb-2">Search & Pagination are Premium Features</h3>
+          <p className="text-sm opacity-70 max-w-md mx-auto mb-6">Upgrade to Premium to search for specific colleges, apply filters, and access all pages of our database.</p>
+          <Link to="/packages" className="zn-cta px-8 py-3">Upgrade to Premium</Link>
+        </div>
       ) : (
         <>
           <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -948,29 +955,38 @@ export function FinderPage() {
               );
             })}
           </div>
-          <div className="flex items-center justify-center gap-3 mt-6">
-            <button
-              type="button"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="zn-cta text-sm py-2 disabled:opacity-40"
-            >
-              <ChevronLeft className="w-4 h-4" /> Prev
-            </button>
-            <span className={`text-sm font-bold ${s.muted}`}>
-              {page} / {totalPages}
-            </span>
-            <button
-              type="button"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-              className="zn-cta text-sm py-2 disabled:opacity-40"
-            >
-              Next <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </>
-      )}
+            {isPremium && (
+              <div className="flex items-center justify-center gap-3 mt-6">
+                <button
+                  type="button"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="zn-cta text-sm py-2 disabled:opacity-40"
+                >
+                  <ChevronLeft className="w-4 h-4" /> Prev
+                </button>
+                <span className={`text-sm font-bold ${s.muted}`}>
+                  {page} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="zn-cta text-sm py-2 disabled:opacity-40"
+                >
+                  Next <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+            {!isPremium && totalPages > 1 && (
+              <div className="mt-8 text-center border-t border-primary/10 pt-6">
+                <Crown className="w-5 h-5 text-primary mx-auto mb-2" />
+                <p className="text-sm font-bold mb-2">Upgrade to view all {total} colleges</p>
+                <Link to="/packages" className="zn-cta px-5 py-2 text-xs">Upgrade Now</Link>
+              </div>
+            )}
+          </>
+        )}
       <CollegeInfoModal 
         collegeName={selectedCollegeInfo} 
         isOpen={!!selectedCollegeInfo} 
@@ -1764,6 +1780,13 @@ export function DashSeatMatrixPage() {
           <div className="p-10 text-center">
             <Loader2 className="w-6 h-6 animate-spin mx-auto" />
           </div>
+        ) : (!isPremium && (page > 1 || search.trim() !== '')) ? (
+          <div className="p-12 text-center flex flex-col items-center justify-center min-h-[300px]">
+            <Crown className="w-12 h-12 text-primary mx-auto mb-4" />
+            <h3 className="text-xl font-black mb-2">Search & Filters are Premium Features</h3>
+            <p className="text-sm opacity-70 max-w-md mx-auto mb-6">Upgrade to Premium to search for specific colleges, filter by quota/category, and view all seat matrix data.</p>
+            <Link to="/packages" className="zn-cta px-8 py-3">Upgrade to Premium</Link>
+          </div>
         ) : (
           <table className="w-full text-sm min-w-[720px]">
             <thead className={s.dark ? 'bg-white/5' : 'bg-grey-bg-light'}>
@@ -1805,7 +1828,7 @@ export function DashSeatMatrixPage() {
         )}
       </div>
 
-      {!isPremium && rows.length > 3 && (
+      {!isPremium && rows.length > 3 && !(page > 1 || search.trim() !== '') && (
         <div className="relative mt-2">
           {/* Blurred teaser rows */}
           <div className={`rounded-2xl border overflow-hidden ${s.card} select-none filter blur-sm pointer-events-none opacity-40`}>

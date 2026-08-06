@@ -8,7 +8,9 @@ import {
   AlertCircle,
   PanelRightOpen,
   Maximize2,
+  Crown
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { apiJson } from '../../lib/api';
 import {
   buildCompetitionQuery,
@@ -24,6 +26,7 @@ import CompetitionFiltersBar from './CompetitionFilters';
 import IndiaCompetitionMap from './IndiaCompetitionMap';
 import StateDetailPanel from './StateDetailPanel';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePremium } from '../../lib/premium';
 
 interface Props {
   dark?: boolean;
@@ -144,6 +147,25 @@ export default function CompetitionMapModule({ dark, embedded }: Props) {
   const shell = dark
     ? 'bg-[#071017] text-white'
     : 'bg-gradient-to-b from-[#f6fbfa] to-white text-primary-dark';
+
+  const { isPremium } = usePremium();
+
+  if (!isPremium) {
+    return (
+      <div className={`${embedded ? '' : 'min-h-[calc(100vh-6rem)] flex items-center justify-center p-4'} ${shell}`}>
+        <div className={`flex flex-col items-center justify-center p-12 text-center rounded-3xl border w-full max-w-2xl min-h-[400px] ${dark ? 'border-white/10 bg-white/5' : 'border-primary-dark/8 bg-white shadow-sm'}`}>
+          <Crown className="w-12 h-12 text-orange-500 mb-4" />
+          <h2 className="text-2xl font-black mb-2">Closing Rank Map is a Premium Feature</h2>
+          <p className={`text-sm max-w-md mx-auto mb-6 ${dark ? 'text-white/70' : 'text-gray-500'}`}>
+            Upgrade to Premium to view the interactive Closing Rank Map, analyze state-wise competition, and access detailed seat matrices.
+          </p>
+          <Link to="/packages" className="zn-cta px-8 py-3">
+            Upgrade to Premium
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`${embedded ? '' : 'min-h-[calc(100vh-6rem)]'} ${shell}`}>
