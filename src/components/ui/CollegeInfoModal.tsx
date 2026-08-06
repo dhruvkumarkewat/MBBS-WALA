@@ -151,6 +151,19 @@ export function CollegeInfoModal({ collegeName, isOpen, onClose, s = { dark: tru
                 </a>
               )}
 
+              {/* Map Embed */}
+              <div className={`overflow-hidden rounded-xl border ${s.dark ? 'border-white/10' : 'border-slate-200'}`}>
+                <iframe
+                  width="100%"
+                  height="250"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(collegeName + (data.location ? ' ' + data.location : ''))}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
+                ></iframe>
+              </div>
+
               {/* About Section */}
               <div className={`space-y-3 ${s.dark ? 'bg-slate-800/50 border-white/5' : 'bg-slate-50 border-slate-200'} p-4 sm:p-5 rounded-xl border`}>
                 <h3 className={`text-sm font-black uppercase tracking-wider ${s.dark ? 'text-orange-400 border-white/10' : 'text-orange-600 border-slate-200'} border-b pb-2`}>About the College</h3>
