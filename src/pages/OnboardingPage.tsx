@@ -509,6 +509,7 @@ export default function OnboardingPage() {
                         <Calendar className="absolute left-3.5 top-3.5 w-4 h-4 text-white/40" />
                         <input
                           type="date"
+                          max={new Date(new Date().setFullYear(new Date().getFullYear() - 16)).toISOString().split('T')[0]}
                           value={form.date_of_birth}
                           onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })}
                           className="w-full bg-white/[0.04] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-orange-500 transition font-medium"

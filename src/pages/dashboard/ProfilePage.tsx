@@ -550,6 +550,7 @@ export function ProfilePage() {
                 </label>
                 <input
                   type="date"
+                  max={new Date(new Date().setFullYear(new Date().getFullYear() - 16)).toISOString().split('T')[0]}
                   value={form.date_of_birth}
                   onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-border/60 bg-background text-sm font-medium focus:ring-2 focus:ring-primary focus:outline-none"
