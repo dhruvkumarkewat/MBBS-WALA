@@ -154,42 +154,62 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                         {Array.isArray(c.historical_trend) && c.historical_trend.length > 0 && (
                           <div className="mt-4">
                             <h5 className={`text-[10px] uppercase font-bold mb-2 ${s.muted}`}>Historical Trends</h5>
-                            
-                            <div className="relative pt-6 mb-4 flex items-end gap-3 h-28 border-b border-white/10 pb-6 bg-black/10 rounded-lg px-4 border border-white/5">
-                              {candidateRank > 0 && (
-                                <div 
-                                  className="absolute left-0 right-0 border-t-2 border-dashed border-orange-500/50 z-0 flex items-center pointer-events-none"
-                                  style={{
-                                    bottom: `calc(1.5rem + ${Math.min(100, Math.max(0, (candidateRank / Math.max(candidateRank, ...c.historical_trend.map((x:any) => parseInt(String(x.closing_rank).replace(/\\D/g, '')) || 0))) * 100))}% * 0.7)` // 0.7 scales it so it fits in the container better
-                                  }}
-                                >
-                                  <span className="absolute left-2 -top-4 text-[9px] font-bold text-orange-500 bg-black/50 px-1 rounded">Your Rank: {candidateRank}</span>
-                                </div>
-                              )}
-                              
-                              {c.historical_trend.map((t: any, idx: number) => {
-                                const maxVal = Math.max(
-                                  candidateRank, 
-                                  ...c.historical_trend.map((x:any) => parseInt(String(x.closing_rank).replace(/\\D/g, '')) || 0)
-                                );
-                                const val = parseInt(String(t.closing_rank).replace(/\\D/g, '')) || 0;
-                                const pct = maxVal > 0 ? (val / maxVal) * 100 : 50;
+                            {(() => {
+                              // Sort trends by year so the histogram goes from old to new
+                              const trendData = [...c.historical_trend].sort((a, b) => parseInt(a.year) - parseInt(b.year));
+                              const maxVal = Math.max(
+                                candidateRank, 
+                                ...trendData.map(x => parseInt(String(x.closing_rank).replace(/\D/g, '')) || 0)
+                              );
+
+                              return (
+                                <div className="relative h-32 mt-8 mb-6 rounded-xl bg-black/5 border border-white/10 p-4">
+                                  {/* Chart Area */}
+                                  <div className="relative w-full h-full flex items-end justify-around gap-2">
+                                    {/* Candidate Rank Line */}
+                                    {candidateRank > 0 && maxVal > 0 && (
+                                      <div 
+                                        className="absolute left-0 right-0 border-t-2 border-dashed border-orange-500/50 z-0 flex items-center pointer-events-none transition-all duration-500"
+                                        style={{
+                                          bottom: `${Math.min(100, Math.max(0, (candidateRank / maxVal) * 100))}%`
+                                        }}
+                                      >
+                                        <span className="absolute left-0 -top-5 text-[9px] font-bold text-orange-500 bg-orange-500/10 px-1.5 py-0.5 rounded backdrop-blur-md border border-orange-500/20">
+                                          Your Rank: {candidateRank}
+                                        </span>
+                                      </div>
+                                    )}
                                 
-                                return (
-                                  <div key={idx} className="flex-1 flex flex-col justify-end items-center group relative h-full z-10">
-                                    <div className="absolute -top-5 text-[10px] font-bold text-white opacity-70 group-hover:opacity-100 transition-opacity">
-                                      {t.closing_rank}
-                                    </div>
-                                    <div 
-                                      className="w-full max-w-[40px] bg-primary/40 rounded-t-md hover:bg-primary transition-all duration-300 relative border-x border-t border-primary/50 shadow-[0_0_10px_rgba(var(--color-primary),0.2)]" 
-                                      style={{ height: `${Math.max(5, pct * 0.7)}%` }}
-                                    >
-                                    </div>
-                                    <div className={`absolute -bottom-5 text-[9px] font-bold uppercase ${s.muted}`}>{t.year}</div>
+                                    {/* Histogram Bars */}
+                                    {trendData.map((t, idx) => {
+                                       const val = parseInt(String(t.closing_rank).replace(/\D/g, '')) || 0;
+                                       const pct = maxVal > 0 ? (val / maxVal) * 100 : 0;
+                                       return (
+                                         <div key={idx} className="relative flex flex-col justify-end items-center group w-full max-w-[60px] h-full z-10">
+                                           {/* Value */}
+                                           <div className="absolute -top-6 text-[10px] font-bold text-white opacity-70 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                             {t.closing_rank}
+                                           </div>
+                                           
+                                           {/* Bar */}
+                                           <div 
+                                             className="w-full bg-primary/40 hover:bg-primary/80 transition-all duration-500 rounded-t-sm border-x border-t border-primary/50 relative overflow-hidden group-hover:shadow-[0_0_15px_rgba(var(--color-primary),0.3)]"
+                                             style={{ height: `${Math.max(2, pct)}%` }}
+                                           >
+                                              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
+                                           </div>
+                                           
+                                           {/* X-Axis Label */}
+                                           <div className={`absolute -bottom-6 text-[10px] font-bold ${s.muted}`}>
+                                             {t.year}
+                                           </div>
+                                         </div>
+                                       );
+                                    })}
                                   </div>
-                                )
-                              })}
-                            </div>
+                                </div>
+                              );
+                            })()}
                             
                             <div className="overflow-x-auto rounded border border-white/10 hidden md:block">
                               <table className="w-full text-left text-[10px] border-collapse bg-black/10">
