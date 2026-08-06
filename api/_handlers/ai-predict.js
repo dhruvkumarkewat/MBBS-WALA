@@ -432,6 +432,7 @@ export default async function handler(req, res) {
       category: body.category || 'General',
       quotas: body.quotas || (body.quota ? [body.quota] : ['AIQ']),
       domicile_state: body.domicile_state || body.state || null,
+      target_state: body.target_state || null,
       preferred_states: body.preferred_states || null,
       round: body.round || body.round_id || 'Round 1',
       round_id: body.round_id || null,
