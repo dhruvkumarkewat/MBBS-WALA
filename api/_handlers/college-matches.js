@@ -213,7 +213,7 @@ export default async function handler(req, res) {
     const matchedScholarships = (scholarships || []).filter((s) => {
       if (s.category_scope && s.category_scope.length > 0) {
         const matchesCat = s.category_scope.some((cs) => {
-          const csUpper = cs.toUpperCase();
+          const csUpper = cs?.toUpperCase() || '';
           if (catNorm.includes('OBC') && csUpper.includes('OBC')) return true;
           if (catNorm.includes('SC') && csUpper.includes('SC')) return true;
           if (catNorm.includes('ST') && csUpper.includes('ST')) return true;
@@ -227,12 +227,15 @@ export default async function handler(req, res) {
       if (s.state_scope && s.state_scope.length > 0 && state && state !== 'All India (AIQ)') {
         const stateNorm = state.toLowerCase();
         const matchesState = s.state_scope.some(
-          (st) => stateNorm.includes(st.toLowerCase()) || st.toLowerCase().includes(stateNorm)
-        );
+        (st) => {
+          const stLower = st?.toLowerCase() || '';
+          return stateNorm.includes(stLower) || stLower.includes(stateNorm);
+        }
+      );
         if (!matchesState) return false;
       }
       if (s.course_scope && s.course_scope.length > 0) {
-        const matchesCourse = s.course_scope.some((c) => c.toUpperCase() === course.toUpperCase());
+        const matchesCourse = s.course_scope.some((c) => c?.toUpperCase() === String(course).toUpperCase());
         if (!matchesCourse) return false;
       }
       return true;

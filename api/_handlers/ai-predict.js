@@ -25,7 +25,7 @@ function isDomicileRestricted(quota) {
 
 function getCategoryClosing(cutoff, category) {
   if (!cutoff) return null;
-  const cat = (category || 'General').toUpperCase();
+  const cat = String(category || 'General').toUpperCase();
   if (cat.includes('OBC')) return cutoff.OBC_closing || cutoff.OBC || cutoff.closing_rank || cutoff.closing;
   if (cat.includes('SC')) return cutoff.SC_closing || cutoff.SC || cutoff.closing_rank || cutoff.closing;
   if (cat.includes('ST')) return cutoff.ST_closing || cutoff.ST || cutoff.closing_rank || cutoff.closing;
@@ -195,7 +195,7 @@ const DEEMED_KEYWORDS = [
     if (!item.college_name || item.college_name === '-' || item.college_name.length < 3) continue;
 
     // STRICT MEDICAL KEYWORD FILTER: Reject all garbage data from the database
-    const nameUpper = item.college_name.toUpperCase();
+    const nameUpper = String(item.college_name).toUpperCase();
     const isValidMedical = /MEDICAL|COLLEGE|INSTITUTE|UNIVERSITY|HOSPITAL|AIIMS|JIPMER|GMC|AMC|SMC|RIMS|VIMS|PIMS|MIMS|SIMS|AIMS|KIMS|BJMC|SCIENCE|ACADEMY|FACULTY|DENTAL|AYURVED|HOMOEOPATH|UNANI/i.test(nameUpper);
     if (!isValidMedical) continue;
 
@@ -297,7 +297,7 @@ const DEEMED_KEYWORDS = [
     .select('*')
     .eq('is_active', true);
 
-  const catNorm = (category || 'General').toUpperCase();
+  const catNorm = String(category || 'General').toUpperCase();
   const selectedCourse = examTrack === 'AYUSH' ? 'BAMS' : 'MBBS';
 
   const matchedScholarships = (scholarships || []).filter((s) => {
@@ -330,7 +330,7 @@ const DEEMED_KEYWORDS = [
 
     // 3. Course Matching
     if (s.course_scope && s.course_scope.length > 0) {
-      const matchesCourse = s.course_scope.some((c) => c?.toUpperCase() === selectedCourse.toUpperCase());
+      const matchesCourse = s.course_scope.some((c) => c?.toUpperCase() === String(selectedCourse).toUpperCase());
       if (!matchesCourse) return false;
     }
 
