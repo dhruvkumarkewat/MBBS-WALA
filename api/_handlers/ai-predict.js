@@ -584,6 +584,9 @@ export default async function handler(req, res) {
       qualifying_cutoffs: context.qualifying_cutoffs.length,
       rounds_available: context.calendar_rounds.length,
     };
+    
+    // Attach query so frontend can display candidate rank
+    response.query = query;
 
     return res.status(200).json(response);
   } catch (err) {
