@@ -2115,10 +2115,29 @@ export function DashSeatMatrixPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [type, setType] = useState('All');
+  const [course, setCourse] = useState('All');
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
   useEffect(() => {
     setLoading(true);
+    const qs = new URLSearchParams({
+      paginate: '1',
+      page: String(page),
+      limit: '20'
+    });
+    if (debouncedSearch) qs.append('q', debouncedSearch);
+    if (type !== 'All') qs.append('kind', type);
+    if (course !== 'All') qs.append('course', course);
+
     apiJson<{ data: Array<Record<string, unknown>>; totalPages: number }>(
-      `/api/seat-matrix?paginate=1&page=${page}&limit=20`
+      `/api/seat-matrix?${qs.toString()}`
     )
       .then((d) => {
         setRows(d.data || []);
@@ -2126,7 +2145,7 @@ export function DashSeatMatrixPage() {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [page]);
+  }, [page, debouncedSearch, type, course]);
 
   const visibleRows = isPremium ? rows : rows.slice(0, 3);
 
@@ -2134,6 +2153,61 @@ export function DashSeatMatrixPage() {
     <div>
       <PageHead title="Seat Matrix" sub="Detailed seat breakdown by college, quota, and category" />
       <ErrorBox message={error} />
+      
+      <div className="flex flex-col md:flex-row gap-3 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+          <input
+            type="text"
+            placeholder="Search college, city, state, course"
+            className={`w-full pl-9 pr-4 py-2.5 rounded-xl border text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${s.input}`}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-2">
+          <div className="relative shrink-0">
+            <select
+              className={`appearance-none pl-4 pr-9 py-2.5 rounded-xl border text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${s.input}`}
+              value={type}
+              onChange={(e) => {
+                setType(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="All">All types</option>
+              <option value="Government">Government</option>
+              <option value="Private">Private</option>
+              <option value="Deemed">Deemed</option>
+              <option value="AIIMS">AIIMS</option>
+              <option value="JIPMER">JIPMER</option>
+              <option value="Central Universities">Central Universities</option>
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none opacity-50" />
+          </div>
+          <div className="relative shrink-0">
+            <select
+              className={`appearance-none pl-4 pr-9 py-2.5 rounded-xl border text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${s.input}`}
+              value={course}
+              onChange={(e) => {
+                setCourse(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="All">All courses</option>
+              <option value="MBBS">MBBS</option>
+              <option value="BDS">BDS</option>
+              <option value="BAMS">BAMS</option>
+              <option value="BHMS">BHMS</option>
+              <option value="BUMS">BUMS</option>
+              <option value="BSMS">BSMS</option>
+              <option value="BNYS">BNYS</option>
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none opacity-50" />
+          </div>
+        </div>
+      </div>
+
       
       <div className={`rounded-2xl border overflow-x-auto ${s.card}`}>
         {loading ? (
