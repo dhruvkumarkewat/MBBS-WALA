@@ -302,6 +302,7 @@ export default async function handler(req, res) {
         full_name: body.full_name !== undefined ? String(body.full_name).trim() : undefined,
         name: body.full_name !== undefined ? String(body.full_name).trim() : (body.name !== undefined ? String(body.name).trim() : undefined),
         phone: body.phone !== undefined ? String(body.phone).trim() : undefined,
+        annual_income: body.annual_income !== undefined ? (body.annual_income === null ? null : Number(body.annual_income)) : undefined,
         avatar_url: body.avatar_url !== undefined ? String(body.avatar_url).trim() : undefined,
         date_of_birth: body.date_of_birth !== undefined ? body.date_of_birth || null : undefined,
         gender: body.gender !== undefined ? String(body.gender) : undefined,
@@ -334,6 +335,8 @@ export default async function handler(req, res) {
         ews_status: body.ews_status !== undefined ? Boolean(body.ews_status) : undefined,
         defence_quota: body.defence_quota !== undefined ? Boolean(body.defence_quota) : undefined,
         freedom_fighter_quota: body.freedom_fighter_quota !== undefined ? Boolean(body.freedom_fighter_quota) : undefined,
+        has_sambal_card: body.has_sambal_card !== undefined ? Boolean(body.has_sambal_card) : undefined,
+        studied_in_govt_school: body.studied_in_govt_school !== undefined ? Boolean(body.studied_in_govt_school) : undefined,
         minority_status: body.minority_status !== undefined ? String(body.minority_status).trim() : undefined,
         other_reservations: body.other_reservations !== undefined ? String(body.other_reservations).trim() : undefined,
 

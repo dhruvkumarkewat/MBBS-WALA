@@ -162,6 +162,9 @@ export interface CompetitionFilters {
   fees: string;
   q: string;
   rank: string;
+  annual_income?: number;
+  has_sambal_card?: boolean;
+  studied_in_govt_school?: boolean;
 }
 
 export const defaultCompetitionFilters: CompetitionFilters = {
@@ -187,6 +190,10 @@ export function buildCompetitionQuery(f: CompetitionFilters): string {
   if (f.college_type && f.college_type !== 'All') p.set('college_type', f.college_type);
   if (f.q) p.set('q', f.q);
   if (f.rank) p.set('rank', f.rank);
+  if (f.rank) p.set('rank', f.rank);
+  if (f.annual_income != null) p.set('annual_income', String(f.annual_income));
+  if (f.has_sambal_card) p.set('has_sambal_card', 'true');
+  if (f.studied_in_govt_school) p.set('studied_in_govt_school', 'true');
   // fees/round reserved for UI + future API
   if (f.fees && f.fees !== 'All') p.set('fees', f.fees);
   if (f.round) p.set('round', f.round);

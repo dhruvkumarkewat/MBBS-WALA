@@ -43,10 +43,13 @@ export default function CompetitionMapModule({ dark, embedded }: Props) {
     }
     return {
       ...defaultCompetitionFilters,
-      rank: profile?.neet_rank?.toString() || '',
+      rank: String(profile?.rank || profile?.neet_rank || ''),
       category: profile?.category || 'All',
       state: profile?.domicile_state || 'All',
-      fees: budgetFee
+      fees: budgetFee,
+      annual_income: profile?.annual_income,
+      has_sambal_card: profile?.has_sambal_card,
+      studied_in_govt_school: profile?.studied_in_govt_school
     };
   }, [profile]);
 
@@ -56,9 +59,12 @@ export default function CompetitionMapModule({ dark, embedded }: Props) {
   useEffect(() => {
     setFilters(prev => ({
       ...prev,
-      rank: prev.rank || profile?.neet_rank?.toString() || '',
+      rank: String(prev.rank || profile?.rank || profile?.neet_rank || ''),
       category: prev.category === 'All' ? (profile?.category || 'All') : prev.category,
       state: prev.state === 'All' ? (profile?.domicile_state || 'All') : prev.state,
+      annual_income: prev.annual_income ?? profile?.annual_income,
+      has_sambal_card: prev.has_sambal_card ?? profile?.has_sambal_card,
+      studied_in_govt_school: prev.studied_in_govt_school ?? profile?.studied_in_govt_school,
     }));
   }, [profile]);
 

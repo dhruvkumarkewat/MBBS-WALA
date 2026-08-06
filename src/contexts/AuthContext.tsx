@@ -50,6 +50,10 @@ export interface UserProfile {
   completion_percentage?: number;
   referral_code?: string;
   is_premium?: boolean;
+  rank?: string;
+  annual_income?: number;
+  has_sambal_card?: boolean;
+  studied_in_govt_school?: boolean;
 }
 
 export function checkProfileCompleteness(p: UserProfile | null | undefined): boolean {

@@ -89,6 +89,7 @@ export function ProfilePage() {
     full_name: '',
     phone: '',
     email: '',
+    annual_income: '' as string | number,
     date_of_birth: '',
     gender: 'Other',
     state: 'Madhya Pradesh',
@@ -115,6 +116,8 @@ export function ProfilePage() {
     ews_status: false,
     defence_quota: false,
     freedom_fighter_quota: false,
+    has_sambal_card: false,
+    studied_in_govt_school: false,
     minority_status: '',
     other_reservations: '',
 
@@ -143,6 +146,7 @@ export function ProfilePage() {
         full_name: data.full_name || data.name || user?.user_metadata?.full_name || '',
         phone: data.phone || user?.user_metadata?.phone || '',
         email: data.email || user?.email || '',
+        annual_income: data.annual_income ?? '',
         date_of_birth: data.date_of_birth ? data.date_of_birth.slice(0, 10) : '',
         gender: data.gender || 'Other',
         state: data.state || 'Madhya Pradesh',
@@ -167,6 +171,8 @@ export function ProfilePage() {
         ews_status: Boolean(data.ews_status),
         defence_quota: Boolean(data.defence_quota),
         freedom_fighter_quota: Boolean(data.freedom_fighter_quota),
+        has_sambal_card: Boolean(data.has_sambal_card),
+        studied_in_govt_school: Boolean(data.studied_in_govt_school),
         minority_status: data.minority_status || '',
         other_reservations: data.other_reservations || '',
 
@@ -201,6 +207,7 @@ export function ProfilePage() {
       const payload = {
         full_name: form.full_name,
         phone: form.phone,
+        annual_income: form.annual_income !== '' ? Number(form.annual_income) : null,
         date_of_birth: form.date_of_birth || null,
         gender: form.gender,
         state: form.state,
@@ -225,6 +232,8 @@ export function ProfilePage() {
         ews_status: form.ews_status,
         defence_quota: form.defence_quota,
         freedom_fighter_quota: form.freedom_fighter_quota,
+        has_sambal_card: form.has_sambal_card,
+        studied_in_govt_school: form.studied_in_govt_school,
         minority_status: form.minority_status,
         other_reservations: form.other_reservations,
 
@@ -524,6 +533,19 @@ export function ProfilePage() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                  Annual Family Income (₹)
+                </label>
+                <input
+                  type="number"
+                  value={form.annual_income}
+                  onChange={(e) => setForm({ ...form, annual_income: e.target.value })}
+                  placeholder="e.g. 500000"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border/60 bg-background text-sm font-medium focus:ring-2 focus:ring-primary focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                   Date of Birth
                 </label>
                 <input
@@ -739,6 +761,8 @@ export function ProfilePage() {
                 { key: 'ews_status', label: 'Economically Weaker Section (EWS Certificate)' },
                 { key: 'defence_quota', label: 'Armed Forces / Defence Personnel Ward (CW Quota)' },
                 { key: 'freedom_fighter_quota', label: 'Freedom Fighter Ward (FF Quota)' },
+                { key: 'has_sambal_card', label: 'Sambal Card / MMJKY Eligible (MP State)' },
+                { key: 'studied_in_govt_school', label: 'Studied in Govt School (GS Quota)' },
                 { key: 'hostel_required', label: 'Hostel Accommodation Required' },
               ].map((item) => (
                 <label
@@ -757,6 +781,26 @@ export function ProfilePage() {
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4 pt-4 border-t border-border/40">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                  Minority Status
+                </label>
+                <select
+                  value={form.minority_status}
+                  onChange={(e) => setForm({ ...form, minority_status: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border/60 bg-background text-sm font-medium focus:ring-2 focus:ring-primary focus:outline-none"
+                >
+                  <option value="">None / Not Applicable</option>
+                  <option value="Muslim">Muslim</option>
+                  <option value="Christian">Christian</option>
+                  <option value="Sikh">Sikh</option>
+                  <option value="Buddhist">Buddhist</option>
+                  <option value="Jain">Jain</option>
+                  <option value="Parsi">Parsi</option>
+                  <option value="Linguistic">Linguistic Minority</option>
+                </select>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                   Preferred Medical Course

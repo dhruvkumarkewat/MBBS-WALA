@@ -23,17 +23,19 @@ import {
   Phone,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
   Crown,
   Sparkles,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2,
+  Clock,
+  MapPin,
 } from 'lucide-react';
 import { useDashboard } from '../../contexts/DashboardContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiJson } from '../../lib/api';
 import { usePremium, UpgradePrompt, PremiumGate } from '../../lib/premium';
 import { INDIAN_STATES, COUNSELLING_ROUNDS } from '../../lib/courses';
-import Cutoffs from '../../pages/Cutoffs';
-import { PredictorResults } from './PredictorResults';
 
 export { ProfilePage } from './ProfilePage';
 export { SubscriptionPage } from './SubscriptionPage';
@@ -211,116 +213,46 @@ const DASH_COURSES = ['All', 'MBBS', 'BDS', 'BAMS', 'BHMS', 'BUMS', 'BSMS', 'BNY
 
 /* ── AI Predictor types (spec Section 6 Output Contract) ── */
 interface CollegePrediction {
-  name: string;
-  probability: string;
-  expected_round: string;
-  fees: string;
+  college_name: string;
+  state: string;
+  course: string;
   quota: string;
-  opening_rank: string;
-  closing_rank: string;
-  reason: string;
+  category: string;
+  chance_tier: 'High' | 'Moderate' | 'Reach' | 'Unlikely';
+  closing_rank_reference: { year: number; round: string; rank: number }[];
+  fee: { amount_min: number; amount_max: number; currency: string; year: number; quota_tier: string } | null;
+  source_ids: string[];
 }
-
+interface ScholarshipMatch {
+  name: string;
+  provider: string;
+  match_reason: string;
+  estimated_amount: string | null;
+  official_portal: string;
+  source_id: string;
+}
+interface ChanceInfo {
+  percent: number;
+  label: string;
+  emoji: string;
+}
+interface PredictionSummary {
+  headline: string;
+  government_mbbs_chance: ChanceInfo;
+  private_mbbs_chance: ChanceInfo;
+  government_bds_chance: ChanceInfo;
+  private_bds_chance: ChanceInfo;
+}
+interface GovernmentOptions {
+  state_quota_mbbs: string;
+  aiq_mbbs: string;
+  government_bds: string;
+}
+interface AiRecommendation {
+  focus_areas: string[];
+  tip: string;
+}
 interface PredictorResponse {
-  admission_summary?: {
-    status: string;
-    overall_confidence: string;
-    ai_prediction_confidence: string;
-    expected_probability: string;
-    explanation: string;
-  };
-  college_predictions?: {
-    safe: CollegePrediction[];
-    moderate: CollegePrediction[];
-    reach: CollegePrediction[];
-  };
-  unlikely_mbbs_guidance?: {
-    active: boolean;
-    message: string;
-    private_options: {
-      name: string;
-      state: string;
-      fees: string;
-      probability: string;
-      rounds: string;
-      management_quota: boolean;
-      nri_seats: boolean;
-    }[];
-  };
-  management_quota_opportunities?: {
-    college: string;
-    expected_rank: string;
-    approx_fees: string;
-    hostel_fees: string;
-    bond: string;
-    total_cost: string;
-    chances: string;
-    donation_expected: boolean;
-  }[];
-  nri_quota?: {
-    eligible_colleges: string[];
-    approx_fees: string;
-    eligibility: string;
-    required_documents: string[];
-  };
-  alternative_courses?: {
-    course: string;
-    career_scope: string;
-    average_salary: string;
-    higher_studies: string;
-    admission_chances: string;
-    top_colleges: string[];
-  }[];
-  scholarships?: {
-    government: string[];
-    state: string[];
-    private: string[];
-    minority: string[];
-    category: string[];
-    income_based: string[];
-  };
-  counselling_strategy?: {
-    round_1: string;
-    round_2: string;
-    round_3: string;
-    stray_vacancy: string;
-    aaccc: string;
-    state_counselling: string;
-  };
-  expected_cutoff_comparison?: {
-    college: string;
-    last_year_closing_rank: string;
-    your_rank: string;
-    difference: string;
-    admission_chance: string;
-  }[];
-  fee_comparison?: {
-    government: string;
-    private: string;
-    management: string;
-    nri: string;
-    total_course_cost: string;
-    hostel: string;
-    miscellaneous: string;
-    bond: string;
-    penalty: string;
-  };
-  documents_required?: string[];
-  important_advice?: string[];
-  ai_recommendation?: string;
-  smart_suggestions?: string[];
-  dashboard_cards?: {
-    govt_mbbs: string;
-    pvt_mbbs: string;
-    mgmt_quota: string;
-    bds: string;
-    ayush: string;
-    scholarships: string;
-    expected_fees: string;
-    expected_rounds: string;
-    confidence_score: string;
-  };
-  
   meta?: {
     exam_track?: string;
     authority?: string;
@@ -328,10 +260,19 @@ interface PredictorResponse {
     data_basis_year?: number;
     qualifying_floor_met?: boolean;
   };
+  prediction_summary?: PredictionSummary;
+  government_options?: GovernmentOptions;
+  ai_recommendation?: AiRecommendation;
+  ai_insight?: string;
+  confidence_percent?: number;
+  colleges?: CollegePrediction[];
+  scholarships?: ScholarshipMatch[];
+  fallback?: { tier_reached: string; message: string; alternative_courses?: string[] } | null;
+  disclaimers?: string[];
+  fraud_warning?: string;
   _provider_used?: string;
   _response_time_ms?: number;
   _data_summary?: { colleges_in_context: number; scholarships_matched: number };
-  disclaimers_fraud_warnings?: string[];
 }
 
 /* ── Chance tier styling ── */
@@ -374,7 +315,7 @@ export function PredictorPage() {
   const [round, setRound] = useState('Round 1');
   const [neetYear, setNeetYear] = useState(new Date().getFullYear());
 
-  // State for AI form
+  // ── Result state ──
   const [aiResponse, setAiResponse] = useState<PredictorResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -385,7 +326,7 @@ export function PredictorPage() {
   // ── Persistence ──
   useEffect(() => {
     if (profile?.id) {
-      const saved = localStorage.getItem(`mbbswala_prediction_v2_${profile.id}`);
+      const saved = localStorage.getItem(`mbbswala_prediction_${profile.id}`);
       if (saved) {
         try {
           setAiResponse(JSON.parse(saved));
@@ -398,14 +339,14 @@ export function PredictorPage() {
 
   useEffect(() => {
     if (profile?.id && aiResponse) {
-      localStorage.setItem(`mbbswala_prediction_v2_${profile.id}`, JSON.stringify(aiResponse));
+      localStorage.setItem(`mbbswala_prediction_${profile.id}`, JSON.stringify(aiResponse));
     }
   }, [aiResponse, profile?.id]);
 
   const handleRecalculate = () => {
     setAiResponse(null);
     if (profile?.id) {
-      localStorage.removeItem(`mbbswala_prediction_v2_${profile.id}`);
+      localStorage.removeItem(`mbbswala_prediction_${profile.id}`);
     }
   };
 
@@ -526,33 +467,31 @@ export function PredictorPage() {
           return true;
         });
 
-        const fallbackColleges = filteredMatches.map((m) => {
-          const isHomeState = Boolean(domicileState && (m.state || '').toLowerCase().includes(domicileState.toLowerCase()));
-          const tier = toneToTier(m.chance_tone);
-          return {
-            name: m.college_name,
-            probability: tier,
-            expected_round: m.round || round || 'Round 1',
-            fees: (m as any).fee ? `₹${Number((m as any).fee).toLocaleString('en-IN')}/yr` : 'N/A',
-            quota: (m as any).quota || (isHomeState && quotas.includes('State') ? 'State' : 'AIQ'),
-            opening_rank: '-',
-            closing_rank: m.aiq_rank?.toString() || '-',
-            reason: 'Legacy fallback match',
-          };
-        });
-
         setAiResponse({
           meta: { exam_track: examTrack, qualifying_floor_met: true },
-          college_predictions: {
-            safe: fallbackColleges.filter(c => c.probability === 'High'),
-            moderate: fallbackColleges.filter(c => c.probability === 'Moderate'),
-            reach: fallbackColleges.filter(c => c.probability === 'Reach'),
-          },
-          scholarships: {
-            government: (legacy.scholarships || []).map((s: any) => s.name),
-            state: [], private: [], minority: [], category: [], income_based: [],
-          },
-          disclaimers_fraud_warnings: ['Data from official counselling cutoffs.'],
+          colleges: filteredMatches.map((m) => {
+            const isHomeState = Boolean(domicileState && (m.state || '').toLowerCase().includes(domicileState.toLowerCase()));
+            return {
+              college_name: m.college_name,
+              state: m.state,
+              course: (m as any).course || 'MBBS',
+              quota: (m as any).quota || (isHomeState && quotas.includes('State') ? 'State' : 'AIQ'),
+              category,
+              chance_tier: toneToTier(m.chance_tone) as CollegePrediction['chance_tier'],
+              closing_rank_reference: m.aiq_rank ? [{ year: neetYear - 1, round: m.round || round || 'Round 1', rank: m.aiq_rank }] : [],
+              fee: ((m as any).fee ? { formatted: `₹${Number((m as any).fee).toLocaleString('en-IN')}/yr` } : null) as any,
+              source_ids: [],
+            };
+          }),
+          scholarships: (legacy.scholarships || []).map((s) => ({
+            name: s.name,
+            provider: s.provider,
+            match_reason: s.match_reason,
+            estimated_amount: s.estimated_amount,
+            official_portal: s.official_portal,
+            source_id: s.source_id || '',
+          })),
+          disclaimers: ['Data from official counselling cutoffs.'],
           _provider_used: 'legacy-fallback',
         });
       }
@@ -564,7 +503,31 @@ export function PredictorPage() {
   };
 
   const floorMet = aiResponse?.meta?.qualifying_floor_met !== false;
+  const colleges = aiResponse?.colleges || [];
+  const scholarships = aiResponse?.scholarships || [];
+  const highCount = colleges.filter((c) => c.chance_tier === 'High').length;
+  const modCount  = colleges.filter((c) => c.chance_tier === 'Moderate').length;
+  const reachCount = colleges.filter((c) => c.chance_tier === 'Reach').length;
+
   const isOnlyStateQuota = quotas.includes('State') && !quotas.includes('AIQ');
+
+  const displayedColleges = colleges.filter((c) => {
+    if (tierFilter !== 'ALL' && c.chance_tier !== tierFilter) return false;
+    if (quotaFilter !== 'ALL' && c.quota !== quotaFilter) return false;
+    // Strict State Quota Isolation: State quota seats can ONLY be in candidate's domicile state
+    if (c.quota === 'State' && domicileState && !(c.state || '').toLowerCase().includes(domicileState.toLowerCase())) {
+      return false;
+    }
+    // If only state quota was selected in form, only domicile state colleges are valid
+    if (isOnlyStateQuota && domicileState && (!(c.state || '').toLowerCase().includes(domicileState.toLowerCase()) || c.quota !== 'State')) {
+      return false;
+    }
+    return true;
+  });
+
+  const availableQuotas = useMemo(() => {
+    return Array.from(new Set(colleges.map((c) => c.quota).filter(Boolean)));
+  }, [colleges]);
 
   return (
     <div className="w-full">
@@ -744,13 +707,500 @@ export function PredictorPage() {
 
       {/* ── Results ── */}
       {aiResponse && (
-        <div className="space-y-4 mt-8">
-          <PredictorResults 
-            aiResponse={aiResponse} 
-            s={s} 
-            isPremium={isPremium} 
-            domicileState={domicileState} 
-          />
+        <div className="space-y-4">
+
+          {/* ── Qualifying Floor Banner ── */}
+          {!floorMet ? (
+            <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-5">
+              <p className="text-sm font-bold text-red-400 mb-1">⛔ Below NEET Qualifying Threshold</p>
+              <p className="text-sm text-red-300/80 leading-relaxed">
+                {aiResponse.fallback?.message ||
+                  'This score/rank is below the minimum NEET qualifying cutoff for this year and category. No MBBS/BDS/AYUSH seat is possible in any quota at any price this cycle. This is a regulatory requirement, not a budget constraint.'}
+              </p>
+              {aiResponse.fallback?.alternative_courses && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {aiResponse.fallback.alternative_courses.map((c) => (
+                    <span key={c} className="text-xs px-3 py-1 rounded-full bg-white/10 text-white/70 font-semibold">{c}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              {/* ── Summary Strip ── */}
+              <div className={`rounded-2xl border p-4 ${s.card}`}>
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div>
+                    <p className="font-bold text-sm">
+                      {colleges.length} colleges analysed
+                      {aiResponse.meta?.authority && (
+                        <span className={`ml-2 text-xs font-semibold ${s.muted}`}>
+                          via {aiResponse.meta.authority}
+                          {aiResponse.meta.round?.label ? ` · ${aiResponse.meta.round.label}` : ''}
+                        </span>
+                      )}
+                    </p>
+                    {aiResponse._provider_used && aiResponse._provider_used !== 'legacy-fallback' && (
+                      <p className={`text-[10px] font-medium mt-0.5 ${s.muted}`}>
+                        AI: {aiResponse._provider_used} · {aiResponse._response_time_ms || 0}ms
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex gap-2 text-center">
+                    {[
+                      { l: 'High', v: highCount, t: 'High' as const, cls: 'text-emerald-400', border: 'border-emerald-500/30' },
+                      { l: 'Moderate', v: modCount, t: 'Moderate' as const, cls: 'text-amber-400', border: 'border-amber-500/30' },
+                      { l: 'Reach', v: reachCount, t: 'Reach' as const, cls: 'text-orange-400', border: 'border-orange-500/30' },
+                    ].map((x) => (
+                      <button
+                        key={x.l}
+                        type="button"
+                        onClick={() => setTierFilter(tierFilter === x.t ? 'ALL' : x.t)}
+                        className={`px-3 py-1.5 rounded-xl border transition-all ${
+                          tierFilter === x.t ? `${x.border} bg-white/10 shadow-sm scale-105` : 'border-transparent hover:bg-white/5'
+                        }`}
+                      >
+                        <p className={`text-xl font-black ${x.cls}`}>{x.v}</p>
+                        <p className={`text-[10px] font-bold uppercase ${s.muted}`}>{x.l}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tabs & Tier Filter Pill Row */}
+                <div className="mt-3 flex flex-wrap gap-2 items-center justify-between">
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('colleges')}
+                      className={`text-xs px-3 py-1.5 rounded-full font-bold transition-all ${activeTab === 'colleges' ? 'bg-primary text-white' : `${s.muted} border border-white/10`}`}
+                    >
+                      🏥 Colleges ({displayedColleges.length})
+                    </button>
+                    {scholarships.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('scholarships')}
+                        className={`text-xs px-3 py-1.5 rounded-full font-bold transition-all ${activeTab === 'scholarships' ? 'bg-emerald-600 text-white' : `${s.muted} border border-white/10`}`}
+                      >
+                        🎓 Scholarships ({scholarships.length})
+                      </button>
+                    )}
+                  </div>
+
+                  {activeTab === 'colleges' && colleges.length > 0 && (
+                    <div className="flex gap-1.5">
+                      {(['ALL', 'High', 'Moderate', 'Reach'] as const).map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => setTierFilter(t)}
+                          className={`text-[11px] px-2.5 py-1 rounded-lg font-bold transition-all ${
+                            tierFilter === t
+                              ? t === 'High' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                : t === 'Moderate' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                : t === 'Reach' ? 'bg-orange-500/20 text-orange-300 border border-orange-500/40'
+                                : 'bg-white/20 text-white border border-white/30'
+                              : `${s.muted} hover:text-white border border-transparent`
+                          }`}
+                        >
+                          {t === 'ALL' ? 'All Tiers' : t}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Quota Sub-filter when multiple quotas are present */}
+                {activeTab === 'colleges' && availableQuotas.length > 1 && (
+                  <div className="mt-3 pt-3 border-t border-white/10 flex flex-wrap items-center gap-1.5">
+                    <span className={`text-[11px] font-bold uppercase mr-1 ${s.muted}`}>Quota Filter:</span>
+                    <button
+                      type="button"
+                      onClick={() => setQuotaFilter('ALL')}
+                      className={`text-[11px] px-2.5 py-1 rounded-lg font-semibold transition-all ${
+                        quotaFilter === 'ALL'
+                          ? 'bg-white/20 text-white border border-white/30'
+                          : `${s.muted} hover:text-white border border-transparent`
+                      }`}
+                    >
+                      All Quotas ({colleges.length})
+                    </button>
+                    {availableQuotas.map((q) => {
+                      const count = colleges.filter((c) => c.quota === q).length;
+                      return (
+                        <button
+                          key={q}
+                          type="button"
+                          onClick={() => setQuotaFilter(q)}
+                          className={`text-[11px] px-2.5 py-1 rounded-lg font-semibold transition-all ${
+                            quotaFilter === q
+                              ? 'bg-primary text-white border border-primary'
+                              : `${s.muted} hover:text-white border border-transparent`
+                          }`}
+                        >
+                          {q === 'State' ? `🎯 State Quota (${domicileState || 'Domicile'})` : q} ({count})
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* ── 🎯 AI Prediction Summary ── */}
+              {aiResponse.prediction_summary && (
+                <div className={`rounded-2xl border p-5 ${s.card}`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-lg">🎯</span>
+                    <h3 className="font-black text-sm uppercase tracking-wider">Prediction Summary</h3>
+                    {aiResponse.confidence_percent && (
+                      <span className="ml-auto text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                        {aiResponse.confidence_percent}% Confidence
+                      </span>
+                    )}
+                  </div>
+                  <p className={`text-sm leading-relaxed mb-4 ${s.muted}`}>
+                    {aiResponse.prediction_summary.headline}
+                  </p>
+
+                  {/* Chance Meter Bars */}
+                  <div className="space-y-3">
+                    {[
+                      { label: 'Government MBBS', data: aiResponse.prediction_summary.government_mbbs_chance, color: 'from-red-500 to-orange-500', bg: 'bg-red-500/10', text: 'text-red-400' },
+                      { label: 'Private MBBS', data: aiResponse.prediction_summary.private_mbbs_chance, color: 'from-emerald-500 to-teal-500', bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
+                      { label: 'Government BDS', data: aiResponse.prediction_summary.government_bds_chance, color: 'from-amber-500 to-yellow-500', bg: 'bg-amber-500/10', text: 'text-amber-400' },
+                      { label: 'Private BDS', data: aiResponse.prediction_summary.private_bds_chance, color: 'from-blue-500 to-cyan-500', bg: 'bg-blue-500/10', text: 'text-blue-400' },
+                    ].map((meter) => (
+                      <div key={meter.label}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-bold">{meter.label}</span>
+                          <span className={`text-xs font-bold ${meter.text}`}>
+                            {meter.data.emoji} {meter.data.label} ({meter.data.percent}%)
+                          </span>
+                        </div>
+                        <div className={`w-full h-2.5 rounded-full ${s.dark ? 'bg-white/5' : 'bg-slate-100'} overflow-hidden`}>
+                          <div
+                            className={`h-full rounded-full bg-gradient-to-r ${meter.color} transition-all duration-1000 ease-out`}
+                            style={{ width: `${Math.max(meter.data.percent, 2)}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── 🏛️ Government Options ── */}
+              {aiResponse.government_options && (
+                <div className={`rounded-2xl border p-5 ${s.card}`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-lg">🏛️</span>
+                    <h3 className="font-black text-sm uppercase tracking-wider">Government Options</h3>
+                  </div>
+                  <p className={`text-xs mb-3 ${s.muted}`}>Based on previous counselling trends:</p>
+                  <div className="space-y-2">
+                    {[
+                      { label: 'Government MBBS through State Quota', value: aiResponse.government_options.state_quota_mbbs },
+                      { label: 'Government MBBS through AIQ', value: aiResponse.government_options.aiq_mbbs },
+                      { label: 'Government BDS', value: aiResponse.government_options.government_bds },
+                    ].map((opt) => (
+                      <div key={opt.label} className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 ${s.dark ? 'bg-white/5' : 'bg-slate-50'}`}>
+                        <span className="text-xs font-semibold">{opt.label}</span>
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                          opt.value?.toLowerCase().includes('high') || opt.value?.toLowerCase().includes('safe')
+                            ? 'bg-emerald-500/15 text-emerald-400'
+                            : opt.value?.toLowerCase().includes('moderate') || opt.value?.toLowerCase().includes('possible')
+                            ? 'bg-amber-500/15 text-amber-400'
+                            : 'bg-red-500/15 text-red-400'
+                        }`}>
+                          {opt.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── ✅ AI Recommendation ── */}
+              {aiResponse.ai_recommendation && (
+                <div className={`rounded-2xl border p-5 ${s.card} border-l-4 border-l-emerald-500/60`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-lg">✅</span>
+                    <h3 className="font-black text-sm uppercase tracking-wider">AI Recommendation</h3>
+                  </div>
+                  <p className={`text-xs mb-2 font-semibold ${s.muted}`}>If your goal is MBBS in {neetYear}, focus on:</p>
+                  <ul className="space-y-2 mb-3">
+                    {aiResponse.ai_recommendation.focus_areas.map((area, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm">
+                        <span className="text-emerald-400 mt-0.5 shrink-0">✅</span>
+                        <span className="font-semibold">{area}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {aiResponse.ai_recommendation.tip && (
+                    <p className={`text-xs leading-relaxed ${s.muted} italic border-t border-white/10 pt-2.5 mt-2.5`}>
+                      💡 {aiResponse.ai_recommendation.tip}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* ── 🤖 AI Insight ── */}
+              {aiResponse.ai_insight && (
+                <div className={`rounded-2xl border p-5 ${s.card} border-l-4 border-l-blue-500/60`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-lg">🤖</span>
+                    <h3 className="font-black text-sm uppercase tracking-wider">AI Insight</h3>
+                  </div>
+                  <blockquote className={`text-sm leading-relaxed ${s.dark ? 'text-white/80' : 'text-slate-600'} italic border-l-2 border-blue-500/40 pl-4`}>
+                    "{aiResponse.ai_insight}"
+                  </blockquote>
+                </div>
+              )}
+
+              {/* ── State Quota Domicile Notice ── */}
+              {(isOnlyStateQuota || quotaFilter === 'State') && domicileState && (
+                <div className="rounded-2xl border border-primary/30 bg-primary/10 p-3.5 flex items-center gap-3 text-xs font-semibold text-primary">
+                  <span className="text-xl">🏛️</span>
+                  <div>
+                    <p className="font-bold uppercase tracking-wider text-[11px]">85% Domicile State Quota Enforced</p>
+                    <p className="text-white/90 text-xs">
+                      Showing medical colleges located strictly in <span className="font-bold text-white underline">{domicileState}</span> under 85% state quota. Non-domicile state colleges are excluded.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Fraud Warning ── */}
+              {aiResponse.fraud_warning && (
+                <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-4">
+                  <p className="text-xs font-bold text-red-400 uppercase mb-1">⚠️ Fraud Warning</p>
+                  <p className="text-sm text-red-300/90 leading-relaxed">{aiResponse.fraud_warning}</p>
+                </div>
+              )}
+
+              {/* ── College Cards ── */}
+              {activeTab === 'colleges' && displayedColleges.length > 0 && (
+                <div className="space-y-3">
+                  {(isPremium ? displayedColleges : displayedColleges.slice(0, 3)).map((c, i) => {
+                    const style = TIER_STYLES[c.chance_tier] || TIER_STYLES.Unlikely;
+                    const latestRef = c.closing_rank_reference?.[0];
+                    return (
+                      <div key={`${c.college_name}-${i}`} className={`rounded-xl border p-4 ${s.card} ${style.border}`}>
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${style.badge}`}>
+                                {style.icon} {c.chance_tier}
+                              </span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20`}>
+                                🎯 {c.quota} Quota
+                              </span>
+                              {latestRef?.round && (
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30`}>
+                                  {latestRef.round}
+                                </span>
+                              )}
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${s.chip}`}>
+                                {c.category}
+                              </span>
+                            </div>
+                            <p className="font-bold text-sm leading-snug">{c.college_name}</p>
+                            <p className={`text-xs mt-0.5 ${s.muted}`}>
+                              {c.state} · {c.course}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Rank Reference */}
+                        {latestRef && (
+                          <div className={`text-xs rounded-lg px-3 py-2 mt-2 flex items-center justify-between flex-wrap gap-2 ${s.dark ? 'bg-white/5' : 'bg-slate-50'}`}>
+                            <div>
+                              <span className={`font-semibold ${s.muted}`}>
+                                📊 {latestRef.year} {c.quota} ({c.category}) Closing Rank:{' '}
+                              </span>
+                              <span className="font-extrabold text-primary text-sm">AIR #{latestRef.rank?.toLocaleString()}</span>
+                            </div>
+                            <span className={`text-[10px] ${s.muted}`}>
+                              (official {c.quota} counselling cutoff)
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Fee */}
+                        {c.fee && (
+                          <div className={`text-xs mt-2 ${s.muted}`}>
+                            💰 Est. Fee{(c.fee as any)?.quota_tier ? ` (${(c.fee as any).quota_tier})` : ''}:{' '}
+                            <span className="font-semibold">
+                              {typeof c.fee === 'string'
+                                ? c.fee
+                                : (c.fee as any)?.formatted
+                                ? (c.fee as any).formatted
+                                : (c.fee as any)?.amount_min
+                                ? `₹${(c.fee as any).amount_min?.toLocaleString()}${(c.fee as any).amount_max && (c.fee as any).amount_max !== (c.fee as any).amount_min ? ` – ₹${(c.fee as any).amount_max?.toLocaleString()}` : ''} / yr`
+                                : (c.fee as any)?.tuition_annual
+                                ? `₹${(c.fee as any).tuition_annual?.toLocaleString()} / yr`
+                                : 'Govt Subsidized Rate'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Non-Premium Locked College Predictor Teaser */}
+                  {!isPremium && displayedColleges.length > 3 && (
+                    <div className="relative mt-3 rounded-2xl overflow-hidden">
+                      <div className="space-y-3 filter blur-sm pointer-events-none select-none opacity-40">
+                        {displayedColleges.slice(3, 6).map((c, i) => (
+                          <div key={i} className={`rounded-xl border p-4 ${s.card}`}>
+                            <p className="font-bold text-sm">{c.college_name}</p>
+                            <p className="text-xs text-gray-400 mt-1">{c.state} · {c.course} · 🎯 {c.quota} Quota</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
+                        <div className={`w-full max-w-lg rounded-2xl p-6 text-center border shadow-2xl backdrop-blur-xl ${
+                          s.dark ? 'bg-[#0f172a]/95 border-orange-500/30 text-white' : 'bg-white/95 border-orange-500/20 text-slate-900'
+                        }`}>
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-500 to-orange-500 text-white mx-auto flex items-center justify-center mb-3 shadow-lg shadow-orange-500/30">
+                            <Crown className="w-6 h-6" />
+                          </div>
+                          <h4 className="text-lg font-black tracking-tight mb-1">
+                            Unlock {displayedColleges.length - 3}+ More Matching Colleges
+                          </h4>
+                          <p className="text-xs font-medium text-slate-400 dark:text-slate-300 max-w-md mx-auto mb-4 leading-relaxed">
+                            Upgrade to NEET Counselling Pro to view all AI-predicted colleges, official round cutoffs, fee structures, and state quota analysis.
+                          </p>
+                          <div className="flex items-center justify-center gap-3">
+                            <Link
+                              to="/packages"
+                              className="btn-orange inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold shadow-lg shadow-orange-500/25"
+                            >
+                              <Sparkles className="w-3.5 h-3.5" /> Upgrade to Pro
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Fallback Message */}
+                  {aiResponse.fallback && (
+                    <div className={`rounded-xl border p-4 ${s.card}`}>
+                      <p className={`text-xs font-bold uppercase mb-1 ${s.muted}`}>
+                        Additional Options ({aiResponse.fallback.tier_reached})
+                      </p>
+                      <p className="text-sm leading-relaxed">{aiResponse.fallback.message}</p>
+                      {aiResponse.fallback.alternative_courses && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {aiResponse.fallback.alternative_courses.map((c) => (
+                            <span key={c} className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-semibold">{c}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-1">
+                    <Link to="/dashboard/compare" className="zn-cta text-sm py-2">Compare</Link>
+                    <Link to="/dashboard/finder" className="zn-cta zn-cta-primary text-sm py-2">Browse All Colleges</Link>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Scholarship Tab ── */}
+              {activeTab === 'scholarships' && (
+                <div className="space-y-3">
+                  {scholarships.length === 0 ? (
+                    <div className={`rounded-xl border p-4 text-center ${s.card}`}>
+                      <p className={`text-sm ${s.muted}`}>No specific scholarships matched for your profile. Check the National Scholarship Portal (scholarships.gov.in) for more schemes.</p>
+                    </div>
+                  ) : (
+                    <>
+                      {(isPremium ? scholarships : scholarships.slice(0, 1)).map((sch, i) => (
+                        <div key={i} className={`rounded-xl border p-4 ${s.card}`}>
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="font-bold text-sm">{sch.name}</p>
+                              <p className={`text-xs mt-0.5 ${s.muted}`}>{sch.provider}</p>
+                            </div>
+                            {sch.estimated_amount && (
+                              <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full whitespace-nowrap shrink-0">
+                                {sch.estimated_amount}
+                              </span>
+                            )}
+                          </div>
+                          <p className={`text-xs mt-2 leading-relaxed ${s.muted}`}>{sch.match_reason}</p>
+                          {sch.official_portal && (
+                            <a
+                              href={sch.official_portal}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+                            >
+                              🔗 Apply at official portal →
+                            </a>
+                          )}
+                        </div>
+                      ))}
+
+                      {/* Non-Premium Locked Scholarships */}
+                      {!isPremium && scholarships.length > 1 && (
+                        <div className="relative mt-3 rounded-2xl overflow-hidden">
+                          <div className="space-y-3 filter blur-sm pointer-events-none select-none opacity-40">
+                            {scholarships.slice(1, 3).map((sch, i) => (
+                              <div key={i} className={`rounded-xl border p-4 ${s.card}`}>
+                                <p className="font-bold text-sm">{sch.name}</p>
+                                <p className="text-xs text-gray-400 mt-1">{sch.provider} · {sch.estimated_amount || 'Govt Grant'}</p>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
+                            <div className={`w-full max-w-lg rounded-2xl p-6 text-center border shadow-2xl backdrop-blur-xl ${
+                              s.dark ? 'bg-[#0f172a]/95 border-orange-500/30 text-white' : 'bg-white/95 border-orange-500/20 text-slate-900'
+                            }`}>
+                              <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 text-white mx-auto flex items-center justify-center mb-3 shadow-lg shadow-emerald-500/30">
+                                <Crown className="w-6 h-6" />
+                              </div>
+                              <h4 className="text-lg font-black tracking-tight mb-1">
+                                Unlock All Eligible Scholarships ({scholarships.length})
+                              </h4>
+                              <p className="text-xs font-medium text-slate-400 dark:text-slate-300 max-w-md mx-auto mb-4 leading-relaxed">
+                                Get access to all matched central, state, and private medical scholarships for your category and state.
+                              </p>
+                              <div className="flex items-center justify-center gap-3">
+                                <Link
+                                  to="/packages"
+                                  className="btn-orange inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold shadow-lg shadow-orange-500/25"
+                                >
+                                  <Sparkles className="w-3.5 h-3.5" /> Unlock All Scholarships
+                                </Link>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* ── Disclaimers ── */}
+              {aiResponse.disclaimers && aiResponse.disclaimers.length > 0 && (
+                <div className={`rounded-xl border p-4 ${s.dark ? 'border-white/5 bg-white/3' : 'border-slate-200 bg-slate-50'}`}>
+                  <p className={`text-[10px] font-bold uppercase mb-2 ${s.muted}`}>⚖️ Important Disclaimers</p>
+                  <ul className="space-y-1.5">
+                    {aiResponse.disclaimers.map((d, i) => (
+                      <li key={i} className={`text-xs leading-relaxed ${s.muted}`}>• {d}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
     </div>
@@ -983,69 +1433,6 @@ export function FinderPage() {
   );
 }
 
-function SearchableCollegeSelect({ value, onChange, colleges, placeholder }: { value: string, onChange: (v: string) => void, colleges: any[], placeholder?: string }) {
-  const [inputValue, setInputValue] = useState('');
-  const [open, setOpen] = useState(false);
-  const s = useShell();
-
-  useEffect(() => {
-    if (!open) {
-      const selected = colleges.find(c => String(c.id) === value);
-      setInputValue(selected ? selected.name : '');
-    }
-  }, [value, colleges, open]);
-
-  const filtered = colleges.filter(c => c.name.toLowerCase().includes(inputValue.toLowerCase())).slice(0, 50);
-
-  return (
-    <div className="relative">
-      <div 
-        className={`rounded-xl border px-3 py-2.5 text-sm font-semibold flex items-center justify-between ${s.input}`}
-        onClick={() => setOpen(true)}
-      >
-        <input 
-          className="w-full bg-transparent outline-none truncate"
-          value={open ? inputValue : (colleges.find(c => String(c.id) === value)?.name || '')}
-          onChange={(e) => {
-            setInputValue(e.target.value);
-            setOpen(true);
-          }}
-          onFocus={() => {
-            setOpen(true);
-            setInputValue('');
-          }}
-          placeholder={placeholder || 'Search college...'}
-        />
-        <ChevronDown className="w-4 h-4 opacity-50 shrink-0 cursor-pointer" />
-      </div>
-      
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className={`absolute z-50 top-full left-0 right-0 mt-1 rounded-xl border shadow-xl overflow-hidden flex flex-col max-h-[300px] ${s.card}`}>
-            <div className="overflow-y-auto zn-scroll py-1">
-              {filtered.length === 0 && <div className="p-3 text-sm opacity-50 text-center">No results</div>}
-              {filtered.map(c => (
-                <div 
-                  key={c.id} 
-                  className={`px-3 py-2 text-sm cursor-pointer ${s.dark ? 'hover:bg-white/5' : 'hover:bg-black/5'} ${String(c.id) === value ? 'font-bold text-orange-500' : ''}`}
-                  onClick={() => {
-                    onChange(String(c.id));
-                    setInputValue(c.name);
-                    setOpen(false);
-                  }}
-                >
-                  {c.name}
-                </div>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 /* ---------------- Compare → enriched seats + cutoffs ---------------- */
 export function ComparePage() {
   const s = useShell();
@@ -1069,7 +1456,7 @@ export function ComparePage() {
   } | null>(null);
 
   useEffect(() => {
-    apiJson<College[]>('/api/colleges?limit=9999')
+    apiJson<College[]>('/api/colleges?limit=300')
       .then((d) => {
         const list = Array.isArray(d) ? d : [];
         setColleges(list);
@@ -1107,18 +1494,28 @@ export function ComparePage() {
       ) : (
         <>
           <div className="grid sm:grid-cols-2 gap-3 mb-4">
-            <SearchableCollegeSelect
+            <select
               value={a}
-              onChange={setA}
-              colleges={colleges}
-              placeholder="Select first college"
-            />
-            <SearchableCollegeSelect
+              onChange={(e) => setA(e.target.value)}
+              className={`rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
+            >
+              {colleges.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <select
               value={b}
-              onChange={setB}
-              colleges={colleges}
-              placeholder="Select second college"
-            />
+              onChange={(e) => setB(e.target.value)}
+              className={`rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
+            >
+              {colleges.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {a === b && (
@@ -1495,99 +1892,97 @@ export function SavedPage() {
 
 export function CounsellingPage() {
   const s = useShell();
-  type AppRow = {
-    id: number;
-    name: string;
-    status: string;
-    external_id?: string;
-    notes?: string;
-  };
-  const [apps, setApps] = useState<AppRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    name: 'NEET UG — State Quota',
-    notes: '',
-    external_id: '',
-  });
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      setApps(await apiJson<AppRow[]>('/api/applications', {}, true));
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to load counselling tracks');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const addTrack = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!form.name.trim()) {
-      setError('Please enter a counselling name');
-      return;
-    }
-    setSaving(true);
-    setError('');
-    try {
-      const created = await apiJson<AppRow>(
-        '/api/applications',
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            name: form.name.trim(),
-            notes: form.notes.trim(),
-            external_id: form.external_id.trim() || `TRACK-${Date.now().toString().slice(-6)}`,
-            status: 'Draft',
-          }),
-        },
-        true
-      );
-      setApps((prev) => [created, ...prev]);
-      setForm({ name: 'NEET UG — State Quota', notes: '', external_id: '' });
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Could not create track');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const setStatus = async (app: AppRow, status: string) => {
-    try {
-      const updated = await apiJson<AppRow>(
-        '/api/applications',
-        { method: 'PUT', body: JSON.stringify({ id: app.id, status }) },
-        true
-      );
-      setApps((prev) => prev.map((a) => (a.id === updated.id ? { ...a, ...updated } : a)));
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Update failed');
-    }
-  };
-
-  const presets = [
-    'MCC AIQ UG',
-    'MP DME State Counselling',
-    'Deemed University Round',
-    'NEET PG AIQ',
+  const { profile } = useAuth();
+  
+  // Mock Data
+  const currentRank = profile?.rank ? Number(profile.rank) : 45000;
+  const currentCategory = profile?.category || 'General';
+  
+  const recommendedColleges = [
+    { name: 'GMC Bhopal', location: 'Bhopal, MP', note: `Expected closing: ${currentRank + 2000}` },
+    { name: 'MGM Medical College', location: 'Indore, MP', note: `Expected closing: ${currentRank + 1500}` },
+    { name: 'NSCB Medical College', location: 'Jabalpur, MP', note: `Expected closing: ${currentRank + 3000}` },
   ];
 
+  const updates = [
+    { text: 'Round 2 Seat Matrix released by MCC', time: '2h ago', unread: true },
+    { text: 'Choice filling for Round 2 is now open', time: '5h ago', unread: true },
+    { text: 'Round 1 final allotment results declared', time: '2d ago', unread: false },
+  ];
+
+  const faqs = [
+    { q: 'How does choice filling order matter?', a: 'Your choices are processed strictly in the order you rank them. The system will allot the highest possible preference where a seat is available at your rank.' },
+    { q: 'Can I upgrade in the next round?', a: 'Yes, if you report to your allotted college and opt for an upgrade. If a higher preference becomes available in the next round, your current seat will be cancelled.' },
+    { q: 'What happens if I don\'t report?', a: 'If you don\'t report for Round 1, it is considered a "free exit". For subsequent rounds, your security deposit may be forfeited.' },
+    { q: 'Is the security deposit refundable?', a: 'Yes, if no seat is allotted or if you join the allotted seat, the deposit is refunded to the original payment source after counselling concludes.' },
+  ];
+
+  const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-4xl space-y-6 pb-10">
       <PageHead
         title="Counselling"
         sub="Manage your counselling tracks, book experts, and jump into live data tools"
       />
-      <ErrorBox message={error} />
 
-      <div className="grid sm:grid-cols-2 gap-3 mb-5">
+      {/* 1. Counselling Status Card */}
+      <div className={`rounded-2xl border p-5 ${s.card}`}>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <div>
+            <h3 className="font-bold text-lg">Round 2 Counselling</h3>
+            <p className={`text-sm ${s.muted}`}>Category: {currentCategory} · Rank: {currentRank.toLocaleString()}</p>
+          </div>
+          <div className="bg-orange-500/10 text-orange-500 border border-orange-500/20 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            Choice filling closes in 2d 4h
+          </div>
+        </div>
+        
+        {/* Stepper */}
+        <div className="flex items-center justify-between relative">
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-white/5 rounded-full z-0" />
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[40%] h-1 bg-teal-500/40 rounded-full z-0" />
+          
+          {[
+            { label: 'Registration', status: 'done' },
+            { label: 'Choice Filling', status: 'active' },
+            { label: 'Seat Allotment', status: 'pending' },
+            { label: 'Reporting', status: 'pending' },
+          ].map((step, i) => (
+            <div key={i} className="relative z-10 flex flex-col items-center gap-2 w-1/4">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                step.status === 'done' ? 'bg-teal-500/20 border-teal-500 text-teal-500' :
+                step.status === 'active' ? 'bg-orange-500 border-orange-500 text-white' :
+                `bg-[#141a24] border-white/20 ${s.muted}`
+              }`}>
+                {step.status === 'done' ? <CheckCircle2 className="w-5 h-5" /> : <span className="text-sm font-bold">{i + 1}</span>}
+              </div>
+              <span className={`text-xs font-medium text-center hidden sm:block ${
+                step.status === 'active' ? 'text-white' : s.muted
+              }`}>{step.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 2. Quick Stats Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { l: 'Your rank', v: currentRank.toLocaleString() },
+          { l: 'Category', v: currentCategory },
+          { l: 'Colleges shortlisted', v: '14' },
+          { l: 'Documents verified', v: '4 / 5' },
+        ].map((stat, i) => (
+          <div key={i} className={`rounded-2xl border p-4 flex flex-col justify-center items-center text-center ${s.card}`}>
+            <p className={`text-xs font-medium mb-1 ${s.muted}`}>{stat.l}</p>
+            <p className="text-lg font-bold">{stat.v}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* 3. Existing CTAs */}
+      <div className="grid sm:grid-cols-2 gap-3">
         {[
           { t: 'Book video call', d: 'WhatsApp to schedule a slot', href: 'https://wa.me/7880119983', icon: CalendarDays },
           { t: 'Call helpline', d: '+91 78801 19983 · 7 days', href: 'tel:+917880119983', icon: Phone },
@@ -1604,31 +1999,112 @@ export function CounsellingPage() {
         ))}
       </div>
 
+      {/* 7. Counsellor Profiles (Integrated right under CTAs) */}
+      <div className="grid sm:grid-cols-2 gap-3">
+        {[
+          { name: 'Dr. A. Sharma', spec: 'AIQ & Deemed Expert', initials: 'AS' },
+          { name: 'Mr. R. Verma', spec: 'State Quota Specialist', initials: 'RV' },
+        ].map((c, i) => (
+          <div key={i} className={`rounded-2xl border p-4 flex items-center justify-between ${s.card}`}>
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm bg-white/5 border border-white/10 ${s.muted}`}>
+                {c.initials}
+              </div>
+              <div>
+                <p className="font-bold text-sm">{c.name}</p>
+                <p className={`text-xs ${s.muted}`}>{c.spec}</p>
+              </div>
+            </div>
+            <a href="https://wa.me/7880119983" className={`text-xs px-3 py-1.5 rounded-lg border border-white/20 hover:bg-white/5 transition-colors font-medium`}>
+              Book
+            </a>
+          </div>
+        ))}
+      </div>
 
+      {/* 4. Recommended Colleges */}
+      <div>
+        <h3 className="font-bold mb-3 text-lg">Recommended for you</h3>
+        <div className="grid sm:grid-cols-3 gap-3">
+          {recommendedColleges.map((c, i) => (
+            <div key={i} className={`rounded-2xl border p-4 flex flex-col justify-between ${s.card}`}>
+              <div>
+                <p className="font-bold text-sm mb-1">{c.name}</p>
+                <div className={`flex items-center gap-1 text-xs mb-3 ${s.muted}`}>
+                  <MapPin className="w-3 h-3" />
+                  {c.location}
+                </div>
+                <p className={`text-xs font-medium bg-white/5 p-2 rounded-lg border border-white/5 ${s.muted}`}>{c.note}</p>
+              </div>
+              <Link to={`/dashboard/finder?q=${encodeURIComponent(c.name)}`} className={`mt-4 text-xs text-center py-2 rounded-lg border border-white/20 hover:bg-white/5 transition-colors font-medium`}>
+                View details
+              </Link>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 5. Data Tools */}
       <div className={`rounded-2xl border p-5 ${s.card}`}>
-        <h3 className="font-bold mb-3">Data tools for counselling</h3>
-        <div className="flex flex-wrap gap-2">
-          <Link to="/dashboard/seat-matrix" className="zn-cta text-sm py-2">
-            Seat matrix
-          </Link>
-          <Link to="/dashboard/cutoffs" className="zn-cta text-sm py-2">
-            Public cutoffs
-          </Link>
-          <Link to="/dashboard/predictor" className="zn-cta zn-cta-primary text-sm py-2">
-            Predictor
-          </Link>
-          <Link to="/dashboard/finder" className="zn-cta text-sm py-2">
-            College finder
-          </Link>
+        <h3 className="font-bold mb-4 text-lg">Data tools for counselling</h3>
+        <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { label: 'Seat matrix', sub: 'Category-wise breakdown', link: '/dashboard/seat-matrix', primary: false },
+            { label: 'Public cutoffs', sub: 'Previous years data', link: '/cutoffs', primary: false },
+            { label: 'Predictor', sub: 'AI-driven probability', link: '/dashboard/predictor', primary: true },
+            { label: 'College finder', sub: '1200+ colleges indexed', link: '/dashboard/finder', primary: false },
+          ].map((tool, i) => (
+            <Link key={i} to={tool.link} className={`flex flex-col items-center justify-center p-4 rounded-xl border text-center transition-colors ${
+              tool.primary ? 'bg-orange-600 border-orange-500 hover:bg-orange-500' : `bg-white/5 border-white/10 hover:bg-white/10`
+            }`}>
+              <span className={`font-medium text-sm ${tool.primary ? 'text-white' : ''}`}>{tool.label}</span>
+              <span className={`text-[10px] mt-1 ${tool.primary ? 'text-white/80' : s.muted}`}>{tool.sub}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* 6. Updates Feed */}
+      <div className={`rounded-2xl border p-5 ${s.card}`}>
+        <h3 className="font-bold mb-4 text-lg">Live Updates</h3>
+        <div className="space-y-1">
+          {updates.map((update, i) => (
+            <div key={i} className={`flex items-start justify-between py-3 px-4 rounded-lg border-l-2 transition-colors hover:bg-white/5 ${
+              update.unread ? 'border-l-orange-500 bg-white/[0.02]' : 'border-l-white/10'
+            }`}>
+              <p className={`text-sm ${update.unread ? 'font-medium' : s.muted}`}>{update.text}</p>
+              <span className={`text-xs whitespace-nowrap ml-4 ${s.muted}`}>{update.time}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 8. FAQ Accordion */}
+      <div>
+        <h3 className="font-bold mb-4 text-lg">Common Doubts</h3>
+        <div className={`rounded-2xl border overflow-hidden ${s.card}`}>
+          {faqs.map((faq, i) => (
+            <div key={i} className="border-b border-white/10 last:border-0">
+              <button
+                className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
+                onClick={() => setExpandedFaq(expandedFaq === i ? null : i)}
+              >
+                <span className="font-medium text-sm">{faq.q}</span>
+                {expandedFaq === i ? <ChevronUp className={`w-4 h-4 ${s.muted}`} /> : <ChevronDown className={`w-4 h-4 ${s.muted}`} />}
+              </button>
+              {expandedFaq === i && (
+                <div className="px-5 pb-4">
+                  <p className={`text-sm ${s.muted}`}>{faq.a}</p>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
     </div>
   );
 }
 
-export function DashCutoffsPage() {
-  return <Cutoffs />;
-}
 
 export function DashSeatMatrixPage() {
   const s = useShell();
@@ -2023,7 +2499,7 @@ export function DownloadsPage() {
   const files = [
     { t: 'Seat Matrix (live table)', to: '/dashboard/seat-matrix' },
     { t: 'College directory', to: '/dashboard/finder' },
-    { t: 'Public cutoffs page', to: '/dashboard/cutoffs' },
+    { t: 'Public cutoffs page', to: '/cutoffs' },
     { t: 'Packages', to: '/packages' },
   ];
   return (

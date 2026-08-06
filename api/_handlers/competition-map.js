@@ -1,4 +1,5 @@
 import supabase from './db-client.js';
+import mpPrivateCutoffs from '../../src/data/mp_private_cutoffs_2024.js';
 
 function normalizeState(s) {
   return String(s || '')
@@ -68,7 +69,11 @@ export default async function handler(req, res) {
       round = 'Round 1',
       min_score,
       max_fees,
+      fees,
       rank,
+      annual_income,
+      has_sambal_card,
+      studied_in_govt_school
     } = req.query;
 
     let yearNum = Number(year) || 2024;
@@ -88,11 +93,12 @@ export default async function handler(req, res) {
     const [baseRowsRes, colleges, seats, cuts] =
       await Promise.all([
         supabase.from('state_competition').select('*').eq('year', yearNum).order('competition_score', { ascending: false }),
-        fetchAll('colleges', 'id,name,city,state,country,college_type,course', q => q.ilike('country', 'INDIA'), 3),
+        fetchAll('colleges', 'id,name,city,state,country,college_type,course,feePvt,feeGovt', q => q.ilike('country', 'INDIA'), 3),
         fetchAll('seat_matrix', '*', q => q, 2),
-        category !== 'All' 
-          ? fetchAll('cutoffs', 'state, category, score, closing_rank', q => q.eq('category', category), 10)
-          : []
+        fetchAll('cutoffs', 'state, category, score, closing_rank, aiq_rank, aiq_score, state_rank_range, college_name, quota_code', q => {
+          if (category !== 'All') return q.eq('category', category);
+          return q.in('category', ['General', 'UR', 'Unreserved', 'OPEN']);
+        }, 10)
       ]);
 
     const baseRows = baseRowsRes.data || [];
@@ -107,6 +113,24 @@ export default async function handler(req, res) {
         continue;
       }
       if (college_type && college_type !== 'All' && c.college_type !== college_type) continue;
+      
+      if (fees && fees !== 'All') {
+        const pvtFee = Number(c.feePvt) || 0;
+        const govtFee = Number(c.feeGovt) || 0;
+        const fee = (/priv/i.test(c.college_type)) ? pvtFee : (govtFee || pvtFee);
+
+        // Scholarship logic: bypass budget limit if eligible for MP Private
+        const isMPPriv = normalizeState(c.state) === 'MADHYA_PRADESH' && /priv/i.test(c.college_type);
+        const isMPScholarshipEligible = (annual_income && Number(annual_income) < 600000) || has_sambal_card === 'true';
+        const bypassFee = isMPPriv && isMPScholarshipEligible;
+
+        if (fee > 0 && !bypassFee) {
+          if (fees === 'Under ₹5L' && fee > 500000) continue;
+          if (fees === '₹5L–₹15L' && (fee < 500000 || fee > 1500000)) continue;
+          if (fees === 'Above ₹15L' && fee < 1500000) continue;
+        }
+      }
+
       const key = normalizeState(c.state);
       if (!collegesByState.has(key)) collegesByState.set(key, []);
       collegesByState.get(key).push(c);
@@ -127,6 +151,17 @@ export default async function handler(req, res) {
     const cutsByState = new Map();
     for (const c of cuts || []) {
       if (category && category !== 'All' && c.category !== category) continue;
+      
+      if (quota && quota !== 'All') {
+         const cQuota = String(c.quota_code || '').toUpperCase();
+         if (cQuota) {
+           if (quota === 'AIQ' && !cQuota.includes('AIQ') && !cQuota.includes('AI')) continue;
+           if (quota === 'State' && !cQuota.includes('SQ') && !cQuota.includes('STATE')) continue;
+           if (quota === 'Management' && !cQuota.includes('MGT')) continue;
+           if (quota === 'NRI' && !cQuota.includes('NRI')) continue;
+         }
+      }
+
       const key = normalizeState(c.state);
       if (!cutsByState.has(key)) cutsByState.set(key, []);
       cutsByState.get(key).push(c);
@@ -164,7 +199,9 @@ export default async function handler(req, res) {
       // Quota filter adjusts displayed seat emphasis
       let displaySeats = totalSeats;
       if (quota === 'AIQ') displaySeats = aiqSeats;
-      if (quota === 'State') displaySeats = stateQuota;
+      else if (quota === 'State') displaySeats = stateQuota;
+      else if (quota === 'Management') displaySeats = Math.round(stateQuota * 0.1);
+      else if (quota === 'NRI') displaySeats = Math.round(totalSeats * 0.08);
 
       const ranks = liveCuts
         .map((c) => c.aiq_rank || parseRankMid(c.state_rank_range))
@@ -211,6 +248,29 @@ export default async function handler(req, res) {
         
         let colCR = colRanks.length ? Math.max(...colRanks) : row.avg_closing_rank;
         if (!colCR) continue;
+
+        // MP Private Cutoffs Override
+        if (key === 'MADHYA_PRADESH' && /priv/i.test(col.college_type || '')) {
+            const mpData = mpPrivateCutoffs['Madhya Pradesh'];
+            if (mpData) {
+                // Find matching college (simple string includes check)
+                const overrideKey = Object.keys(mpData).find(k => 
+                  String(col.name).toLowerCase().includes(k.split(',')[0].toLowerCase())
+                );
+                if (overrideKey && mpData[overrideKey]) {
+                    const catData = mpData[overrideKey][category] || mpData[overrideKey]['UR'];
+                    if (catData && catData.rank) {
+                        colCR = catData.rank;
+                    }
+                }
+            }
+        }
+        
+        // GS Quota Logic (Government School)
+        if (studied_in_govt_school === 'true' && /gov/i.test(col.college_type || '')) {
+            // Apply 30% inflation to Govt CR to simulate easier admission for GS quota
+            colCR = Math.round(colCR * 1.3);
+        }
 
         if (colCR < lowestCR) { lowestCR = colCR; mostCompetitiveCollege = col.name; }
         if (colCR > highestCR) { highestCR = colCR; safestCollege = col.name; }
