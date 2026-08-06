@@ -191,6 +191,12 @@ const DEEMED_KEYWORDS = [
   for (const item of combined) {
     if (!item.college_name || item.college_name === '-' || item.college_name.length < 3) continue;
 
+    // STRICT MEDICAL KEYWORD FILTER: Reject all garbage data from the database
+    // Ensures we only pass legitimate medical/dental/ayush institutions to Gemini
+    const nameUpper = item.college_name.toUpperCase();
+    const isValidMedical = /MEDICAL|COLLEGE|INSTITUTE|UNIVERSITY|HOSPITAL|AIIMS|JIPMER|GMC|AMC|SMC|RIMS|VIMS|PIMS|MIMS|SIMS|AIMS|KIMS|BJMC|SCIENCE|ACADEMY|FACULTY|DENTAL|AYURVED|HOMOEOPATH|UNANI/i.test(nameUpper);
+    if (!isValidMedical) continue;
+
     const normalizedName = item.college_name.toLowerCase().replace(/[^a-z0-9]/g, '');
     if (seenNames.has(normalizedName)) continue;
     

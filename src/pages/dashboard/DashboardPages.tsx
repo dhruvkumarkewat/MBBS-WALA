@@ -669,9 +669,14 @@ export function PredictorPage() {
               <span>
                 {isOnlyStateQuota ? (
                   <><strong>State Quota Only:</strong> Only medical colleges in <strong>{domicileState}</strong> with 85% state quota will be shown.</>
-                ) : (
-                  <><strong>State Quota Included:</strong> 85% state quota colleges will be shown for <strong>{domicileState}</strong> alongside other selected quotas.</>
-                )}
+          ) : (
+            <PredictorResults 
+              aiResponse={aiResponse} 
+              s={s} 
+              isPremium={isPremium} 
+              domicileState={domicileState} 
+            />
+          )}
               </span>
             </div>
           )}
