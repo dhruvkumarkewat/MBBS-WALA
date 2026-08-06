@@ -29,7 +29,11 @@ const getQuotaStyle = (quota: string) => {
 
 const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borderClass, isReach, onCollegeClick }: any) => {
   if (!colleges || colleges.length === 0) return null;
-  const displayColleges = isPremium ? colleges : colleges.slice(0, maxFreeCount);
+  const displayColleges = isPremium ? colleges : [...colleges].sort((a, b) => {
+    const rankA = parseInt(String(a.expected_rank || '0').replace(/\D/g, '')) || 999999;
+    const rankB = parseInt(String(b.expected_rank || '0').replace(/\D/g, '')) || 999999;
+    return rankA - rankB;
+  }).slice(0, maxFreeCount);
   const grouped = displayColleges.reduce((acc: any, c: any) => {
     const q = c.quota || 'Other';
     if (!acc[q]) acc[q] = [];
