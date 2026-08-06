@@ -757,6 +757,7 @@ interface College {
 }
 export function FinderPage() {
   const s = useShell();
+  const { isPremium } = usePremium();
   const [colleges, setColleges] = useState<College[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
