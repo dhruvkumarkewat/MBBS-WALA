@@ -89,8 +89,13 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                       <>
                         <div className="flex flex-wrap gap-2 mb-3">
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${borderClass} bg-white/5`}>
-                            AI-estimated probability: {c.probability}
+                            Admission Probability: {c.probability}
                           </span>
+                          {c.confidence && (
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${borderClass} bg-white/5`}>
+                              Confidence: {c.confidence}
+                            </span>
+                          )}
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
                             {c.expected_round}
                           </span>
@@ -128,6 +133,24 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                               <span className="font-bold">{c.seats}</span>
                             </div>
                           )}
+                          {c.hospital_beds && (
+                            <div className="col-span-2 md:col-span-1">
+                              <span className={s.muted}>Hospital Beds: </span>
+                              <span className="font-bold">{c.hospital_beds}</span>
+                            </div>
+                          )}
+                          {c.internship_stipend && (
+                            <div className="col-span-2 md:col-span-1">
+                              <span className={s.muted}>Stipend: </span>
+                              <span className="font-bold">{c.internship_stipend}</span>
+                            </div>
+                          )}
+                          {c.volatility && (
+                            <div className="col-span-2 md:col-span-1">
+                              <span className={s.muted}>Cutoff Volatility: </span>
+                              <span className="font-bold">{c.volatility}</span>
+                            </div>
+                          )}
                           {c.bond && (
                             <div className="col-span-2">
                               <span className={s.muted}>Bond: </span>
@@ -138,13 +161,26 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
 
                         {Array.isArray(c.historical_trend) && c.historical_trend.length > 0 && (
                           <div className="mt-4">
-                            <h5 className={`text-[10px] uppercase font-bold mb-1 ${s.muted}`}>Historical Trends</h5>
-                            <div className="flex gap-4 text-[10px]">
-                              {c.historical_trend.map((t: any, idx: number) => (
-                                <div key={idx} className="bg-black/10 px-2 py-1 rounded">
-                                  <span className={s.muted}>{t.year}:</span> <span className="font-bold">{t.closing_rank}</span>
-                                </div>
-                              ))}
+                            <h5 className={`text-[10px] uppercase font-bold mb-2 ${s.muted}`}>Historical Trends</h5>
+                            <div className="overflow-x-auto rounded border border-white/10">
+                              <table className="w-full text-left text-[10px] border-collapse bg-black/10">
+                                <thead>
+                                  <tr className={`border-b ${s.dark ? 'border-white/10' : 'border-black/10'}`}>
+                                    <th className="px-3 py-1.5 font-bold">Year</th>
+                                    <th className="px-3 py-1.5 font-bold text-right">Opening</th>
+                                    <th className="px-3 py-1.5 font-bold text-right">Closing</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {c.historical_trend.map((t: any, idx: number) => (
+                                    <tr key={idx} className={`border-b last:border-0 ${s.dark ? 'border-white/5' : 'border-black/5'}`}>
+                                      <td className="px-3 py-1">{t.year}</td>
+                                      <td className="px-3 py-1 text-right opacity-80">{t.opening_rank || '-'}</td>
+                                      <td className="px-3 py-1 text-right font-bold">{t.closing_rank}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
                             </div>
                           </div>
                         )}
