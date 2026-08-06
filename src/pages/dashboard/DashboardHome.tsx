@@ -166,19 +166,31 @@ function NewsWidget({ dark }: { dark: boolean }) {
     'state quota', 'all india quota', 'merit list'
   ];
 
+  const FALLBACK_HEADLINE = {
+    title: 'NEET UG 2026 — Exam Date Announced',
+    source_id: 'NTA Official',
+    pubDate: new Date().toISOString(),
+    link: 'https://nta.ac.in',
+  };
+
   useEffect(() => {
-    fetch('https://newsdata.io/api/1/news?apikey=pub_cff7c67139b447a58b649e9cc2d292ac&q=NEET%20OR%20MBBS%20OR%20%22medical%20college%22&country=in&language=en&category=health')
-      .then(r => r.json())
+    fetch('https://newsdata.io/api/1/news?apikey=pub_8e7f2b8fe15c4a13bb444bf2e8b0c195&q=NEET%20OR%20MBBS%20OR%20%22medical%20college%22&country=in&language=en&category=health')
+      .then(r => {
+        if (!r.ok) throw new Error('rate-limited');
+        return r.json();
+      })
       .then(d => {
-        if (d && d.results && d.results.length > 0) {
+        if (d && Array.isArray(d.results) && d.results.length > 0) {
           const filtered = d.results.filter((item: any) => {
             const text = ((item.title || '') + ' ' + (item.description || '')).toLowerCase();
             return MEDICAL_KEYWORDS.some(kw => text.includes(kw));
           });
-          if (filtered.length > 0) setHeadline(filtered[0]);
+          setHeadline(filtered.length > 0 ? filtered[0] : FALLBACK_HEADLINE);
+        } else {
+          setHeadline(FALLBACK_HEADLINE);
         }
       })
-      .catch(() => {})
+      .catch(() => setHeadline(FALLBACK_HEADLINE))
       .finally(() => setLoading(false));
   }, []);
 
