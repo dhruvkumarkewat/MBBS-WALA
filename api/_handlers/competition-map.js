@@ -120,8 +120,11 @@ export default async function handler(req, res) {
         // Fetch cutoffs for all recent years for trend analysis
         fetchAll('cutoffs', 'state, category, score, closing_rank, aiq_rank, aiq_score, state_rank_range, college_name, quota_code, year, round_name, course_name', q => {
           let query = q;
-          if (category !== 'All') query = query.eq('category', category);
-          else query = query.in('category', ['General', 'UR', 'Unreserved', 'OPEN']);
+          if (category !== 'All') {
+             query = query.in('category', [category, 'General', 'UR', 'Unreserved', 'OPEN']);
+          } else {
+             query = query.in('category', ['General', 'UR', 'Unreserved', 'OPEN']);
+          }
           return query;
         }, 15)
       ]);
@@ -176,9 +179,13 @@ export default async function handler(req, res) {
     // Filter 3, 4, 5: Category, Quota, Round (Course is also checked here if available)
     const cutsByState = new Map();
     for (const c of cuts || []) {
-      if (category && category !== 'All' && c.category !== category) continue;
+      if (category && category !== 'All') {
+        const allowedCats = [category, 'General', 'UR', 'Unreserved', 'OPEN'];
+        if (!allowedCats.includes(c.category)) continue;
+      }
       
       if (course && course !== 'All' && c.course_name && c.course_name.toUpperCase() !== String(course).toUpperCase()) continue;
+
 
       if (quota && quota !== 'All') {
          const cQuota = String(c.quota_code || '').toUpperCase();
