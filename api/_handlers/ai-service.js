@@ -349,19 +349,19 @@ export function buildFallbackResponse(query, context, resolved) {
   const highTier = scoredColleges
     .filter((c) => c.chance_tier === 'High')
     .sort((a, b) => a._closing - b._closing)
-    .slice(0, 10);
+    .slice(0, 30);
 
   // Sort Moderate by proximity to candidate rank
   const modTier = scoredColleges
     .filter((c) => c.chance_tier === 'Moderate')
     .sort((a, b) => a._diff - b._diff)
-    .slice(0, 8);
+    .slice(0, 30);
 
   // Sort Reach by proximity to candidate rank (closest dream colleges first)
   const reachTier = scoredColleges
     .filter((c) => c.chance_tier === 'Reach')
     .sort((a, b) => b._closing - a._closing)
-    .slice(0, 6);
+    .slice(0, 30);
 
   // Assemble with TOP HIGH CHANCE COLLEGES FIRST
   const colleges = [...highTier, ...modTier, ...reachTier];

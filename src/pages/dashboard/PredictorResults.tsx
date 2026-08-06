@@ -358,7 +358,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
           </div>
           <CollegeGroupList 
             colleges={preds?.safe || []} 
-            s={s} isPremium={isPremium} maxFreeCount={5}
+            s={s} isPremium={isPremium} maxFreeCount={15}
             bgClass={s.dark ? 'bg-emerald-900/10' : 'bg-emerald-50'} 
             borderClass="border-emerald-500/30" 
             isReach={false}
@@ -366,10 +366,10 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             candidateRank={aiResponse.query?.score_or_rank?.value || 0}
           />
           
-          {!isPremium && (preds?.safe?.length || 0) > 5 && (
+          {!isPremium && (preds?.safe?.length || 0) > 15 && (
              <div className="mt-4 p-4 rounded-xl border border-primary/20 bg-primary/5 text-center">
                <Crown className="w-5 h-5 text-primary mx-auto mb-2" />
-               <p className="text-xs font-bold mb-2">Upgrade to Premium to view {(preds?.safe?.length || 0) - 5} more Safe colleges.</p>
+               <p className="text-xs font-bold mb-2">Upgrade to Premium to view {(preds?.safe?.length || 0) - 15} more Safe colleges.</p>
                <Link to="/dashboard/subscription" className="text-[10px] bg-primary text-white px-3 py-1.5 rounded-full font-bold inline-block">Upgrade Now</Link>
              </div>
           )}
@@ -385,7 +385,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
           </div>
           <CollegeGroupList 
             colleges={preds?.moderate || []} 
-            s={s} isPremium={isPremium} maxFreeCount={5}
+            s={s} isPremium={isPremium} maxFreeCount={15}
             bgClass={s.dark ? 'bg-amber-900/10' : 'bg-amber-50'} 
             borderClass="border-amber-500/30" 
             isReach={false}
@@ -393,10 +393,10 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             candidateRank={aiResponse.query?.score_or_rank?.value || 0}
           />
           
-          {!isPremium && (preds?.moderate?.length || 0) > 5 && (
+          {!isPremium && (preds?.moderate?.length || 0) > 15 && (
              <div className="mt-4 p-4 rounded-xl border border-primary/20 bg-primary/5 text-center">
                <Crown className="w-5 h-5 text-primary mx-auto mb-2" />
-               <p className="text-xs font-bold mb-2">Upgrade to Premium to view {(preds?.moderate?.length || 0) - 5} more Moderate colleges.</p>
+               <p className="text-xs font-bold mb-2">Upgrade to Premium to view {(preds?.moderate?.length || 0) - 15} more Moderate colleges.</p>
                <Link to="/dashboard/subscription" className="text-[10px] bg-primary text-white px-3 py-1.5 rounded-full font-bold inline-block">Upgrade Now</Link>
              </div>
           )}
@@ -412,7 +412,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
           </div>
           <CollegeGroupList 
             colleges={preds?.reach || []} 
-            s={s} isPremium={isPremium} maxFreeCount={5}
+            s={s} isPremium={isPremium} maxFreeCount={15}
             bgClass={s.dark ? 'bg-orange-900/10' : 'bg-orange-50'} 
             borderClass="border-orange-500/30" 
             isReach={true}
@@ -420,10 +420,10 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             candidateRank={aiResponse.query?.score_or_rank?.value || 0}
           />
           
-          {!isPremium && (preds?.reach?.length || 0) > 5 && (
+          {!isPremium && (preds?.reach?.length || 0) > 15 && (
              <div className="mt-4 p-4 rounded-xl border border-primary/20 bg-primary/5 text-center">
                <Crown className="w-5 h-5 text-primary mx-auto mb-2" />
-               <p className="text-xs font-bold mb-2">Upgrade to Premium to view {(preds?.reach?.length || 0) - 5} more Reach colleges.</p>
+               <p className="text-xs font-bold mb-2">Upgrade to Premium to view {(preds?.reach?.length || 0) - 15} more Reach colleges.</p>
                <Link to="/dashboard/subscription" className="text-[10px] bg-primary text-white px-3 py-1.5 rounded-full font-bold inline-block">Upgrade Now</Link>
              </div>
           )}
