@@ -215,7 +215,7 @@ async function loadCachedResult(aId, bId) {
   try {
     const minId = Math.min(Number(aId), Number(bId));
     const maxId = Math.max(Number(aId), Number(bId));
-    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const cutoff = new Date(Date.now() - 60 * 1000).toISOString(); // 1 minute cache for testing
     const { data } = await supabase
       .from('college_comparisons')
       .select('result_json, created_at')
@@ -299,9 +299,10 @@ export default async function handler(req, res) {
         system_prompt: `You are an expert Indian medical admission counsellor and data analyst. Compare these two medical colleges strictly using the data provided.
 
 CRITICAL RULES:
-1. Use ONLY the data provided in the user_prompt. Do NOT invent numbers.
-2. For any field where data is "N/A" or not provided, use your general knowledge of that college — but mark it as estimated.
-3. Scores must be realistic integers 0–100 based on actual college quality.
+1. You MUST fill every single field in the JSON. Do NOT return "N/A" anywhere.
+2. If the user_prompt provides data, use it exactly.
+3. If the user_prompt says "N/A" for a field (like fees, beds, infrastructure, etc.), you MUST use your extensive real-world knowledge of that specific college to provide a highly accurate estimate (e.g., "1,200 Beds" or "₹1,15,000/yr").
+4. Scores must be realistic integers 0–100 based on actual college quality. No zeroes unless genuinely terrible.
 4. DO NOT return markdown. Return ONLY a valid JSON object exactly matching this schema:
 
 {
