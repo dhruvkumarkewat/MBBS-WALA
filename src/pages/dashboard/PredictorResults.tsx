@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Crown, Sparkles, AlertTriangle, FileText, IndianRupee, MapPin, Search } from 'lucide-react';
 import React, { useState } from 'react';
-import { CollegeInfoModal } from '../../../components/ui/CollegeInfoModal';
+import { CollegeInfoModal } from '../../components/ui/CollegeInfoModal';
 
 // Interfaces mapping to PredictorResponse
 interface PredictorResultsProps {
