@@ -5,7 +5,7 @@ import {
   Target,
   TrendingUp,
   Landmark,
-  Percent,
+  Layers,
   Sparkles,
 } from 'lucide-react';
 import type { StateCompetition } from '../../lib/competitionMap';
@@ -73,7 +73,7 @@ export default function MapTooltip({ state, x, y, dark }: Props) {
             <Metric icon={Landmark} label="Govt / Pvt" value={`${state.govt_colleges}/${state.private_colleges}`} dark={dark} />
             <Metric icon={GraduationCap} label="Total seats" value={formatNum(state.total_seats)} dark={dark} />
             <Metric icon={Target} label="AIQ seats" value={formatNum(state.aiq_seats)} dark={dark} />
-            <Metric icon={Percent} label="State quota" value={formatNum(state.state_quota_seats)} dark={dark} />
+            <Metric icon={Layers} label="SQ seats" value={formatNum(state.state_quota_seats)} dark={dark} />
             <Metric icon={TrendingUp} label="Avg close rank" value={formatNum(state.avg_closing_rank)} dark={dark} />
             {state.lowest_closing_rank != null && (
               <Metric icon={TrendingUp} label="Lowest CR" value={formatNum(state.lowest_closing_rank)} dark={dark} />
