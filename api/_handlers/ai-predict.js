@@ -62,6 +62,8 @@ export async function retrieveContext(query) {
     .from('cutoffs')
     .select('*')
     .eq('category', category)
+    .gte('closing_rank', Math.max(1, Math.floor(candidateRank * 0.4)))
+    .order('closing_rank', { ascending: true })
     .limit(3000);
 
   if (examTrack === 'MBBS_BDS') {
@@ -261,15 +263,15 @@ const DEEMED_KEYWORDS = [
   const eligible = scored.filter((c) => c._tier !== 'Unlikely');
   const highTier = eligible
     .filter((c) => c._tier === 'High')
-    .sort((a, b) => (b._state_match ? 1 : 0) - (a._state_match ? 1 : 0) || a._closing - b._closing)
+    .sort((a, b) => a._closing - b._closing) // Absolute best colleges they can get
     .slice(0, 30);
   const modTier = eligible
     .filter((c) => c._tier === 'Moderate')
-    .sort((a, b) => (b._state_match ? 1 : 0) - (a._state_match ? 1 : 0) || a._diff - b._diff)
+    .sort((a, b) => a._diff - b._diff) // Most achievable moderate
     .slice(0, 20);
   const reachTier = eligible
     .filter((c) => c._tier === 'Reach')
-    .sort((a, b) => (b._state_match ? 1 : 0) - (a._state_match ? 1 : 0) || a._diff - b._diff)
+    .sort((a, b) => a._diff - b._diff) // Most achievable reach
     .slice(0, 15);
 
   const finalClosingRanks = [...highTier, ...modTier, ...reachTier];
