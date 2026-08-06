@@ -25,37 +25,55 @@ function L({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<PageFallback />}>{children}</Suspense>;
 }
 
+function lazyWithRetry(componentImport: () => Promise<any>) {
+  return lazy(async () => {
+    try {
+      const component = await componentImport();
+      window.sessionStorage.removeItem('retry-lazy');
+      return component;
+    } catch (error: any) {
+      const isRetried = window.sessionStorage.getItem('retry-lazy');
+      if (!isRetried) {
+        window.sessionStorage.setItem('retry-lazy', 'true');
+        window.location.reload();
+        return new Promise(() => {});
+      }
+      throw error;
+    }
+  });
+}
+
 /* Marketing — code-split */
-const Packages = lazy(() => import('./pages/Packages'));
-const ExamPage = lazy(() => import('./pages/ExamPage'));
-const RankCalculator = lazy(() => import('./pages/RankCalculator'));
-const TestimonialsPage = lazy(() => import('./pages/TestimonialsPage'));
-const Blogs = lazy(() => import('./pages/Blogs'));
-const BlogPost = lazy(() => import('./pages/BlogPost'));
-const About = lazy(() => import('./pages/About'));
-const Careers = lazy(() => import('./pages/Careers'));
-const Login = lazy(() => import('./pages/Login'));
-const Policy = lazy(() => import('./pages/Policy'));
-const Colleges = lazy(() => import('./pages/Colleges'));
-const CollegeDetailPage = lazy(() => import('./pages/dashboard/college-detail/CollegeDetailPage'));
-const Cutoffs = lazy(() => import('./pages/Cutoffs'));
-const SeatMatrix = lazy(() => import('./pages/SeatMatrix'));
-const Contact = lazy(() => import('./pages/Contact'));
-const Compare = lazy(() => import('./pages/Compare'));
-const DesignSystem = lazy(() => import('./pages/DesignSystem'));
-const ComponentLibrary = lazy(() => import('./pages/ComponentLibrary'));
-const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
+const Packages = lazyWithRetry(() => import('./pages/Packages'));
+const ExamPage = lazyWithRetry(() => import('./pages/ExamPage'));
+const RankCalculator = lazyWithRetry(() => import('./pages/RankCalculator'));
+const TestimonialsPage = lazyWithRetry(() => import('./pages/TestimonialsPage'));
+const Blogs = lazyWithRetry(() => import('./pages/Blogs'));
+const BlogPost = lazyWithRetry(() => import('./pages/BlogPost'));
+const About = lazyWithRetry(() => import('./pages/About'));
+const Careers = lazyWithRetry(() => import('./pages/Careers'));
+const Login = lazyWithRetry(() => import('./pages/Login'));
+const Policy = lazyWithRetry(() => import('./pages/Policy'));
+const Colleges = lazyWithRetry(() => import('./pages/Colleges'));
+const CollegeDetailPage = lazyWithRetry(() => import('./pages/dashboard/college-detail/CollegeDetailPage'));
+const Cutoffs = lazyWithRetry(() => import('./pages/Cutoffs'));
+const SeatMatrix = lazyWithRetry(() => import('./pages/SeatMatrix'));
+const Contact = lazyWithRetry(() => import('./pages/Contact'));
+const Compare = lazyWithRetry(() => import('./pages/Compare'));
+const DesignSystem = lazyWithRetry(() => import('./pages/DesignSystem'));
+const ComponentLibrary = lazyWithRetry(() => import('./pages/ComponentLibrary'));
+const OnboardingPage = lazyWithRetry(() => import('./pages/OnboardingPage'));
 
 /* Dashboard shell + pages — only when /dashboard is hit */
-const DashboardLayout = lazy(() => import('./components/dashboard/DashboardLayout'));
-const DashboardHome = lazy(() => import('./pages/dashboard/DashboardHome'));
-const CompetitionMapPage = lazy(() => import('./pages/dashboard/CompetitionMapPage'));
+const DashboardLayout = lazyWithRetry(() => import('./components/dashboard/DashboardLayout'));
+const DashboardHome = lazyWithRetry(() => import('./pages/dashboard/DashboardHome'));
+const CompetitionMapPage = lazyWithRetry(() => import('./pages/dashboard/CompetitionMapPage'));
 
 function lazyNamed<T extends Record<string, ComponentType>>(
   loader: () => Promise<T>,
   name: keyof T & string
 ) {
-  return lazy(async () => {
+  return lazyWithRetry(async () => {
     const mod = await loader();
     return { default: mod[name] as ComponentType };
   });
