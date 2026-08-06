@@ -153,73 +153,79 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
 
                         {Array.isArray(c.historical_trend) && c.historical_trend.length > 0 && (
                           <div className="mt-4">
-                            <h5 className={`text-[10px] uppercase font-bold mb-2 ${s.muted}`}>Historical Trends</h5>
-                            {(() => {
-                              // Sort trends by year so the histogram goes from old to new
-                              const trendData = [...c.historical_trend].sort((a, b) => parseInt(a.year) - parseInt(b.year));
-                              const maxVal = Math.max(
-                                candidateRank, 
-                                ...trendData.map(x => parseInt(String(x.closing_rank).replace(/\D/g, '')) || 0)
-                              );
+                             <h5 className={`text-[10px] uppercase font-bold mb-2 flex items-center ${s.muted}`}>
+                               Historical Trends
+                               <span className="text-[8px] font-normal opacity-60 ml-2 lowercase tracking-normal">(taller bar = better rank)</span>
+                             </h5>
+                             {(() => {
+                               // Sort trends by year so the histogram goes from old to new
+                               const trendData = [...c.historical_trend].sort((a, b) => parseInt(a.year) - parseInt(b.year));
+                               const rankValues = [
+                                 candidateRank,
+                                 ...trendData.map(x => parseInt(String(x.closing_rank).replace(/\D/g, '')) || 0)
+                               ].filter(v => v > 0);
+                               const rawMax = Math.max(...rankValues, 100);
+                               const maxVal = rawMax * 1.25; // 25% padding at top
 
-                              return (
-                                <div className="relative h-48 mt-8 mb-6 rounded-xl bg-black/5 border border-white/10 p-4">
-                                  {/* Chart Area */}
-                                  <div className="relative w-full h-full flex items-end justify-around gap-2 pb-6">
-                                    {/* Histogram Bars */}
-                                    {trendData.map((t, idx) => {
-                                       const val = parseInt(String(t.closing_rank).replace(/\D/g, '')) || 0;
-                                       const pct = maxVal > 0 ? (val / maxVal) * 100 : 0;
-                                       const candPct = maxVal > 0 ? (candidateRank / maxVal) * 100 : 0;
-                                       return (
-                                         <div key={idx} className="relative flex flex-col justify-end items-center group w-full max-w-[90px] h-full z-10">
-                                           
-                                           {/* Double Bars Container */}
-                                           <div className="flex items-end justify-center w-full h-full gap-1 sm:gap-2">
-                                             
-                                             {/* Your Rank Bar */}
-                                             {candidateRank > 0 && (
-                                               <div className="relative flex flex-col justify-end items-center group/bar w-full max-w-[35px] h-full">
-                                                 <div className="absolute -top-6 text-[9px] font-bold opacity-70 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap text-orange-400">
-                                                   {candidateRank}
-                                                 </div>
-                                                 <div 
-                                                   className="w-full bg-orange-500/30 hover:bg-orange-500/70 transition-all duration-500 rounded-t-sm border-x border-t border-orange-500/50 relative overflow-hidden group-hover/bar:shadow-[0_0_15px_rgba(249,115,22,0.3)]"
-                                                   style={{ height: `${Math.max(2, candPct)}%` }}
-                                                 >
+                               return (
+                                 <div className="relative h-48 mt-8 mb-6 rounded-xl bg-black/5 border border-white/10 p-4">
+                                   {/* Chart Area */}
+                                   <div className="relative w-full h-full flex items-end justify-around gap-2 pb-6">
+                                     {/* Histogram Bars */}
+                                     {trendData.map((t, idx) => {
+                                        const val = parseInt(String(t.closing_rank).replace(/\D/g, '')) || 0;
+                                        // Invert scale: lower rank number = taller bar (better standing)
+                                        const pct = maxVal > 0 && val > 0 ? Math.max(8, ((maxVal - val) / maxVal) * 100) : 0;
+                                        const candPct = maxVal > 0 && candidateRank > 0 ? Math.max(8, ((maxVal - candidateRank) / maxVal) * 100) : 0;
+                                        return (
+                                          <div key={idx} className="relative flex flex-col justify-end items-center group w-full max-w-[90px] h-full z-10">
+                                            
+                                            {/* Double Bars Container */}
+                                            <div className="flex items-end justify-center w-full h-full gap-1.5 sm:gap-2">
+                                              
+                                              {/* Your Rank Bar */}
+                                              {candidateRank > 0 && (
+                                                <div className="relative flex flex-col justify-end items-center group/bar w-full max-w-[32px] h-full">
+                                                  <div className="absolute -top-6 text-[9px] font-bold opacity-80 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap text-amber-400">
+                                                    {candidateRank}
+                                                  </div>
+                                                  <div 
+                                                    className="w-full bg-amber-500/40 hover:bg-amber-500/80 transition-all duration-500 rounded-t-sm border-x border-t border-amber-500/60 relative overflow-hidden group-hover/bar:shadow-[0_0_15px_rgba(245,158,11,0.4)]"
+                                                    style={{ height: `${candPct}%` }}
+                                                  >
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
+                                                  </div>
+                                                  <div className="absolute -bottom-4 text-[8px] font-semibold text-amber-400">You</div>
+                                                </div>
+                                              )}
+
+                                              {/* Closing Rank Bar */}
+                                              <div className="relative flex flex-col justify-end items-center group/bar w-full max-w-[32px] h-full">
+                                                <div className={`absolute -top-6 text-[9px] font-bold opacity-80 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap ${s.dark ? 'text-white' : 'text-slate-800'}`}>
+                                                  {t.closing_rank}
+                                                </div>
+                                                <div 
+                                                  className="w-full bg-primary/40 hover:bg-primary/80 transition-all duration-500 rounded-t-sm border-x border-t border-primary/60 relative overflow-hidden group-hover/bar:shadow-[0_0_15px_rgba(var(--color-primary),0.4)]"
+                                                  style={{ height: `${pct}%` }}
+                                                >
                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
-                                                 </div>
-                                                 <div className="absolute -bottom-4 text-[8px] text-orange-400/80">You</div>
-                                               </div>
-                                             )}
+                                                </div>
+                                                <div className="absolute -bottom-4 text-[8px] font-semibold text-primary">Close</div>
+                                              </div>
 
-                                             {/* Closing Rank Bar */}
-                                             <div className="relative flex flex-col justify-end items-center group/bar w-full max-w-[35px] h-full">
-                                               <div className={`absolute -top-6 text-[9px] font-bold opacity-70 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap ${s.dark ? 'text-white' : 'text-slate-800'}`}>
-                                                 {t.closing_rank}
-                                               </div>
-                                               <div 
-                                                 className="w-full bg-primary/40 hover:bg-primary/80 transition-all duration-500 rounded-t-sm border-x border-t border-primary/50 relative overflow-hidden group-hover/bar:shadow-[0_0_15px_rgba(var(--color-primary),0.3)]"
-                                                 style={{ height: `${Math.max(2, pct)}%` }}
-                                               >
-                                                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
-                                               </div>
-                                               <div className="absolute -bottom-4 text-[8px] text-primary/80">Close</div>
-                                             </div>
-
-                                           </div>
-                                           
-                                           {/* X-Axis Label */}
-                                           <div className={`absolute -bottom-9 text-[10px] font-bold ${s.muted}`}>
-                                             {t.year}
-                                           </div>
-                                         </div>
-                                       );
-                                    })}
-                                  </div>
-                                </div>
-                              );
-                            })()}
+                                            </div>
+                                            
+                                            {/* X-Axis Label */}
+                                            <div className={`absolute -bottom-9 text-[10px] font-bold ${s.muted}`}>
+                                              {t.year}
+                                            </div>
+                                          </div>
+                                        );
+                                     })}
+                                   </div>
+                                 </div>
+                               );
+                             })()}
                             
                             <div className="overflow-x-auto rounded border border-white/10 hidden md:block">
                               <table className="w-full text-left text-[10px] border-collapse bg-black/10">
