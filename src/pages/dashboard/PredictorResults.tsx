@@ -163,7 +163,7 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                               );
 
                               return (
-                                <div className="relative h-32 mt-8 mb-6 rounded-xl bg-black/5 border border-white/10 p-4">
+                                <div className="relative h-48 mt-8 mb-6 rounded-xl bg-black/5 border border-white/10 p-4">
                                   {/* Chart Area */}
                                   <div className="relative w-full h-full flex items-end justify-around gap-2">
                                     {/* Candidate Rank Line */}
@@ -187,7 +187,7 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                                        return (
                                          <div key={idx} className="relative flex flex-col justify-end items-center group w-full max-w-[60px] h-full z-10">
                                            {/* Value */}
-                                           <div className="absolute -top-6 text-[10px] font-bold text-white opacity-70 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                           <div className={`absolute -top-6 text-[10px] font-bold opacity-70 group-hover:opacity-100 transition-opacity whitespace-nowrap ${s.dark ? 'text-white' : 'text-slate-800'}`}>
                                              {t.closing_rank}
                                            </div>
                                            
