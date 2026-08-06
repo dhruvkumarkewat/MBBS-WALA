@@ -99,15 +99,33 @@ export function AiAssistantPage() {
   const { isPremium } = usePremium();
   const { profile } = useAuth();
   type ChatMsg = { role: 'assistant' | 'user'; text: string };
-  const [messages, setMessages] = useState<ChatMsg[]>([
-    {
+  const [messages, setMessages] = useState<ChatMsg[]>(() => {
+    const saved = localStorage.getItem(`mbbswala_chat_${profile?.id || 'guest'}`);
+    if (saved) {
+      try { return JSON.parse(saved); } catch(e) {}
+    }
+    return [{
       role: 'assistant',
       text: "Hi — I'm your MBBSWala assistant. I use your live college/seat data tips. For ranks, open College Predictor (real /api/rank-calculator).",
-    },
-  ]);
+    }];
+  });
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
-  const [userQueryCount, setUserQueryCount] = useState(0);
+  const [userQueryCount, setUserQueryCount] = useState(() => {
+    const saved = localStorage.getItem(`mbbswala_chat_count_${profile?.id || 'guest'}`);
+    return saved ? parseInt(saved, 10) : 0;
+  });
+
+  useEffect(() => {
+    if (messages.length > 1) {
+      localStorage.setItem(`mbbswala_chat_${profile?.id || 'guest'}`, JSON.stringify(messages));
+    }
+  }, [messages, profile?.id]);
+
+  useEffect(() => {
+    localStorage.setItem(`mbbswala_chat_count_${profile?.id || 'guest'}`, userQueryCount.toString());
+  }, [userQueryCount, profile?.id]);
+
 
   const send = async (e: FormEvent) => {
     e.preventDefault();
