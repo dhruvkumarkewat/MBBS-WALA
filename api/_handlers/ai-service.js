@@ -39,7 +39,8 @@ Rules:
 5. Provide realistic tuition fees, hostel fees, and bond details.
 6. Calculate a realistic admission probability percentage.
 7. CLEARLY designate the course (MBBS vs BDS). If the user asks for MBBS/BDS, provide both but mark the 'course' field accurately.
-8. Provide multi-year trend data (2025, 2024, 2023) to show closing rank history. Use realistic historical estimates.`;
+8. Provide multi-year trend data (2025, 2024, 2023) to show closing rank history. Use realistic historical estimates.
+9. CRITICAL RULE FOR NEET RANKS: In NEET, a LOWER number rank is BETTER. AIR 330 is an outstanding, top-tier rank that guarantees admission to premier government medical colleges (e.g., AIIMS New Delhi, MAMC). A rank like 330 is vastly superior to 25,000. Do NOT treat low numbers as poor ranks!`;
 
 // ── Provider Calling ────────────────────────────────────────────────────────
 
