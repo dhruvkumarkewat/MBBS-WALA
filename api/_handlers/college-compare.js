@@ -5,26 +5,7 @@ function normalize(name) {
   return (name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
-function findSeat(seats, collegeName) {
-  const key = normalize(collegeName);
-  let best = null;
-  for (const s of seats || []) {
-    const k = normalize(s.college_name);
-    if (k === key || k.includes(key.slice(0, 14)) || key.includes(k.slice(0, 14))) {
-      best = s;
-      break;
-    }
-  }
-  return best;
-}
 
-function findCutoffs(cutoffs, collegeName) {
-  const key = normalize(collegeName);
-  return (cutoffs || []).filter((c) => {
-    const k = normalize(c.college_name);
-    return k === key || k.includes(key.slice(0, 14)) || key.includes(k.slice(0, 14));
-  });
-}
 
 async function loadCollegeBundle(id) {
   const { data: college, error } = await supabase
@@ -36,12 +17,12 @@ async function loadCollegeBundle(id) {
   if (!college) return null;
 
   const [{ data: cutoffs }, { data: seats }] = await Promise.all([
-    supabase.from('cutoffs').select('*').order('category'),
-    supabase.from('seat_matrix').select('*'),
+    supabase.from('cutoffs').select('*').eq('college_name', college.name).order('category'),
+    supabase.from('seat_matrix').select('*').eq('college_name', college.name)
   ]);
 
-  const relatedCutoffs = findCutoffs(cutoffs, college.name);
-  const seat = findSeat(seats, college.name);
+  const relatedCutoffs = cutoffs || [];
+  const seat = (seats && seats.length > 0) ? seats[0] : null;
 
   const byCat = {};
   relatedCutoffs.forEach((c) => {
