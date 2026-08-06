@@ -201,6 +201,7 @@ const DEEMED_KEYWORDS = [
   const seenNames = new Set();
   const deduplicated = [];
   const onlyStateQuota = quotas.includes('State') && quotas.length === 1;
+  const targetState = query.target_state;
 
   for (const item of combined) {
     if (!item.college_name || item.college_name === '-' || item.college_name.length < 3) continue;
@@ -234,6 +235,12 @@ const DEEMED_KEYWORDS = [
     // 3. DOMICILE STATE FILTER: If only State Quota was selected, drop all colleges outside domicile state
     if (onlyStateQuota && !item._state_match) {
       continue;
+    }
+
+    // 4. TARGET STATE FILTER: If target state is specified, only include colleges from that state
+    if (targetState) {
+      const tStateMatch = Boolean((item.state || '').toLowerCase().includes(targetState.toLowerCase()));
+      if (!tStateMatch) continue;
     }
 
     seenNames.add(dedupKey);

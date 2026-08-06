@@ -334,6 +334,7 @@ export function PredictorPage() {
   const [score, setScore] = useState(profile?.neet_score?.toString() || '');
   const [category, setCategory] = useState(profile?.category || 'General');
   const [domicileState, setDomicileState] = useState(profile?.domicile_state || profile?.state || '');
+  const [targetState, setTargetState] = useState('');
   const [quotas, setQuotas] = useState<string[]>(['AIQ', 'State']);
   const [round, setRound] = useState('Round 1');
   const [neetYear, setNeetYear] = useState(new Date().getFullYear());
@@ -421,6 +422,7 @@ export function PredictorPage() {
           category,
           quotas,
           domicile_state: domicileState || null,
+          target_state: targetState || null,
           state: domicileState || null,
         };
 
@@ -473,7 +475,7 @@ export function PredictorPage() {
             round,
             course: undefined,
             exam_track: examTrack,
-            state: quotas.includes('State') && !quotas.includes('AIQ') && domicileState ? domicileState : undefined,
+            state: targetState || (quotas.includes('State') && !quotas.includes('AIQ') && domicileState ? domicileState : undefined),
             limit: 25,
           }),
         });
@@ -662,6 +664,19 @@ export function PredictorPage() {
               className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input} ${quotas.includes('State') && !domicileState ? 'border-primary/60 bg-primary/5 ring-1 ring-primary/30' : ''}`}
             >
               <option value="">Select Domicile State...</option>
+              {INDIA_STATES.map((st) => <option key={st}>{st}</option>)}
+            </select>
+          </label>
+          <label className="block">
+            <span className={`text-xs font-bold uppercase ${s.muted}`}>
+              Target State (Optional)
+            </span>
+            <select
+              value={targetState}
+              onChange={(e) => setTargetState(e.target.value)}
+              className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
+            >
+              <option value="">All States / Anywhere</option>
               {INDIA_STATES.map((st) => <option key={st}>{st}</option>)}
             </select>
           </label>
