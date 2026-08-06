@@ -303,13 +303,18 @@ export abstract class BaseScraper {
 
     // Reject obvious document phrases, applicant rules, and checklists
     const invalidPhrases = [
+      // Document / Administrative phrases
       'passport', 'candidate', 'certificate', 'undertaking', 'affidavit', 'eligibility',
       'annexure', 'proforma', 'allotment letter', 'instruction', 'admit card', 'score card',
       'domicile', 'caste', 'signature', 'thumb', 'photograph', 'stipend', 'bond', 'penalty',
       'verification', 'reporting', 'counselling schedule', 'registration', 'payment', 'fee structure',
       'valid id', 'original document', 'category certificate', 'seat allotment', 'result of',
       'notice regarding', 'information bulletin', 'stray vacancy', 'mop up', 'round 1', 'round 2',
-      'applicable to', 'submission of', 'declaration', 'authority', 'directorate'
+      'applicable to', 'submission of', 'declaration', 'authority', 'directorate',
+      // Non-Medical Institutions
+      ' iti ', 'iti ', 'ncvt', 'polytechnic', 'engineering', 'technology', 'arts', 'commerce',
+      'management', 'law college', 'architecture', 'pharmacy', 'agriculture', 'veterinary', 
+      'fisheries', 'degree college', 'iti,', 'industrial training'
     ];
     if (invalidPhrases.some((phrase) => lower.includes(phrase))) return false;
 
