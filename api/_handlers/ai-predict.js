@@ -140,7 +140,8 @@ const DEEMED_KEYWORDS = [
       }
     }
 
-    const feeVal = isGovt ? (col.feeGovt || 50000) : isDeemed ? (col.feePvt || 2200000) : (col.feePvt || 1400000);
+    const feeVal = isGovt ? (col.feeGovt || null) : (col.feePvt || null);
+    const feeString = feeVal ? `₹${Number(feeVal).toLocaleString('en-IN')}` : 'Check Govt/State Portal';
 
     return {
       id: col.id,
@@ -153,7 +154,7 @@ const DEEMED_KEYWORDS = [
       year: year,
       course_name: col.course || (examTrack === 'AYUSH' ? 'BAMS' : 'MBBS'),
       quota_code: quotaCode,
-      fee_amount: feeVal,
+      fee_amount: feeString,
       seats: col.seats || 100,
       _state_match: stateMatch,
     };
@@ -228,11 +229,12 @@ const DEEMED_KEYWORDS = [
     const closing = c.aiq_rank || c.closing_rank || 0;
     let tier = 'Unlikely';
     if (closing && candidateRank > 0) {
-      if (closing >= candidateRank * 0.95) { // Safe: Closes slightly below or anywhere above their rank
+      const diff = closing - candidateRank;
+      if (diff >= closing * 0.10) { // High/Safe: Closes > 10% above candidate rank
         tier = 'High';
-      } else if (closing >= candidateRank * 0.75 && closing < candidateRank * 0.95) { // Moderate: Within 25% reach
+      } else if (diff >= 0 && diff < closing * 0.10) { // Moderate: 0-10% difference
         tier = 'Moderate';
-      } else if (closing >= candidateRank * 0.40 && closing < candidateRank * 0.75) { // Reach: Ambitious but possible
+      } else if (diff < 0 && diff >= -(closing * 0.20)) { // Reach: Up to 20% worse than closing
         tier = 'Reach';
       }
     }

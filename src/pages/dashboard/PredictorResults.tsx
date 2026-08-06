@@ -146,8 +146,8 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
                <p className="text-sm font-black text-emerald-500">{aiResponse.admission_summary.expected_probability}</p>
              </div>
              <div className={`${s.dark ? 'bg-white/5' : 'bg-slate-50'} rounded-xl p-3 border border-slate-500/20`}>
-               <p className={`text-[10px] uppercase font-bold ${s.muted} mb-1`}>AI Confidence</p>
-               <p className="text-sm font-black text-blue-500">{aiResponse.admission_summary.ai_prediction_confidence}</p>
+               <p className={`text-[10px] uppercase font-bold ${s.muted} mb-1`}>Data Reliability</p>
+               <p className="text-sm font-black text-blue-500">{aiResponse.admission_summary.data_reliability || 'High'}</p>
              </div>
              <div className={`${s.dark ? 'bg-white/5' : 'bg-slate-50'} rounded-xl p-3 border border-slate-500/20`}>
                <p className={`text-[10px] uppercase font-bold ${s.muted} mb-1`}>Overall Match</p>
