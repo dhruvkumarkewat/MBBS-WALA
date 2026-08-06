@@ -304,7 +304,7 @@ const DEEMED_KEYWORDS = [
     // 1. Category Matching
     if (s.category_scope && s.category_scope.length > 0) {
       const matchesCat = s.category_scope.some((cs) => {
-        const csUpper = cs.toUpperCase();
+        const csUpper = cs?.toUpperCase() || '';
         if (catNorm.includes('OBC') && csUpper.includes('OBC')) return true;
         if (catNorm.includes('SC') && csUpper.includes('SC')) return true;
         if (catNorm.includes('ST') && csUpper.includes('ST')) return true;
@@ -320,14 +320,17 @@ const DEEMED_KEYWORDS = [
     if (s.state_scope && s.state_scope.length > 0 && domicileState) {
       const stateNorm = domicileState.toLowerCase();
       const matchesState = s.state_scope.some(
-        (st) => stateNorm.includes(st.toLowerCase()) || st.toLowerCase().includes(stateNorm)
+        (st) => {
+          const stLower = st?.toLowerCase() || '';
+          return stateNorm.includes(stLower) || stLower.includes(stateNorm);
+        }
       );
       if (!matchesState) return false;
     }
 
     // 3. Course Matching
     if (s.course_scope && s.course_scope.length > 0) {
-      const matchesCourse = s.course_scope.some((c) => c.toUpperCase() === selectedCourse.toUpperCase());
+      const matchesCourse = s.course_scope.some((c) => c?.toUpperCase() === selectedCourse.toUpperCase());
       if (!matchesCourse) return false;
     }
 
