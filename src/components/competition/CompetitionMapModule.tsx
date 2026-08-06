@@ -159,7 +159,7 @@ export default function CompetitionMapModule({ dark, embedded }: Props) {
           <p className={`text-sm max-w-md mx-auto mb-6 ${dark ? 'text-white/70' : 'text-gray-500'}`}>
             Upgrade to Premium to view the interactive Closing Rank Map, analyze state-wise competition, and access detailed seat matrices.
           </p>
-          <Link to="/packages" className="zn-cta px-8 py-3">
+          <Link to="/dashboard/subscription" className="zn-cta px-8 py-3">
             Upgrade to Premium
           </Link>
         </div>

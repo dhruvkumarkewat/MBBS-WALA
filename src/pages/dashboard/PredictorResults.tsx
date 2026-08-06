@@ -174,7 +174,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
              <div className="mt-4 p-4 rounded-xl border border-primary/20 bg-primary/5 text-center">
                <Crown className="w-5 h-5 text-primary mx-auto mb-2" />
                <p className="text-xs font-bold mb-2">Upgrade to Premium to view {aiResponse.college_predictions.safe.length - 1} more Safe colleges.</p>
-               <Link to="/packages" className="text-[10px] bg-primary text-white px-3 py-1.5 rounded-full font-bold inline-block">Upgrade Now</Link>
+               <Link to="/dashboard/subscription" className="text-[10px] bg-primary text-white px-3 py-1.5 rounded-full font-bold inline-block">Upgrade Now</Link>
              </div>
           )}
         </div>
@@ -194,7 +194,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
                <Crown className="w-6 h-6 text-primary mx-auto mb-3" />
                <p className="text-sm font-bold mb-2">Premium Feature</p>
                <p className="text-xs opacity-70 mb-4">Upgrade to view {aiResponse.college_predictions.moderate.length} Moderate colleges where you have a 40-70% chance of admission.</p>
-               <Link to="/packages" className="text-xs bg-primary text-white px-5 py-2.5 rounded-full font-bold inline-block hover:scale-105 transition">Upgrade Now</Link>
+               <Link to="/dashboard/subscription" className="text-xs bg-primary text-white px-5 py-2.5 rounded-full font-bold inline-block hover:scale-105 transition">Upgrade Now</Link>
              </div>
           )}
         </div>
@@ -214,7 +214,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
                <Crown className="w-6 h-6 text-primary mx-auto mb-3" />
                <p className="text-sm font-bold mb-2">Premium Feature</p>
                <p className="text-xs opacity-70 mb-4">Upgrade to view {aiResponse.college_predictions.reach.length} Reach colleges that are highly competitive.</p>
-               <Link to="/packages" className="text-xs bg-primary text-white px-5 py-2.5 rounded-full font-bold inline-block hover:scale-105 transition">Upgrade Now</Link>
+               <Link to="/dashboard/subscription" className="text-xs bg-primary text-white px-5 py-2.5 rounded-full font-bold inline-block hover:scale-105 transition">Upgrade Now</Link>
              </div>
           )}
         </div>
@@ -253,7 +253,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 text-center">
                <Crown className="w-5 h-5 text-primary mx-auto mb-2" />
                <p className="text-xs font-bold mb-2">Upgrade to Premium to view detailed admission guidance and private options.</p>
-               <Link to="/packages" className="text-[10px] bg-primary text-white px-3 py-1.5 rounded-full font-bold inline-block">Upgrade Now</Link>
+               <Link to="/dashboard/subscription" className="text-[10px] bg-primary text-white px-3 py-1.5 rounded-full font-bold inline-block">Upgrade Now</Link>
              </div>
           )}
         </div>
@@ -304,7 +304,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 text-center">
                <Crown className="w-5 h-5 text-primary mx-auto mb-2" />
                <p className="text-xs font-bold mb-2">Upgrade to Premium to view Management Quota opportunities and costs.</p>
-               <Link to="/packages" className="text-[10px] bg-primary text-white px-3 py-1.5 rounded-full font-bold inline-block">Upgrade Now</Link>
+               <Link to="/dashboard/subscription" className="text-[10px] bg-primary text-white px-3 py-1.5 rounded-full font-bold inline-block">Upgrade Now</Link>
              </div>
           )}
         </div>
@@ -341,7 +341,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
                <Crown className="w-6 h-6 text-primary mx-auto mb-3" />
                <p className="text-sm font-bold mb-2">Premium Feature</p>
                <p className="text-xs opacity-70 mb-4">Upgrade to view detailed Alternative Courses (BDS, BAMS, BHMS) and career scope.</p>
-               <Link to="/packages" className="text-xs bg-primary text-white px-5 py-2.5 rounded-full font-bold inline-block hover:scale-105 transition">Upgrade Now</Link>
+               <Link to="/dashboard/subscription" className="text-xs bg-primary text-white px-5 py-2.5 rounded-full font-bold inline-block hover:scale-105 transition">Upgrade Now</Link>
              </div>
           )}
         </div>
@@ -380,7 +380,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
                <Crown className="w-6 h-6 text-primary mx-auto mb-3" />
                <p className="text-sm font-bold mb-2">Premium Feature</p>
                <p className="text-xs opacity-70 mb-4">Upgrade to unlock personalized AI Counselling Strategy and Recommendations for all rounds.</p>
-               <Link to="/packages" className="text-xs bg-primary text-white px-5 py-2.5 rounded-full font-bold inline-block hover:scale-105 transition">Upgrade Now</Link>
+               <Link to="/dashboard/subscription" className="text-xs bg-primary text-white px-5 py-2.5 rounded-full font-bold inline-block hover:scale-105 transition">Upgrade Now</Link>
              </div>
           )}
         </div>

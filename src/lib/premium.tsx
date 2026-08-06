@@ -211,7 +211,7 @@ export function UpgradePrompt({
           </button>
 
           <Link
-            to="/packages"
+            to="/dashboard/subscription"
             className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
           >
             Compare All Plans & Pricing →

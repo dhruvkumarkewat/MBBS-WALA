@@ -187,7 +187,7 @@ export function AiAssistantPage() {
           {!isPremium && userQueryCount >= 3 && (
             <div className="p-4 rounded-xl border border-orange-500/25 bg-orange-500/10 text-center">
               <p className="text-xs font-bold text-orange-400 mb-2">Free AI trial queries completed</p>
-              <Link to="/packages" className="btn-orange inline-flex px-4 py-1.5 text-xs font-bold shadow-md">
+              <Link to="/dashboard/subscription" className="btn-orange inline-flex px-4 py-1.5 text-xs font-bold shadow-md">
                 Upgrade to Pro
               </Link>
             </div>
@@ -890,7 +890,7 @@ export function FinderPage() {
           <Crown className="w-12 h-12 text-primary mx-auto mb-4" />
           <h3 className="text-xl font-black mb-2">Search & Pagination are Premium Features</h3>
           <p className="text-sm opacity-70 max-w-md mx-auto mb-6">Upgrade to Premium to search for specific colleges, apply filters, and access all pages of our database.</p>
-          <Link to="/packages" className="zn-cta px-8 py-3">Upgrade to Premium</Link>
+          <Link to="/dashboard/subscription" className="zn-cta px-8 py-3">Upgrade to Premium</Link>
         </div>
       ) : (
         <>
@@ -983,7 +983,7 @@ export function FinderPage() {
               <div className="mt-8 text-center border-t border-primary/10 pt-6">
                 <Crown className="w-5 h-5 text-primary mx-auto mb-2" />
                 <p className="text-sm font-bold mb-2">Upgrade to view all {total} colleges</p>
-                <Link to="/packages" className="zn-cta px-5 py-2 text-xs">Upgrade Now</Link>
+                <Link to="/dashboard/subscription" className="zn-cta px-5 py-2 text-xs">Upgrade Now</Link>
               </div>
             )}
           </>
@@ -1786,7 +1786,7 @@ export function DashSeatMatrixPage() {
             <Crown className="w-12 h-12 text-primary mx-auto mb-4" />
             <h3 className="text-xl font-black mb-2">Search & Filters are Premium Features</h3>
             <p className="text-sm opacity-70 max-w-md mx-auto mb-6">Upgrade to Premium to search for specific colleges, filter by quota/category, and view all seat matrix data.</p>
-            <Link to="/packages" className="zn-cta px-8 py-3">Upgrade to Premium</Link>
+            <Link to="/dashboard/subscription" className="zn-cta px-8 py-3">Upgrade to Premium</Link>
           </div>
         ) : (
           <table className="w-full text-sm min-w-[720px]">
