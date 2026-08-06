@@ -36,6 +36,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { apiJson } from '../../lib/api';
 import { usePremium, UpgradePrompt, PremiumGate } from '../../lib/premium';
 import { INDIAN_STATES, COUNSELLING_ROUNDS } from '../../lib/courses';
+import { PredictorResults } from './PredictorResults';
 
 export { ProfilePage } from './ProfilePage';
 export { SubscriptionPage } from './SubscriptionPage';
