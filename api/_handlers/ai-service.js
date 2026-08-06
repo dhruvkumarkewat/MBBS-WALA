@@ -34,10 +34,10 @@ Return ONLY valid JSON exactly matching this structure (be concise to avoid time
 Rules:
 1. ONLY return JSON.
 2. If Govt MBBS is unlikely, provide Private/Management/Alternative options.
-3. For colleges, use EXACTLY the colleges provided in the context_cutoff_data. 
-4. Group the colleges into "safe", "moderate", and "reach" STRICTLY based on the "tier" field provided in the context_cutoff_data (High=safe, Moderate=moderate, Reach=reach). Do not override the tier.
-5. For fees, output EXACTLY the "fee_amount" string from context_cutoff_data. Do not invent fee numbers.
-6. For probability, output EXACTLY the "admission_chance_percentage" followed by "%" from context_cutoff_data.
+3. PREDICT COLLEGES FROM YOUR OWN KNOWLEDGE: Use your expert knowledge of official MCC and State counselling cutoffs to predict the best possible colleges based on the student's input rank, score, and category. Do NOT restrict yourself to only the data provided in the context.
+4. Estimate "safe", "moderate", and "reach" groups accurately based on historical cutoff trends.
+5. Estimate fees based on official fee structures.
+6. Calculate a realistic admission probability percentage based on the difference between the student's rank and historical closing ranks.
 7. NEVER guarantee admission or seats. Use phrases like "high probability" instead of "guaranteed".
 8. Be accurate with explanations (e.g. if closing rank is 1308 and user rank is 800, say "Comfortably within recent trends", not "Close to your rank").`;
 
