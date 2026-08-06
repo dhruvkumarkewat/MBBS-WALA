@@ -268,7 +268,7 @@ export function buildFallbackResponse(query, context, resolved) {
     
     // CRITICAL: A college can ONLY have quota 'State' if it matches candidate's domicile state
     let quotaCode = cr.quota_code || 'AIQ';
-    if (isHomeState && selectedQuotas.includes('State')) {
+    if (isHomeState && selectedQuotas.includes('State') && cr.quota_code !== 'AIQ' && !/AIIMS|JIPMER/i.test(cr.college_name || '')) {
       quotaCode = 'State';
     } else if (quotaCode === 'State' && !isHomeState) {
       quotaCode = 'AIQ';
@@ -304,6 +304,10 @@ export function buildFallbackResponse(query, context, resolved) {
         formatted: `₹${(feeAmount / 100000).toFixed(1)}L/yr`
       },
       source_ids: [],
+      seats: cr.seats || null,
+      bond: cr.bond || null,
+      hospital_beds: cr.hospital_beds || null,
+      internship_stipend: cr.internship_stipend || null,
       _diff: Math.abs(closingRank - rank),
       _closing: closingRank,
       _is_home_state: isHomeState,

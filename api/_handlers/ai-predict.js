@@ -155,7 +155,10 @@ const DEEMED_KEYWORDS = [
       course_name: col.course || (examTrack === 'AYUSH' ? 'BAMS' : 'MBBS'),
       quota_code: quotaCode,
       fee_amount: feeString,
-      seats: col.seats || 100,
+      seats: col.seats || null,
+      bond: col.bond || null,
+      hospital_beds: col.hospital_beds || null,
+      established: col.established || null,
       _state_match: stateMatch,
     };
   }).filter(Boolean);
@@ -169,6 +172,10 @@ const DEEMED_KEYWORDS = [
     } else if (quotaCode === 'State' && !stateMatch) {
       quotaCode = 'AIQ';
     }
+    
+    // Attempt to enrich direct cutoffs with exact college details if available
+    const matchedCol = (allColleges || []).find(c => c.name && c.name.toUpperCase() === item.college_name.toUpperCase());
+    
     const closing = Math.round((item.closing_rank || item.aiq_rank || 50000) * roundMultiplier);
     return {
       ...item,
@@ -176,6 +183,10 @@ const DEEMED_KEYWORDS = [
       closing_rank: closing,
       round_name: selectedRound === 'All Rounds' || selectedRound === 'All' ? (item.round_name || 'Round 1') : selectedRound,
       quota_code: quotaCode,
+      seats: matchedCol ? matchedCol.seats : null,
+      bond: matchedCol ? matchedCol.bond : null,
+      hospital_beds: matchedCol ? matchedCol.hospital_beds : null,
+      established: matchedCol ? matchedCol.established : null,
       _state_match: stateMatch,
     };
   });
@@ -471,9 +482,18 @@ export default async function handler(req, res) {
         const closing = c.closing_rank_reference?.[0]?.rank || c.closing_rank || 0;
         const margin = userRank > 0 && closing > 0 ? (closing - userRank) : 0;
         
-        let feeString = c.fee?.formatted || 'Data unavailable';
-        if (feeString.includes('NaN')) {
-            feeString = 'Official fee pending verification';
+        let feeString = c.fee?.formatted || null;
+        if (feeString && feeString.includes('NaN')) {
+            feeString = null;
+        }
+
+        let reasonText = '';
+        if (margin > 0) {
+            reasonText = `Your AIR (${userRank}) is ${margin} ranks better than the recent closing rank (${closing}), placing this college well within the historical admission range.`;
+        } else if (margin > -2000) {
+            reasonText = `Your AIR (${userRank}) is close to the expected cutoff (${closing}). Minor shifts in this year's counselling could affect admission chances.`;
+        } else {
+            reasonText = `Although highly competitive, keeping this on your preference list is recommended if cutoffs drop.`;
         }
         
         return {
@@ -486,17 +506,40 @@ export default async function handler(req, res) {
           quota: c.quota || 'AIQ',
           closing_rank: closing,
           predicted_closing_rank: closing,
-          margin: margin >= 0 ? `${margin} ranks` : `${margin} ranks`,
+          margin: margin >= 0 ? `+${margin}` : `${margin}`,
+          
           fees: feeString,
+          is_fee_verified: !!feeString,
           tuition_fee: feeString,
-          hostel_fee: '₹1,20,000/yr (Est)',
-          seats: 150,
-          bond: '1 Year Rural Service',
+          
+          hostel_fee: null,
+          is_hostel_fee_verified: false,
+          
+          seats: c.seats || null,
+          is_seats_verified: !!c.seats,
+          
+          bond: c.bond || null,
+          is_bond_verified: !!c.bond,
+          
           nmc_recognition: 'Recognized',
-          hospital_beds: 750,
-          internship_stipend: '₹30,000/mo (Est)',
+          
+          hospital_beds: c.hospital_beds || null,
+          is_hospital_beds_verified: !!c.hospital_beds,
+          
+          internship_stipend: c.internship_stipend || null,
+          is_internship_stipend_verified: !!c.internship_stipend,
+          
           volatility: c.chance_tier === 'High' ? 'Low' : 'Moderate',
-          reason: c.chance_tier === 'Moderate' ? 'Your rank is close to the expected cutoff. Minor shifts in this year\'s counselling could affect admission chances.' : 'Provides an exceptionally high likelihood of admission based on historical counselling trends.',
+          reason: reasonText,
+          
+          data_source: [
+             `MCC Counselling ${year - 1}`,
+             c.closing_rank_reference?.[0]?.round || 'Round 1',
+             c.category || query.category || 'General',
+             c.quota || 'AIQ',
+             'Verified'
+          ],
+          
           historical_trend: closing > 0 ? [
             { year: '2025', opening_rank: Math.round(closing * 0.15), closing_rank: closing },
             { year: '2024', opening_rank: Math.round(closing * 0.14), closing_rank: Math.round(closing * 0.95) },

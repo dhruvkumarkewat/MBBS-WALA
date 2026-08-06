@@ -45,12 +45,11 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
     return acc;
   }, {});
 
-  const sortedCourses = Object.keys(groupedByCourse).sort((a, b) => a.localeCompare(b));
-
   return (
     <div className="space-y-6">
-      {sortedCourses.map((course) => {
-        const quotas = groupedByCourse[course];
+      {Object.entries(groupedByCourse)
+        .sort(([a], [b]) => (a === 'MBBS' ? -1 : b === 'MBBS' ? 1 : a.localeCompare(b)))
+        .map(([course, quotas]: [string, any]) => {
         const sortedQuotas = Object.keys(quotas).sort((a, b) => {
           if (a === 'AIQ') return -1;
           if (b === 'AIQ') return 1;
@@ -62,7 +61,7 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
         return (
           <div key={course} className="space-y-4">
             <h3 className={`text-sm font-black uppercase tracking-wider text-primary border-b-2 border-primary/20 pb-2`}>
-              {course} Colleges
+              Recommended {course} Colleges
             </h3>
             {sortedQuotas.map((quota) => (
               <div key={quota} className="space-y-3">
@@ -88,14 +87,9 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                     {!isReach ? (
                       <>
                         <div className="flex flex-wrap gap-2 mb-3">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${borderClass} bg-white/5`}>
-                            Admission Probability: {c.probability}
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${borderClass} bg-white/5 flex items-center gap-1`}>
+                            {c.confidence === 'High' ? 'Very Safe' : (c.confidence === 'Moderate' ? 'Moderate' : 'Reach')} <span className="opacity-50">|</span> {c.probability}
                           </span>
-                          {c.confidence && (
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${borderClass} bg-white/5`}>
-                              Confidence: {c.confidence}
-                            </span>
-                          )}
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
                             {c.expected_round}
                           </span>
@@ -106,57 +100,61 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                           )}
                         </div>
                         
-                        <div className="grid grid-cols-2 text-xs gap-3 mt-4 p-3 rounded-lg bg-white/5 border border-white/10">
-                          <div>
-                            <span className={s.muted}>Expected Closing: </span>
-                            <span className="font-bold text-orange-500">{c.predicted_closing_rank || c.closing_rank}</span>
-                          </div>
-                          {candidateRank > 0 && c.margin && (
-                            <div>
-                              <span className={s.muted}>Safety Margin: </span>
-                              <span className="font-bold text-emerald-500">{c.margin}</span>
+                        <div className="grid grid-cols-2 text-[11px] gap-4 mt-4 p-3 rounded-lg bg-white/5 border border-white/10">
+                          <div className="col-span-2 flex justify-between items-center bg-black/20 p-2 rounded">
+                            <div className="text-center">
+                              <div className={s.muted}>Your Rank</div>
+                              <div className="font-bold text-white">{candidateRank > 0 ? candidateRank : 'N/A'}</div>
                             </div>
-                          )}
+                            <div className="text-center">
+                              <div className={s.muted}>Expected Closing</div>
+                              <div className="font-bold text-orange-400">{c.predicted_closing_rank || c.closing_rank}</div>
+                            </div>
+                            <div className="text-center">
+                              <div className={s.muted}>Safety Margin</div>
+                              <div className={`font-bold ${c.margin && c.margin.includes('+') ? 'text-emerald-400' : 'text-rose-400'}`}>{c.margin || 'N/A'}</div>
+                            </div>
+                          </div>
+                          
                           <div className="col-span-2 md:col-span-1">
-                            <span className={s.muted}>Tuition: </span>
-                            <span className="font-bold">{c.tuition_fee || c.fees || 'N/A'}</span>
+                            <div className="flex justify-between">
+                              <span className={s.muted}>Tuition Fee: </span>
+                              {c.is_fee_verified ? <span className="text-emerald-400">✔ Verified</span> : <span className="text-yellow-500">⚠ Not Verified</span>}
+                            </div>
+                            <div className="font-bold">{c.tuition_fee || c.fees || 'See official prospectus'}</div>
                           </div>
-                          {c.hostel_fee && (
-                            <div className="col-span-2 md:col-span-1">
-                              <span className={s.muted}>Hostel: </span>
-                              <span className="font-bold">{c.hostel_fee}</span>
-                            </div>
-                          )}
-                          {c.seats && (
-                            <div className="col-span-2 md:col-span-1">
+                          
+                          <div className="col-span-2 md:col-span-1">
+                            <div className="flex justify-between">
                               <span className={s.muted}>Seats: </span>
-                              <span className="font-bold">{c.seats}</span>
+                              {c.is_seats_verified ? <span className="text-emerald-400">✔ Verified</span> : <span className="text-yellow-500">⚠ Not Verified</span>}
                             </div>
-                          )}
-                          {c.hospital_beds && (
-                            <div className="col-span-2 md:col-span-1">
+                            <div className="font-bold">{c.seats || 'Data unavailable'}</div>
+                          </div>
+                          
+                          <div className="col-span-2 md:col-span-1">
+                            <div className="flex justify-between">
                               <span className={s.muted}>Hospital Beds: </span>
-                              <span className="font-bold">{c.hospital_beds}</span>
+                              {c.is_hospital_beds_verified ? <span className="text-emerald-400">✔ Verified</span> : <span className="text-yellow-500">⚠ Not Verified</span>}
                             </div>
-                          )}
-                          {c.internship_stipend && (
-                            <div className="col-span-2 md:col-span-1">
+                            <div className="font-bold">{c.hospital_beds || 'Data unavailable'}</div>
+                          </div>
+                          
+                          <div className="col-span-2 md:col-span-1">
+                            <div className="flex justify-between">
                               <span className={s.muted}>Stipend: </span>
-                              <span className="font-bold">{c.internship_stipend}</span>
+                              {c.is_internship_stipend_verified ? <span className="text-emerald-400">✔ Verified</span> : <span className="text-yellow-500">⚠ Not Verified</span>}
                             </div>
-                          )}
-                          {c.volatility && (
-                            <div className="col-span-2 md:col-span-1">
-                              <span className={s.muted}>Cutoff Volatility: </span>
-                              <span className="font-bold">{c.volatility}</span>
-                            </div>
-                          )}
-                          {c.bond && (
-                            <div className="col-span-2">
+                            <div className="font-bold">{c.internship_stipend || 'Data unavailable'}</div>
+                          </div>
+                          
+                          <div className="col-span-2">
+                            <div className="flex justify-between">
                               <span className={s.muted}>Bond: </span>
-                              <span className="font-bold text-rose-500">{c.bond}</span>
+                              {c.is_bond_verified ? <span className="text-emerald-400">✔ Verified</span> : <span className="text-yellow-500">⚠ Not Verified</span>}
                             </div>
-                          )}
+                            <div className="font-bold text-rose-400">{c.bond || 'Data unavailable'}</div>
+                          </div>
                         </div>
 
                         {Array.isArray(c.historical_trend) && c.historical_trend.length > 0 && (
@@ -184,8 +182,23 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                             </div>
                           </div>
                         )}
+                        
+                        {Array.isArray(c.data_source) && c.data_source.length > 0 && (
+                          <div className="mt-4">
+                            <h5 className={`text-[10px] uppercase font-bold mb-2 ${s.muted}`}>Data Source</h5>
+                            <div className="flex flex-wrap gap-1.5 text-[9px]">
+                              {c.data_source.map((ds: string, idx: number) => (
+                                <span key={idx} className={`px-2 py-0.5 rounded bg-white/5 ${ds === 'Verified' ? 'text-emerald-400 font-bold border border-emerald-500/20 bg-emerald-500/10' : 'text-slate-400'}`}>
+                                  {ds === 'Verified' ? '✓ Verified' : ds}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
-                        <p className={`text-[11px] mt-3 italic ${s.muted}`}>💡 {c.reason}</p>
+                        <div className={`mt-4 p-3 rounded bg-blue-500/5 border border-blue-500/10`}>
+                          <p className={`text-[11px] leading-relaxed italic ${s.muted}`}>💡 {c.reason}</p>
+                        </div>
                       </>
                     ) : (
                       <div className="grid grid-cols-2 text-xs gap-2 mt-2">
