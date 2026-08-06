@@ -89,7 +89,7 @@ function DarkSearchableSelect({ value, onChange, options, placeholder }: { value
 }
 
 export default function Compare() {
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const [colleges, setColleges] = useState<College[]>([]);
   const [course, setCourse] = useState('All');
   const [a, setA] = useState('');
@@ -149,12 +149,28 @@ export default function Compare() {
     return () => controller.abort();
   }, [a, b]);
 
+  useEffect(() => {
+    if (a && b) {
+      const currentParams = Object.fromEntries(params);
+      if (a) currentParams.a = a;
+      if (b) currentParams.b = b;
+      if (course !== 'All') {
+        currentParams.course = course;
+      } else {
+        delete currentParams.course;
+      }
+      setParams(currentParams, { replace: true });
+    }
+  }, [a, b, course, params, setParams]);
+
   const options = useMemo(
     () =>
-      colleges.map((c) => ({
-        id: String(c.id),
-        label: `${c.name}${c.city ? ` · ${c.city}` : ''}${c.course ? ` · ${c.course}` : ''}`,
-      })),
+      colleges
+        .filter(c => c.name && c.name.trim() !== '-' && c.name.trim() !== '')
+        .map((c) => ({
+          id: String(c.id),
+          label: `${c.name}${c.city && c.city.trim() !== '-' ? ` · ${c.city}` : ''}${c.course ? ` · ${c.course}` : ''}`,
+        })),
     [colleges]
   );
 
