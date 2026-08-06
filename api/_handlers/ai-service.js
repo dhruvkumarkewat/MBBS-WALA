@@ -144,7 +144,6 @@ const PROVIDER_CONFIGS = {
       };
     },
   },
-  },
 };
 
 for (let i = 1; i <= 15; i++) {
