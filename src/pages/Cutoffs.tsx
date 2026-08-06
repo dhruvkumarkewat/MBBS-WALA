@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Table, { type Column } from '../components/ui/Table';
 import SearchInput from '../components/ui/SearchInput';
@@ -52,7 +53,7 @@ export default function Cutoffs() {
       {
         id: 'college',
         header: 'College',
-        cell: (r) => <span className="font-semibold">{r.college_name}</span>,
+        cell: (r) => <Link to={`/colleges/${encodeURIComponent(r.college_name)}`} className="font-semibold hover:underline decoration-orange-500 underline-offset-4">{r.college_name}</Link>,
       },
       {
         id: 'cat',

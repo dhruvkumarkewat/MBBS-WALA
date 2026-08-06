@@ -22,6 +22,7 @@ import choices from './_handlers/choices.js';
 import collegeCompare from './_handlers/college-compare.js';
 import collegeMatches from './_handlers/college-matches.js';
 import colleges from './_handlers/colleges.js';
+import collegeDetail from './_handlers/college-detail.js';
 import competitionMap from './_handlers/competition-map.js';
 import coupons from './_handlers/coupons.js';
 import cutoffs from './_handlers/cutoffs.js';
@@ -70,6 +71,7 @@ const routes = {
   'college-compare': collegeCompare,
   'college-matches': collegeMatches,
   'colleges': colleges,
+  'college-detail': collegeDetail,
   'competition-map': competitionMap,
   'coupons': coupons,
   'cutoffs': cutoffs,

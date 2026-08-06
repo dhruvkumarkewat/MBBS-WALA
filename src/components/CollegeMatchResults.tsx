@@ -135,9 +135,11 @@ export default function CollegeMatchResults({
                       </span>
                     )}
                   </div>
-                  <h3 className={`font-bold text-base sm:text-lg leading-snug ${dark ? 'text-white' : 'text-black'}`}>
-                    {m.college_name}
-                  </h3>
+                  <Link to={`/colleges/${encodeURIComponent(m.college_name)}`} className="group hover:underline decoration-orange-500 underline-offset-4 decoration-2">
+                    <h3 className={`font-bold text-base sm:text-lg leading-snug group-hover:text-orange-500 transition-colors ${dark ? 'text-white' : 'text-black'}`}>
+                      {m.college_name}
+                    </h3>
+                  </Link>
                   <p className={`text-sm font-medium flex items-center gap-1.5 mt-1 ${dark ? 'text-white/50' : 'text-gray-500'}`}>
                     <MapPin className="w-3.5 h-3.5" /> {m.state}
                   </p>

@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import {
   X,
   Building2,
@@ -271,7 +272,9 @@ export default function StateDetailPanel({ state, onClose, dark }: Props) {
                     <tbody>
                       {state.seat_rows!.slice(0, 8).map((r, i) => (
                         <tr key={i} className={dark ? 'border-t border-white/5' : 'border-t border-primary-dark/5'}>
-                          <td className="p-2.5 font-semibold max-w-[180px] truncate">{String(r.college_name || '—')}</td>
+                          <td className="p-2.5 font-semibold max-w-[180px] truncate">
+                            <Link to={`/colleges/${encodeURIComponent(String(r.college_name || ''))}`} className="hover:underline decoration-orange-500 underline-offset-4">{String(r.college_name || '—')}</Link>
+                          </td>
                           <td className="p-2.5 tabular-nums">{formatNum(Number(r.total_seats))}</td>
                           <td className="p-2.5 tabular-nums">{formatNum(Number(r.all_india))}</td>
                           <td className="p-2.5 tabular-nums">{formatNum(Number(r.open_seats))}</td>
@@ -300,7 +303,9 @@ export default function StateDetailPanel({ state, onClose, dark }: Props) {
                     <tbody>
                       {state.cutoff_rows!.slice(0, 10).map((r, i) => (
                         <tr key={i} className={dark ? 'border-t border-white/5' : 'border-t border-primary-dark/5'}>
-                          <td className="p-2.5 font-semibold max-w-[160px] truncate">{String(r.college_name || '—')}</td>
+                          <td className="p-2.5 font-semibold max-w-[160px] truncate">
+                            <Link to={`/colleges/${encodeURIComponent(String(r.college_name || ''))}`} className="hover:underline decoration-orange-500 underline-offset-4">{String(r.college_name || '—')}</Link>
+                          </td>
                           <td className="p-2.5">{String(r.category || '—')}</td>
                           <td className="p-2.5 tabular-nums">{formatNum(Number(r.aiq_rank))}</td>
                           <td className="p-2.5 tabular-nums">{formatNum(Number(r.aiq_score))}</td>

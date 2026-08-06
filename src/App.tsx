@@ -37,6 +37,7 @@ const Careers = lazy(() => import('./pages/Careers'));
 const Login = lazy(() => import('./pages/Login'));
 const Policy = lazy(() => import('./pages/Policy'));
 const Colleges = lazy(() => import('./pages/Colleges'));
+const CollegeDetailPage = lazy(() => import('./pages/dashboard/college-detail/CollegeDetailPage'));
 const Cutoffs = lazy(() => import('./pages/Cutoffs'));
 const SeatMatrix = lazy(() => import('./pages/SeatMatrix'));
 const Contact = lazy(() => import('./pages/Contact'));
@@ -130,6 +131,7 @@ export default function App() {
           <Route path="counselor/login" element={<L><Login defaultPortal="admin" /></L>} />
           <Route path="staff/login" element={<L><Login defaultPortal="admin" /></L>} />
           <Route path="colleges" element={<L><Colleges /></L>} />
+          <Route path="colleges/:id" element={<L><CollegeDetailPage /></L>} />
           <Route path="cutoffs" element={<L><Cutoffs /></L>} />
           <Route path="seat-matrix" element={<L><SeatMatrix /></L>} />
           <Route path="compare" element={<L><Compare /></L>} />

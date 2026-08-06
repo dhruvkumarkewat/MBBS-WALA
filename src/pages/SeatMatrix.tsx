@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { MEDICAL_COURSES } from '../lib/courses';
 
@@ -135,7 +136,7 @@ export default function SeatMatrix() {
             <tbody>
               {rows.map((r, i) => (
                 <tr key={r.id} className={i % 2 ? 'bg-grey-bg-light' : 'bg-white'}>
-                  <td className="p-3 font-semibold">{r.college_name}</td>
+                  <td className="p-3 font-semibold"><Link to={`/colleges/${encodeURIComponent(r.college_name)}`} className="hover:underline decoration-orange-500 underline-offset-4">{r.college_name}</Link></td>
                   <td className="p-3">
                     <span className={`text-xs font-bold px-2 py-0.5 rounded border border-black/10 ${
                       r.college_kind === 'Private' ? 'bg-orange-bg' : 'bg-green-bg'

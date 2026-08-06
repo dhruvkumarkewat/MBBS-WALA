@@ -36,7 +36,7 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
           </h4>
           {grouped[quota].map((c: any, i: number) => (
             <div key={i} className={`rounded-xl border ${bgClass} ${borderClass} p-4`}>
-              <p className="font-bold text-sm mb-1">{c.name}</p>
+              <Link to={`/colleges/${encodeURIComponent(c.name)}`} className="font-bold text-sm mb-1 hover:underline decoration-orange-500 underline-offset-4">{c.name}</Link>
               {!isReach ? (
                 <>
                   <div className="flex flex-wrap gap-2 mb-2">
@@ -225,7 +225,9 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
               <tbody>
                 {(aiResponse.management_quota_opportunities || []).map((mq: any, i: number) => (
                   <tr key={i} className={`border-b ${s.dark ? 'border-white/5' : 'border-slate-100'}`}>
-                    <td className="py-2 font-semibold pr-4">{mq.college}</td>
+                    <td className="py-2 font-semibold pr-4">
+                      <Link to={`/colleges/${encodeURIComponent(mq.college)}`} className="hover:underline decoration-orange-500 underline-offset-4">{mq.college}</Link>
+                    </td>
                     <td className="py-2 pr-4">{mq.expected_rank}</td>
                     <td className="py-2 pr-4">{mq.approx_fees}</td>
                     <td className="py-2 pr-4 font-bold text-amber-500">{mq.total_cost}</td>
