@@ -62,7 +62,7 @@ export async function retrieveContext(query) {
     .from('cutoffs')
     .select('*')
     .eq('category', category)
-    .gte('closing_rank', Math.max(1, Math.floor(candidateRank * 0.4)))
+    .gte('closing_rank', Math.max(1, candidateRank - 15000))
     .order('closing_rank', { ascending: true })
     .limit(3000);
 

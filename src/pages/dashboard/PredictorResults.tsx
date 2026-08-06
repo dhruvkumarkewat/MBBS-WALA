@@ -332,22 +332,21 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             <span className="text-lg">🟡</span>
             <h3 className="font-black text-sm uppercase tracking-wider">Moderate Colleges</h3>
           </div>
-          {isPremium ? (
-            <CollegeGroupList 
-              colleges={preds?.moderate || []} 
-              s={s} isPremium={isPremium} maxFreeCount={100}
-              bgClass={s.dark ? 'bg-amber-900/10' : 'bg-amber-50'} 
-              borderClass="border-amber-500/30" 
-              isReach={false}
-              onCollegeClick={setSelectedCollegeInfo}
-              candidateRank={aiResponse.query?.score_or_rank?.value || 0}
-            />
-          ) : (
-            <div className="p-6 rounded-xl border border-primary/20 bg-primary/5 text-center">
-               <Crown className="w-6 h-6 text-primary mx-auto mb-3" />
-               <p className="text-sm font-bold mb-2">Premium Feature</p>
-               <p className="text-xs opacity-70 mb-4">Upgrade to view {preds?.moderate?.length || 0} Moderate colleges where you have a 40-70% chance of admission.</p>
-               <Link to="/dashboard/subscription" className="text-xs bg-primary text-white px-5 py-2.5 rounded-full font-bold inline-block hover:scale-105 transition">Upgrade Now</Link>
+          <CollegeGroupList 
+            colleges={preds?.moderate || []} 
+            s={s} isPremium={isPremium} maxFreeCount={3}
+            bgClass={s.dark ? 'bg-amber-900/10' : 'bg-amber-50'} 
+            borderClass="border-amber-500/30" 
+            isReach={false}
+            onCollegeClick={setSelectedCollegeInfo}
+            candidateRank={aiResponse.query?.score_or_rank?.value || 0}
+          />
+          
+          {!isPremium && (preds?.moderate?.length || 0) > 3 && (
+             <div className="mt-4 p-4 rounded-xl border border-primary/20 bg-primary/5 text-center">
+               <Crown className="w-5 h-5 text-primary mx-auto mb-2" />
+               <p className="text-xs font-bold mb-2">Upgrade to Premium to view {(preds?.moderate?.length || 0) - 3} more Moderate colleges.</p>
+               <Link to="/dashboard/subscription" className="text-[10px] bg-primary text-white px-3 py-1.5 rounded-full font-bold inline-block">Upgrade Now</Link>
              </div>
           )}
         </div>
@@ -360,22 +359,21 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             <span className="text-lg">🔴</span>
             <h3 className="font-black text-sm uppercase tracking-wider">Reach Colleges</h3>
           </div>
-          {isPremium ? (
-            <CollegeGroupList 
-              colleges={preds?.reach || []} 
-              s={s} isPremium={isPremium} maxFreeCount={100}
-              bgClass={s.dark ? 'bg-orange-900/10' : 'bg-orange-50'} 
-              borderClass="border-orange-500/30" 
-              isReach={true}
-              onCollegeClick={setSelectedCollegeInfo}
-              candidateRank={aiResponse.query?.score_or_rank?.value || 0}
-            />
-          ) : (
-            <div className="p-6 rounded-xl border border-primary/20 bg-primary/5 text-center">
-               <Crown className="w-6 h-6 text-primary mx-auto mb-3" />
-               <p className="text-sm font-bold mb-2">Premium Feature</p>
-               <p className="text-xs opacity-70 mb-4">Upgrade to view {preds?.reach?.length || 0} Reach colleges that are highly competitive.</p>
-               <Link to="/dashboard/subscription" className="text-xs bg-primary text-white px-5 py-2.5 rounded-full font-bold inline-block hover:scale-105 transition">Upgrade Now</Link>
+          <CollegeGroupList 
+            colleges={preds?.reach || []} 
+            s={s} isPremium={isPremium} maxFreeCount={3}
+            bgClass={s.dark ? 'bg-orange-900/10' : 'bg-orange-50'} 
+            borderClass="border-orange-500/30" 
+            isReach={true}
+            onCollegeClick={setSelectedCollegeInfo}
+            candidateRank={aiResponse.query?.score_or_rank?.value || 0}
+          />
+          
+          {!isPremium && (preds?.reach?.length || 0) > 3 && (
+             <div className="mt-4 p-4 rounded-xl border border-primary/20 bg-primary/5 text-center">
+               <Crown className="w-5 h-5 text-primary mx-auto mb-2" />
+               <p className="text-xs font-bold mb-2">Upgrade to Premium to view {(preds?.reach?.length || 0) - 3} more Reach colleges.</p>
+               <Link to="/dashboard/subscription" className="text-[10px] bg-primary text-white px-3 py-1.5 rounded-full font-bold inline-block">Upgrade Now</Link>
              </div>
           )}
         </div>
