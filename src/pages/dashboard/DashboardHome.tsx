@@ -663,13 +663,25 @@ export default function DashboardHome() {
 
       {/* Tools grid — images restored + readable labels */}
       <div>
-        <div className="flex items-center justify-between mb-3 px-0.5">
+        <div className="flex items-center justify-between mb-2 px-0.5">
           <h3 className={`font-bold text-[15px] ${dark ? 'text-white' : 'text-[#0f172a]'}`}>
             Quick tools
           </h3>
           <Link to="/dashboard/finder" className="text-xs font-bold text-orange-500 hover:underline">
             View all
           </Link>
+        </div>
+        <div className={`flex items-start gap-2 mb-3 px-3 py-2.5 rounded-xl text-[11px] font-medium leading-snug ${
+          dark ? 'bg-amber-500/8 border border-amber-500/20 text-amber-200/70' : 'bg-amber-50 border border-amber-200/70 text-amber-700'
+        }`}>
+          <span className="shrink-0 mt-0.5">⚠️</span>
+          <span>
+            Results shown by these tools are AI-assisted estimates based on historical data.
+            For accurate, personalised counselling guidance, please{' '}
+            <Link to="/dashboard/support" className="font-bold underline underline-offset-2 hover:opacity-80">
+              contact your counsellor
+            </Link>.
+          </span>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {tools.map((tool) => (
