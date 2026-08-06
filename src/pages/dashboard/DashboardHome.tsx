@@ -25,6 +25,7 @@ import {
   CheckCircle2,
   AlertCircle,
   IndianRupee,
+  Newspaper,
 } from 'lucide-react';
 import { useDashboard } from '../../contexts/DashboardContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -150,6 +151,61 @@ function ActivityChart({ dark }: { dark: boolean }) {
         <polygon fill="url(#actFill)" points={`0,64 ${points} 180,64`} />
       </svg>
     </div>
+  );
+}
+
+function NewsWidget({ dark }: { dark: boolean }) {
+  const [headline, setHeadline] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('https://newsdata.io/api/1/news?apikey=pub_cff7c67139b447a58b649e9cc2d292ac&q=neet OR "medical college"&country=in&language=en')
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.results && d.results.length > 0) {
+          setHeadline(d.results[0]);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <Link
+      to="/dashboard/notifications"
+      className={`rounded-2xl p-4 flex flex-col gap-2 transition-all hover:-translate-y-0.5 ${
+        dark
+          ? 'bg-gradient-to-br from-teal-500/10 to-emerald-500/5 border border-teal-500/20 shadow-lg shadow-teal-500/5 hover:border-teal-500/40'
+          : 'bg-gradient-to-br from-teal-50 to-emerald-50/50 border border-teal-200/50 shadow-sm hover:border-teal-300'
+      }`}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-teal-600 dark:text-teal-400">
+          <Newspaper className="w-4 h-4" />
+          <span className="text-[10px] font-extrabold uppercase tracking-widest">Live News</span>
+        </div>
+        <ArrowRight className="w-3.5 h-3.5 text-teal-600/50 dark:text-teal-400/50" />
+      </div>
+      {loading ? (
+        <div className="space-y-1.5">
+          <div className="h-4 bg-teal-500/20 rounded animate-pulse w-3/4" />
+          <div className="h-3 bg-teal-500/10 rounded animate-pulse w-1/2" />
+        </div>
+      ) : headline ? (
+        <div>
+          <p className={`text-sm font-bold line-clamp-2 leading-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
+            {headline.title}
+          </p>
+          <p className={`text-[10px] mt-1.5 font-semibold ${dark ? 'text-teal-200/50' : 'text-teal-700/60'}`}>
+            {headline.source_id || 'Update'} • {new Date(headline.pubDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </p>
+        </div>
+      ) : (
+        <p className={`text-xs font-medium ${dark ? 'text-white/50' : 'text-slate-500'}`}>
+          No latest updates found.
+        </p>
+      )}
+    </Link>
   );
 }
 
@@ -371,6 +427,8 @@ export default function DashboardHome() {
                 Inbox <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
+            
+            <NewsWidget dark={dark} />
           </div>
         </div>
       </section>
