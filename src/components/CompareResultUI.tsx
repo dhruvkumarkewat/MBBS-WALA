@@ -169,7 +169,7 @@ export function CompareResultUI({ payload, s, isPremium }: { payload: any, s: an
       {/* Tabs for Detailed Breakdown */}
       <div className="mt-8">
         <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar border-b border-gray-200 dark:border-gray-800">
-          {['overview', 'admission', 'fees', 'hospital', 'infrastructure', 'trends'].map(tab => (
+          {['overview', 'admission', 'fees', 'hospital', 'infrastructure'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -291,32 +291,6 @@ function DetailedTable({ section, ai, a, b, s }: any) {
         {renderRow('Sports Facilities', ai.infrastructure?.sports?.a, ai.infrastructure?.sports?.b)}
         {renderRow('Food Quality', ai.student_life?.food_rating?.a, ai.student_life?.food_rating?.b)}
         {renderRow('City Climate', ai.location?.climate?.a, ai.location?.climate?.b)}
-      </div>
-    );
-  }
-
-  if (section === 'trends') {
-    const data = ai.cutoff_trends?.General || [];
-    return (
-      <div className={`rounded-xl border p-6 ${s.card}`}>
-        <h3 className="font-bold mb-6">General Category Cutoff Trends (AIQ Closing Rank)</h3>
-        {data.length > 0 ? (
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                <XAxis dataKey="year" tick={{ fontSize: 12, fill: s.dark ? '#888' : '#666' }} />
-                <YAxis reversed tick={{ fontSize: 12, fill: s.dark ? '#888' : '#666' }} />
-                <Tooltip wrapperClassName={s.dark ? 'dark' : ''} />
-                <Legend wrapperStyle={{ fontSize: '12px' }} />
-                <Line type="monotone" name={a.name.slice(0,20)} dataKey="a_closing" stroke="#f97316" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                <Line type="monotone" name={b.name.slice(0,20)} dataKey="b_closing" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <p className="text-sm opacity-60">Not enough historical cutoff data available.</p>
-        )}
       </div>
     );
   }
