@@ -62,7 +62,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       const body = await parseBody(req);
-      const collegeId = Number(body?.college_id || req.query?.college_id);
+      const collegeId = body?.college_id || req.query?.college_id;
       if (!collegeId) return res.status(400).json({ error: 'college_id is required' });
 
       // Ensure college exists
@@ -99,7 +99,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'DELETE') {
       const body = await parseBody(req);
-      const collegeId = Number(body?.college_id || req.body?.college_id || req.query?.college_id);
+      const collegeId = body?.college_id || req.body?.college_id || req.query?.college_id;
       if (!collegeId) return res.status(400).json({ error: 'college_id is required' });
       const { error } = await supabase
         .from('saved_colleges')
