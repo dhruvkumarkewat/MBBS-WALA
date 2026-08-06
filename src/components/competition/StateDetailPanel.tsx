@@ -82,7 +82,7 @@ export default function StateDetailPanel({ state, onClose, dark }: Props) {
           <Kpi dark={dark} icon={Building2} label="Colleges" value={formatNum(state.total_colleges)} sub={`${state.govt_colleges}G · ${state.private_colleges}P`} />
           <Kpi dark={dark} icon={GraduationCap} label="Total seats" value={formatNum(state.total_seats)} />
           <Kpi dark={dark} icon={Target} label="AIQ seats" value={formatNum(state.aiq_seats)} />
-          <Kpi dark={dark} icon={Layers} label="State quota" value={formatNum(state.state_quota_seats)} />
+          <Kpi dark={dark} icon={Layers} label="SQ seats" value={formatNum(state.state_quota_seats)} />
           <Kpi dark={dark} icon={TrendingUp} label="Avg close rank" value={formatNum(state.avg_closing_rank)} />
           {state.lowest_closing_rank != null && (
             <Kpi dark={dark} icon={Target} label="Lowest CR" value={formatNum(state.lowest_closing_rank)} />
