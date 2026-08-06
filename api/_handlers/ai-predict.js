@@ -62,7 +62,7 @@ export async function retrieveContext(query) {
     .from('cutoffs')
     .select('*')
     .eq('category', category)
-    .limit(500);
+    .limit(3000);
 
   if (examTrack === 'MBBS_BDS') {
     cutoffQuery = cutoffQuery.in('course_name', ['MBBS', 'BDS']);
@@ -82,11 +82,11 @@ export async function retrieveContext(query) {
 
   const { data: directCutoffs } = await cutoffQuery;
 
-  // 4. Also fetch from colleges table to ensure full 1,000 college database coverage
+  // 4. Also fetch from colleges table to ensure full database coverage
   let collegesQuery = supabase
     .from('colleges')
     .select('id, name, state, type, feeGovt, feePvt, seats, cutoff, hospital_beds, established, bond, counselling, course')
-    .limit(1000);
+    .limit(3000);
 
   if (examTrack === 'MBBS_BDS') {
     collegesQuery = collegesQuery.in('course', ['MBBS', 'BDS']);
@@ -224,11 +224,11 @@ const DEEMED_KEYWORDS = [
     const closing = c.aiq_rank || c.closing_rank || 0;
     let tier = 'Unlikely';
     if (closing && candidateRank > 0) {
-      if (closing >= candidateRank * 1.05 && closing <= candidateRank * 3.0) {
+      if (closing >= candidateRank * 0.95) { // Safe: Closes slightly below or anywhere above their rank
         tier = 'High';
-      } else if (closing >= candidateRank * 0.85 && closing < candidateRank * 1.05) {
+      } else if (closing >= candidateRank * 0.75 && closing < candidateRank * 0.95) { // Moderate: Within 25% reach
         tier = 'Moderate';
-      } else if (closing >= candidateRank * 0.35 && closing < candidateRank * 0.85) {
+      } else if (closing >= candidateRank * 0.40 && closing < candidateRank * 0.75) { // Reach: Ambitious but possible
         tier = 'Reach';
       }
     }
@@ -269,7 +269,7 @@ const DEEMED_KEYWORDS = [
     .slice(0, 20);
   const reachTier = eligible
     .filter((c) => c._tier === 'Reach')
-    .sort((a, b) => (b._state_match ? 1 : 0) - (a._state_match ? 1 : 0) || b._closing - a._closing)
+    .sort((a, b) => (b._state_match ? 1 : 0) - (a._state_match ? 1 : 0) || a._diff - b._diff)
     .slice(0, 15);
 
   const finalClosingRanks = [...highTier, ...modTier, ...reachTier];
