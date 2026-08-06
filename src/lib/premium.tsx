@@ -23,7 +23,7 @@ const PremiumContext = createContext<PremiumState>({
 });
 
 export function PremiumProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [isPremium, setIsPremium] = useState(false);
   const [status, setStatus] = useState<'free' | 'active' | 'expired' | 'cancelled'>('free');
   const [plan, setPlan] = useState('Free Plan');
@@ -31,6 +31,8 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const checkStatus = useCallback(async () => {
+    if (authLoading) return; // Wait for Auth context to finish loading before making a decision
+
     if (!user) {
       setIsPremium(false);
       setStatus('free');
@@ -91,7 +93,7 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   useEffect(() => {
     checkStatus();
