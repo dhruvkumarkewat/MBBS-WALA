@@ -148,7 +148,20 @@ export default function CompetitionMapModule({ dark, embedded }: Props) {
     ? 'bg-[#071017] text-white'
     : 'bg-gradient-to-b from-[#f6fbfa] to-white text-primary-dark';
 
-  const { isPremium } = usePremium();
+  const { isPremium, loading: premiumLoading } = usePremium();
+
+  if (premiumLoading) {
+    return (
+      <div className={`${embedded ? '' : 'min-h-[calc(100vh-6rem)] flex items-center justify-center p-4'} ${shell}`}>
+        <div className="flex flex-col items-center justify-center text-center p-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary-dark/40 mb-4" />
+          <p className={`text-sm font-medium ${dark ? 'text-white/60' : 'text-gray-500'}`}>
+            Verifying premium status...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isPremium) {
     return (
