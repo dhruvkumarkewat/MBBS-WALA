@@ -13,9 +13,9 @@ Return ONLY valid JSON exactly matching this structure (be concise to avoid time
 {
   "admission_summary": { "status": "Excellent Chances|High Chances|Moderate Chances|Low Chances|Very Low Chances", "data_reliability": "High (Based on 5-Year Trends)", "expected_probability": "85%", "explanation": "2-3 sentences explaining why" },
   "college_predictions": {
-    "safe": [{ "name": "...", "probability": "96%", "expected_round": "Round 1", "fees": "...", "quota": "MUST BE EXACTLY 'AIQ' OR 'State' OR 'Management Quota'", "opening_rank": "...", "closing_rank": "...", "reason": "..." }],
-    "moderate": [{ "name": "...", "probability": "65%", "expected_round": "Round 2", "fees": "...", "quota": "MUST BE EXACTLY 'AIQ' OR 'State' OR 'Management Quota'", "opening_rank": "...", "closing_rank": "...", "reason": "..." }],
-    "reach": [{ "name": "...", "probability": "30%", "expected_round": "Stray", "fees": "...", "quota": "MUST BE EXACTLY 'AIQ' OR 'State' OR 'Management Quota'", "opening_rank": "...", "closing_rank": "...", "reason": "..." }]
+    "safe": [{ "name": "...", "course": "MBBS or BDS", "probability": "96%", "expected_round": "Round 1", "category": "General/OBC/SC/ST/etc", "seats": "...", "tuition_fee": "...", "hostel_fee": "...", "bond": "...", "nmc_recognition": "...", "internship_hospital": "...", "quota": "MUST BE EXACTLY 'AIQ' OR 'State' OR 'Management Quota'", "predicted_closing_rank": "...", "margin": "...", "historical_trend": [{ "year": "2025", "closing_rank": "..." }, { "year": "2024", "closing_rank": "..." }, { "year": "2023", "closing_rank": "..." }], "reason": "..." }],
+    "moderate": [{ "name": "...", "course": "MBBS or BDS", "probability": "65%", "expected_round": "Round 2", "category": "General/OBC/SC/ST/etc", "seats": "...", "tuition_fee": "...", "hostel_fee": "...", "bond": "...", "nmc_recognition": "...", "internship_hospital": "...", "quota": "MUST BE EXACTLY 'AIQ' OR 'State' OR 'Management Quota'", "predicted_closing_rank": "...", "margin": "...", "historical_trend": [{ "year": "2025", "closing_rank": "..." }, { "year": "2024", "closing_rank": "..." }, { "year": "2023", "closing_rank": "..." }], "reason": "..." }],
+    "reach": [{ "name": "...", "course": "MBBS or BDS", "probability": "30%", "expected_round": "Stray", "category": "General/OBC/SC/ST/etc", "seats": "...", "tuition_fee": "...", "hostel_fee": "...", "bond": "...", "nmc_recognition": "...", "internship_hospital": "...", "quota": "MUST BE EXACTLY 'AIQ' OR 'State' OR 'Management Quota'", "predicted_closing_rank": "...", "margin": "...", "historical_trend": [{ "year": "2025", "closing_rank": "..." }, { "year": "2024", "closing_rank": "..." }, { "year": "2023", "closing_rank": "..." }], "reason": "..." }]
   },
   "unlikely_mbbs_guidance": { "active": true, "message": "...", "private_options": [{ "name": "...", "state": "...", "fees": "...", "probability": "...", "rounds": "...", "management_quota": true, "nri_seats": true }] },
   "management_quota_opportunities": [{ "college": "...", "expected_rank": "...", "approx_fees": "...", "hostel_fees": "...", "bond": "...", "total_cost": "...", "chances": "...", "donation_expected": true }],
@@ -27,7 +27,7 @@ Return ONLY valid JSON exactly matching this structure (be concise to avoid time
   "fee_comparison": { "government": "...", "private": "...", "management": "...", "nri": "...", "total_course_cost": "...", "hostel": "...", "miscellaneous": "...", "bond": "...", "penalty": "..." },
   "documents_required": ["NEET Admit Card", "Rank Card", "10th", "12th", "Transfer Certificate"],
   "important_advice": ["...", "..."],
-  "ai_recommendation": "Based on previous years' counselling trends, you have a very high probability of securing admission to a premier government medical college through AIQ.",
+  "ai_recommendation": "Based on previous years' counselling trends...",
   "smart_suggestions": ["...", "..."],
   "dashboard_cards": { "govt_mbbs": "Low", "pvt_mbbs": "Moderate", "mgmt_quota": "High", "bds": "High", "ayush": "High", "scholarships": "Eligible", "expected_fees": "15L", "expected_rounds": "2", "confidence_score": "85%" }
 }
@@ -36,10 +36,10 @@ Rules:
 2. If Govt MBBS is unlikely, provide Private/Management/Alternative options.
 3. PREDICT COLLEGES FROM YOUR OWN KNOWLEDGE: Use your expert knowledge of official MCC and State counselling cutoffs to predict the best possible colleges based on the student's input rank, score, and category. Do NOT restrict yourself to only the data provided in the context.
 4. Estimate "safe", "moderate", and "reach" groups accurately based on historical cutoff trends.
-5. Estimate fees based on official fee structures.
-6. Calculate a realistic admission probability percentage based on the difference between the student's rank and historical closing ranks.
-7. NEVER guarantee admission or seats. Use phrases like "high probability" instead of "guaranteed".
-8. Be accurate with explanations (e.g. if closing rank is 1308 and user rank is 800, say "Comfortably within recent trends", not "Close to your rank").`;
+5. Provide realistic tuition fees, hostel fees, and bond details.
+6. Calculate a realistic admission probability percentage.
+7. CLEARLY designate the course (MBBS vs BDS). If the user asks for MBBS/BDS, provide both but mark the 'course' field accurately.
+8. Provide multi-year trend data (2025, 2024, 2023) to show closing rank history. Use realistic historical estimates.`;
 
 // ── Provider Calling ────────────────────────────────────────────────────────
 

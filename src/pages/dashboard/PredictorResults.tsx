@@ -35,77 +35,141 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
     return probB - probA;
   }).slice(0, isPremium ? 1000 : maxFreeCount);
 
-  const grouped = displayColleges.reduce((acc: any, c: any) => {
+  // First group by course, then by quota
+  const groupedByCourse = displayColleges.reduce((acc: any, c: any) => {
+    const course = c.course || 'MBBS';
     const q = c.quota || 'Other';
-    if (!acc[q]) acc[q] = [];
-    acc[q].push(c);
+    if (!acc[course]) acc[course] = {};
+    if (!acc[course][q]) acc[course][q] = [];
+    acc[course][q].push(c);
     return acc;
   }, {});
-  const sortedQuotas = Object.keys(grouped).sort((a, b) => {
-    if (a === 'AIQ') return -1;
-    if (b === 'AIQ') return 1;
-    if (a === 'State') return -1;
-    if (b === 'State') return 1;
-    return a.localeCompare(b);
-  });
+
+  const sortedCourses = Object.keys(groupedByCourse).sort((a, b) => a.localeCompare(b));
+
   return (
-    <div className="space-y-5">
-      {sortedQuotas.map((quota) => (
-        <div key={quota} className="space-y-3">
-          <h4 className={`text-[11px] font-bold uppercase tracking-wider ${s.muted} border-b ${s.dark ? 'border-white/10' : 'border-slate-200'} pb-1.5`}>
-            {quota} Quota Colleges
-          </h4>
-          {grouped[quota].map((c: any, i: number) => (
-            <div key={i} className={`rounded-xl border ${bgClass} ${borderClass} p-4`}>
-              <button 
-                onClick={() => onCollegeClick(c.name)} 
-                className="font-bold text-sm mb-1 hover:underline decoration-orange-500 underline-offset-4 text-left transition-all hover:text-orange-400"
-              >
-                {c.name}
-              </button>
-              {!isReach ? (
-                <>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${borderClass} bg-white/5`}>{c.probability} Probability</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">{c.expected_round}</span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getQuotaStyle(c.quota)}`}>{c.quota}</span>
-                  </div>
-                  <div className="grid grid-cols-2 text-xs gap-2 mt-3">
-                    <div>
-                      <span className={s.muted}>Last Year Closing: </span>
-                      <span className="font-bold">{c.closing_rank}</span>
-                    </div>
-                    {candidateRank > 0 && c.closing_rank && !isNaN(Number(String(c.closing_rank).replace(/\D/g, ''))) && (
-                      <div>
-                        <span className={s.muted}>Difference: </span>
-                        <span className="font-bold text-emerald-500">
-                          +{Math.max(0, Number(String(c.closing_rank).replace(/\D/g, '')) - candidateRank)}
+    <div className="space-y-6">
+      {sortedCourses.map((course) => {
+        const quotas = groupedByCourse[course];
+        const sortedQuotas = Object.keys(quotas).sort((a, b) => {
+          if (a === 'AIQ') return -1;
+          if (b === 'AIQ') return 1;
+          if (a === 'State') return -1;
+          if (b === 'State') return 1;
+          return a.localeCompare(b);
+        });
+
+        return (
+          <div key={course} className="space-y-4">
+            <h3 className={`text-sm font-black uppercase tracking-wider text-primary border-b-2 border-primary/20 pb-2`}>
+              {course} Colleges
+            </h3>
+            {sortedQuotas.map((quota) => (
+              <div key={quota} className="space-y-3">
+                <h4 className={`text-[11px] font-bold uppercase tracking-wider ${s.muted} border-b ${s.dark ? 'border-white/10' : 'border-slate-200'} pb-1.5`}>
+                  {quota} Quota
+                </h4>
+                {quotas[quota].map((c: any, i: number) => (
+                  <div key={i} className={`rounded-xl border ${bgClass} ${borderClass} p-4`}>
+                    <div className="flex justify-between items-start gap-4 mb-2">
+                      <button 
+                        onClick={() => onCollegeClick(c.name)} 
+                        className="font-bold text-sm hover:underline decoration-orange-500 underline-offset-4 text-left transition-all hover:text-orange-400"
+                      >
+                        {c.name}
+                      </button>
+                      {c.nmc_recognition && (
+                        <span className="shrink-0 text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                          {c.nmc_recognition}
                         </span>
+                      )}
+                    </div>
+                    
+                    {!isReach ? (
+                      <>
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${borderClass} bg-white/5`}>
+                            AI-estimated probability: {c.probability}
+                          </span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                            {c.expected_round}
+                          </span>
+                          {c.category && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-500 border border-slate-500/20">
+                              {c.category}
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className="grid grid-cols-2 text-xs gap-3 mt-4 p-3 rounded-lg bg-white/5 border border-white/10">
+                          <div>
+                            <span className={s.muted}>Expected Closing: </span>
+                            <span className="font-bold text-orange-500">{c.predicted_closing_rank || c.closing_rank}</span>
+                          </div>
+                          {candidateRank > 0 && c.margin && (
+                            <div>
+                              <span className={s.muted}>Safety Margin: </span>
+                              <span className="font-bold text-emerald-500">{c.margin}</span>
+                            </div>
+                          )}
+                          <div className="col-span-2 md:col-span-1">
+                            <span className={s.muted}>Tuition: </span>
+                            <span className="font-bold">{c.tuition_fee || c.fees || 'N/A'}</span>
+                          </div>
+                          {c.hostel_fee && (
+                            <div className="col-span-2 md:col-span-1">
+                              <span className={s.muted}>Hostel: </span>
+                              <span className="font-bold">{c.hostel_fee}</span>
+                            </div>
+                          )}
+                          {c.seats && (
+                            <div className="col-span-2 md:col-span-1">
+                              <span className={s.muted}>Seats: </span>
+                              <span className="font-bold">{c.seats}</span>
+                            </div>
+                          )}
+                          {c.bond && (
+                            <div className="col-span-2">
+                              <span className={s.muted}>Bond: </span>
+                              <span className="font-bold text-rose-500">{c.bond}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {Array.isArray(c.historical_trend) && c.historical_trend.length > 0 && (
+                          <div className="mt-4">
+                            <h5 className={`text-[10px] uppercase font-bold mb-1 ${s.muted}`}>Historical Trends</h5>
+                            <div className="flex gap-4 text-[10px]">
+                              {c.historical_trend.map((t: any, idx: number) => (
+                                <div key={idx} className="bg-black/10 px-2 py-1 rounded">
+                                  <span className={s.muted}>{t.year}:</span> <span className="font-bold">{t.closing_rank}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <p className={`text-[11px] mt-3 italic ${s.muted}`}>💡 {c.reason}</p>
+                      </>
+                    ) : (
+                      <div className="grid grid-cols-2 text-xs gap-2 mt-2">
+                        <div>
+                          <span className={s.muted}>Expected Closing: </span>
+                          <span className="font-bold text-orange-500">{c.predicted_closing_rank || c.closing_rank}</span>
+                        </div>
+                        <div>
+                          <span className={s.muted}>Round: </span>
+                          <span className="font-bold">{c.expected_round}</span>
+                        </div>
                       </div>
                     )}
-                    <div className="col-span-2">
-                      <span className={s.muted}>Est. Tuition: </span>
-                      <span className="font-bold">{c.fees}</span>
-                    </div>
                   </div>
-                  <p className={`text-[11px] mt-2 italic ${s.muted}`}>💡 {c.reason}</p>
-                </>
-              ) : (
-                <div className="grid grid-cols-2 text-xs gap-2 mt-2">
-                  <div>
-                    <span className={s.muted}>Closing: </span>
-                    <span className="font-bold text-orange-500">{c.closing_rank}</span>
-                  </div>
-                  <div>
-                    <span className={s.muted}>Round: </span>
-                    <span className="font-bold">{c.expected_round}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      ))}
+                ))}
+              </div>
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 };
