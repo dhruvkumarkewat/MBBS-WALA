@@ -215,6 +215,7 @@ export default function DashboardHome() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [unreadAlerts, setUnreadAlerts] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -222,8 +223,16 @@ export default function DashboardHome() {
       setLoading(true);
       setError('');
       try {
-        const data = await apiJson<Summary>('/api/dashboard-summary', {}, true);
-        if (!cancelled) setSummary(data);
+        const [data, notifs] = await Promise.all([
+          apiJson<Summary>('/api/dashboard-summary', {}, true).catch(() => null),
+          apiJson<any[]>('/api/notifications', {}, true).catch(() => [])
+        ]);
+        if (!cancelled) {
+          if (data) setSummary(data);
+          if (notifs) {
+            setUnreadAlerts(notifs.filter(n => !n.read).length);
+          }
+        }
       } catch (e: unknown) {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load dashboard');
       } finally {
@@ -241,7 +250,7 @@ export default function DashboardHome() {
     user?.email?.split('@')[0] ||
     'Student';
 
-  const unread = summary?.unread_notifications ?? 0;
+  const unread = unreadAlerts || summary?.unread_notifications || 0;
   const card = dark
     ? 'bg-[#12151c] border-white/[0.07]'
     : 'bg-white border-[#e8ecf1] shadow-[0_1px_2px_rgba(15,23,42,0.04)]';
