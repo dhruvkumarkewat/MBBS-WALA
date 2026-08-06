@@ -845,21 +845,6 @@ export default function OnboardingPage() {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-white/70 mb-2">
-                      Referral Code (Optional)
-                    </label>
-                    <div className="relative">
-                      <Gift className="absolute left-3.5 top-3.5 w-4 h-4 text-emerald-400" />
-                      <input
-                        type="text"
-                        value={form.referral_code}
-                        onChange={(e) => setForm({ ...form, referral_code: e.target.value.toUpperCase() })}
-                        placeholder="e.g. MBW-7880"
-                        className="w-full bg-white/[0.04] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-emerald-500 transition uppercase font-mono tracking-wider font-bold"
-                      />
-                    </div>
-                  </div>
                 </motion.div>
               )}
             </div>
