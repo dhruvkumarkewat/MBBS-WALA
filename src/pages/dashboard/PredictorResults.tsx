@@ -164,7 +164,15 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             <span className="text-lg">✅</span>
             <h3 className="font-black text-sm uppercase tracking-wider">Safe Colleges (High Chance)</h3>
           </div>
-          <CollegeGroupList colleges={aiResponse.college_predictions?.safe} s={s} isPremium={true} maxFreeCount={100} bgClass="bg-emerald-500/5" borderClass="border-emerald-500/20" isReach={false} onCollegeClick={setSelectedCollegeInfo} />
+          <CollegeGroupList colleges={aiResponse.college_predictions?.safe} s={s} isPremium={isPremium} maxFreeCount={2} bgClass="bg-emerald-500/5" borderClass="border-emerald-500/20" isReach={false} onCollegeClick={setSelectedCollegeInfo} />
+          
+          {!isPremium && aiResponse.college_predictions.safe.length > 2 && (
+             <div className="mt-4 p-4 rounded-xl border border-primary/20 bg-primary/5 text-center">
+               <Crown className="w-5 h-5 text-primary mx-auto mb-2" />
+               <p className="text-xs font-bold mb-2">Upgrade to Premium to view {aiResponse.college_predictions.safe.length - 2} more Safe colleges.</p>
+               <Link to="/packages" className="text-[10px] bg-primary text-white px-3 py-1.5 rounded-full font-bold inline-block">Upgrade Now</Link>
+             </div>
+          )}
         </div>
       )}
 
@@ -175,7 +183,15 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             <span className="text-lg">🟡</span>
             <h3 className="font-black text-sm uppercase tracking-wider">Moderate Colleges</h3>
           </div>
-          <CollegeGroupList colleges={aiResponse.college_predictions?.moderate} s={s} isPremium={true} maxFreeCount={100} bgClass="bg-amber-500/5" borderClass="border-amber-500/20" isReach={false} onCollegeClick={setSelectedCollegeInfo} />
+          <CollegeGroupList colleges={aiResponse.college_predictions?.moderate} s={s} isPremium={isPremium} maxFreeCount={2} bgClass="bg-amber-500/5" borderClass="border-amber-500/20" isReach={false} onCollegeClick={setSelectedCollegeInfo} />
+          
+          {!isPremium && aiResponse.college_predictions.moderate.length > 2 && (
+             <div className="mt-4 p-4 rounded-xl border border-primary/20 bg-primary/5 text-center">
+               <Crown className="w-5 h-5 text-primary mx-auto mb-2" />
+               <p className="text-xs font-bold mb-2">Upgrade to Premium to view {aiResponse.college_predictions.moderate.length - 2} more Moderate colleges.</p>
+               <Link to="/packages" className="text-[10px] bg-primary text-white px-3 py-1.5 rounded-full font-bold inline-block">Upgrade Now</Link>
+             </div>
+          )}
         </div>
       )}
 
