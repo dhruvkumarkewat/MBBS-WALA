@@ -11,7 +11,6 @@ interface PredictorResultsProps {
   domicileState: string;
 }
 
-
 const getQuotaStyle = (quota: string) => {
   if (!quota) return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
   const q = quota.toLowerCase();
@@ -28,12 +27,14 @@ const getQuotaStyle = (quota: string) => {
 };
 
 const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borderClass, isReach, onCollegeClick, candidateRank }: any) => {
-  if (!colleges || colleges.length === 0) return null;
-  const displayColleges = [...colleges].sort((a, b) => {
+  const safeColleges = Array.isArray(colleges) ? colleges : (colleges ? [colleges] : []);
+  if (safeColleges.length === 0) return null;
+  const displayColleges = [...safeColleges].sort((a, b) => {
     const probA = parseInt(String(a.probability || '0').replace(/\D/g, '')) || 0;
     const probB = parseInt(String(b.probability || '0').replace(/\D/g, '')) || 0;
     return probB - probA;
   }).slice(0, isPremium ? 1000 : maxFreeCount);
+
   const grouped = displayColleges.reduce((acc: any, c: any) => {
     const q = c.quota || 'Other';
     if (!acc[q]) acc[q] = [];
@@ -114,6 +115,25 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
 
   if (!aiResponse) return null;
 
+  // Map legacy/fallback colleges format to college_predictions if missing
+  const preds = aiResponse.college_predictions || (() => {
+    if (!aiResponse.colleges || !Array.isArray(aiResponse.colleges)) return null;
+    const mapCollege = (c: any) => ({
+      name: c.college_name,
+      probability: c.chance_tier,
+      expected_round: c.closing_rank_reference?.[0]?.round || 'Round 1',
+      fees: c.fee?.formatted || 'N/A',
+      quota: c.quota,
+      closing_rank: c.closing_rank_reference?.[0]?.rank || c.closing_rank || 'N/A',
+      reason: 'Based on historical cutoffs',
+    });
+    return {
+      safe: aiResponse.colleges.filter((c: any) => c.chance_tier === 'High').map(mapCollege),
+      moderate: aiResponse.colleges.filter((c: any) => c.chance_tier === 'Moderate').map(mapCollege),
+      reach: aiResponse.colleges.filter((c: any) => c.chance_tier === 'Reach').map(mapCollege),
+    };
+  })();
+
   return (
     <div className="space-y-6">
       
@@ -166,14 +186,14 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
       )}
 
       {/* ── Safe Colleges ── */}
-      {aiResponse.college_predictions?.safe && aiResponse.college_predictions.safe.length > 0 && (
+      {preds?.safe && preds.safe.length > 0 && (
         <div className={`rounded-2xl border p-5 ${s.card} border-l-4 border-l-emerald-500/60`}>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-lg">✅</span>
             <h3 className="font-black text-sm uppercase tracking-wider">Safe Colleges (High Chance)</h3>
           </div>
           <CollegeGroupList 
-            colleges={aiResponse.college_predictions?.safe || []} 
+            colleges={preds?.safe || []} 
             s={s} isPremium={isPremium} maxFreeCount={3}
             bgClass={s.dark ? 'bg-emerald-900/10' : 'bg-emerald-50'} 
             borderClass="border-emerald-500/30" 
@@ -182,10 +202,10 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             candidateRank={aiResponse.query?.score_or_rank?.value || 0}
           />
           
-          {!isPremium && aiResponse.college_predictions.safe.length > 1 && (
+          {!isPremium && (preds?.safe?.length || 0) > 3 && (
              <div className="mt-4 p-4 rounded-xl border border-primary/20 bg-primary/5 text-center">
                <Crown className="w-5 h-5 text-primary mx-auto mb-2" />
-               <p className="text-xs font-bold mb-2">Upgrade to Premium to view {aiResponse.college_predictions.safe.length - 1} more Safe colleges.</p>
+               <p className="text-xs font-bold mb-2">Upgrade to Premium to view {(preds?.safe?.length || 0) - 3} more Safe colleges.</p>
                <Link to="/dashboard/subscription" className="text-[10px] bg-primary text-white px-3 py-1.5 rounded-full font-bold inline-block">Upgrade Now</Link>
              </div>
           )}
@@ -193,7 +213,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
       )}
 
       {/* ── Moderate Colleges ── */}
-      {aiResponse.college_predictions?.moderate && aiResponse.college_predictions.moderate.length > 0 && (
+      {preds?.moderate && preds.moderate.length > 0 && (
         <div className={`rounded-2xl border p-5 ${s.card} border-l-4 border-l-amber-500/60`}>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-lg">🟡</span>
@@ -201,7 +221,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
           </div>
           {isPremium ? (
             <CollegeGroupList 
-              colleges={aiResponse.college_predictions?.moderate || []} 
+              colleges={preds?.moderate || []} 
               s={s} isPremium={isPremium} maxFreeCount={100}
               bgClass={s.dark ? 'bg-amber-900/10' : 'bg-amber-50'} 
               borderClass="border-amber-500/30" 
@@ -213,7 +233,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             <div className="p-6 rounded-xl border border-primary/20 bg-primary/5 text-center">
                <Crown className="w-6 h-6 text-primary mx-auto mb-3" />
                <p className="text-sm font-bold mb-2">Premium Feature</p>
-               <p className="text-xs opacity-70 mb-4">Upgrade to view {aiResponse.college_predictions.moderate.length} Moderate colleges where you have a 40-70% chance of admission.</p>
+               <p className="text-xs opacity-70 mb-4">Upgrade to view {preds?.moderate?.length || 0} Moderate colleges where you have a 40-70% chance of admission.</p>
                <Link to="/dashboard/subscription" className="text-xs bg-primary text-white px-5 py-2.5 rounded-full font-bold inline-block hover:scale-105 transition">Upgrade Now</Link>
              </div>
           )}
@@ -221,7 +241,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
       )}
 
       {/* ── Reach Colleges ── */}
-      {aiResponse.college_predictions?.reach && aiResponse.college_predictions.reach.length > 0 && (
+      {preds?.reach && preds.reach.length > 0 && (
         <div className={`rounded-2xl border p-5 ${s.card} border-l-4 border-l-orange-500/60`}>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-lg">🔴</span>
@@ -229,7 +249,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
           </div>
           {isPremium ? (
             <CollegeGroupList 
-              colleges={aiResponse.college_predictions?.reach || []} 
+              colleges={preds?.reach || []} 
               s={s} isPremium={isPremium} maxFreeCount={100}
               bgClass={s.dark ? 'bg-orange-900/10' : 'bg-orange-50'} 
               borderClass="border-orange-500/30" 
@@ -241,7 +261,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             <div className="p-6 rounded-xl border border-primary/20 bg-primary/5 text-center">
                <Crown className="w-6 h-6 text-primary mx-auto mb-3" />
                <p className="text-sm font-bold mb-2">Premium Feature</p>
-               <p className="text-xs opacity-70 mb-4">Upgrade to view {aiResponse.college_predictions.reach.length} Reach colleges that are highly competitive.</p>
+               <p className="text-xs opacity-70 mb-4">Upgrade to view {preds?.reach?.length || 0} Reach colleges that are highly competitive.</p>
                <Link to="/dashboard/subscription" className="text-xs bg-primary text-white px-5 py-2.5 rounded-full font-bold inline-block hover:scale-105 transition">Upgrade Now</Link>
              </div>
           )}
@@ -358,7 +378,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
                   <div className="mt-3">
                     <p className="text-[10px] font-bold uppercase mb-1">Top Colleges</p>
                     <ul className="text-xs list-disc pl-4 space-y-1">
-                      {alt.top_colleges?.map((tc: string, j: number) => <li key={j}>{tc}</li>)}
+                      {(Array.isArray(alt.top_colleges) ? alt.top_colleges : [alt.top_colleges].filter(Boolean)).map((tc: string, j: number) => <li key={j}>{tc}</li>)}
                     </ul>
                   </div>
                 </div>
@@ -418,7 +438,11 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
           </div>
           {isPremium ? (
             <>
-              <p className="text-sm leading-relaxed mb-4">{aiResponse.ai_recommendation}</p>
+              <div className="text-sm leading-relaxed mb-4">
+                {typeof aiResponse.ai_recommendation === 'string' 
+                  ? aiResponse.ai_recommendation 
+                  : (aiResponse.ai_recommendation?.tip || JSON.stringify(aiResponse.ai_recommendation))}
+              </div>
               
               {aiResponse.counselling_strategy && (
                 <div className="mt-4 pt-4 border-t border-primary/20">
