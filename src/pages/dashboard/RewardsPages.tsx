@@ -487,12 +487,22 @@ export function WalletPage() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2 mt-6">
-            <Link
-              to="/dashboard/withdrawals"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-orange-500 font-bold text-sm hover:bg-orange-400"
-            >
-              <Banknote className="w-4 h-4" /> Withdraw
-            </Link>
+            {(w?.balance || 0) >= 500 ? (
+              <Link
+                to="/dashboard/withdrawals"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-orange-500 font-bold text-sm hover:bg-orange-400"
+              >
+                <Banknote className="w-4 h-4" /> Withdraw
+              </Link>
+            ) : (
+              <button
+                disabled
+                title="Minimum balance of ₹500 required"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-orange-500/30 font-bold text-sm text-white/50 cursor-not-allowed"
+              >
+                <Banknote className="w-4 h-4" /> Withdraw
+              </button>
+            )}
             <Link
               to="/dashboard/refer"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 border border-white/15 font-bold text-sm"
@@ -1289,8 +1299,9 @@ export function WithdrawalsPage() {
         </label>
         <button
           type="submit"
-          disabled={submitting}
-          className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 text-white font-bold disabled:opacity-60"
+          disabled={submitting || balance < 500}
+          title={balance < 500 ? "Minimum balance of ₹500 required" : ""}
+          className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Banknote className="w-4 h-4" />}
           Request withdrawal
