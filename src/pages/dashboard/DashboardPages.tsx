@@ -968,6 +968,49 @@ export function FinderPage() {
 }
 
 /* ---------------- Compare → enriched seats + cutoffs ---------------- */
+const Autocomplete = ({ value, onChange, placeholder, colleges, s }: any) => {
+  const [query, setQuery] = useState(value);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => { setQuery(value); }, [value]);
+
+  const matches = colleges.filter((c: any) => c.name.toLowerCase().includes(query.toLowerCase())).slice(0, 50);
+
+  return (
+    <div className="relative">
+      <input 
+         type="text" 
+         className={`w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
+         placeholder={placeholder}
+         value={query}
+         onChange={e => {
+           setQuery(e.target.value);
+           setOpen(true);
+         }}
+         onFocus={() => setOpen(true)}
+         onBlur={() => setTimeout(() => setOpen(false), 200)}
+      />
+      {open && query && matches.length > 0 && (
+        <div className={`absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-xl border shadow-xl ${s.card} ${s.dark ? 'bg-[#0f1f2c]' : 'bg-white'}`}>
+          {matches.map((m: any) => (
+            <div 
+              key={m.id} 
+              className={`px-3 py-2 text-sm cursor-pointer transition-colors ${s.dark ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}
+              onClick={() => {
+                 setQuery(m.name);
+                 setOpen(false);
+                 onChange(m.id, m.name);
+              }}
+            >
+               {m.name}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export function ComparePage() {
   const s = useShell();
   const { isPremium } = usePremium();
@@ -992,7 +1035,7 @@ export function ComparePage() {
   } | null>(null);
 
   useEffect(() => {
-    apiJson<College[]>('/api/colleges?limit=300')
+    apiJson<College[]>('/api/colleges?limit=3000')
       .then((d) => {
         const list = Array.isArray(d) ? d : [];
         setColleges(list);
@@ -1032,35 +1075,20 @@ export function ComparePage() {
       ) : (
         <>
           <div className="grid sm:grid-cols-2 gap-3 mb-4">
-            <input
-              type="text"
-              list="colleges-list"
-              value={searchA}
-              onChange={(e) => {
-                setSearchA(e.target.value);
-                const match = colleges.find(c => c.name === e.target.value);
-                if (match) setA(String(match.id));
-              }}
-              placeholder="Search College 1..."
-              className={`rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
+            <Autocomplete 
+               value={searchA}
+               onChange={(id: string, name: string) => { setA(id); setSearchA(name); }}
+               placeholder="Search College 1..."
+               colleges={colleges}
+               s={s}
             />
-            <input
-              type="text"
-              list="colleges-list"
-              value={searchB}
-              onChange={(e) => {
-                setSearchB(e.target.value);
-                const match = colleges.find(c => c.name === e.target.value);
-                if (match) setB(String(match.id));
-              }}
-              placeholder="Search College 2..."
-              className={`rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
+            <Autocomplete 
+               value={searchB}
+               onChange={(id: string, name: string) => { setB(id); setSearchB(name); }}
+               placeholder="Search College 2..."
+               colleges={colleges}
+               s={s}
             />
-            <datalist id="colleges-list">
-              {colleges.map((c) => (
-                <option key={c.id} value={c.name} />
-              ))}
-            </datalist>
           </div>
 
           {a === b && (
@@ -1474,8 +1502,8 @@ export function CounsellingPage() {
         </div>
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div>
-            <h2 className="text-2xl font-black mb-2 tracking-tight">Your Counselling Profile</h2>
-            <p className={`text-sm ${s.muted} max-w-md`}>Keep your profile updated to get the most accurate AI predictions and personalized assistance.</p>
+            <h2 className="text-2xl font-black mb-2 tracking-tight text-white">Your Counselling Profile</h2>
+            <p className={`text-sm text-white/70 max-w-md`}>Keep your profile updated to get the most accurate AI predictions and personalized assistance.</p>
           </div>
           <Link to="/dashboard/profile" className="px-5 py-2.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl font-medium text-sm transition-colors backdrop-blur-md">
             Update Profile
@@ -1565,7 +1593,6 @@ export function CounsellingPage() {
             <div className="grid grid-cols-2 gap-4">
               {[
                 { label: 'Seat Matrix', sub: 'Category breakdown', link: '/dashboard/seat-matrix', primary: false },
-                { label: 'Public Cutoffs', sub: 'Previous years data', link: '/dashboard/cutoffs', primary: false },
                 { label: 'AI Predictor', sub: 'Check probabilities', link: '/dashboard/predictor', primary: true },
                 { label: 'College Finder', sub: '1200+ indexed', link: '/dashboard/finder', primary: false },
               ].map((tool, i) => (
