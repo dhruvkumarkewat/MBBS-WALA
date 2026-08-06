@@ -1,4 +1,5 @@
 import supabase from './db-client.js';
+import { callAI } from './ai-service.js';
 
 function normalize(name) {
   return (name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -114,6 +115,36 @@ export default async function handler(req, res) {
     const [left, right] = await Promise.all([loadCollegeBundle(aId), loadCollegeBundle(bId)]);
     if (!left || !right) return res.status(404).json({ error: 'One or both colleges not found' });
 
+    let aiInsights = [];
+    try {
+      const aiResponse = await callAI({
+        system_prompt: `You are an expert MBBS counsellor in India. Compare the two provided medical colleges and generate exactly 3-5 deep, meaningful, highly professional comparison insights for a student deciding between them. Focus on academics, location advantages, fees, cutoffs, and overall reputation. 
+Return ONLY a valid JSON object matching this structure: { "insights": ["insight 1", "insight 2", "insight 3"] }. DO NOT return markdown formatting like \`\`\`json.`,
+        user_prompt: {
+          college_A: {
+            name: left.college.name,
+            state: left.college.state,
+            type: left.college.college_type,
+            seats: left.highlights.total_seats,
+            aiq_closing_rank: left.highlights.general_aiq
+          },
+          college_B: {
+            name: right.college.name,
+            state: right.college.state,
+            type: right.college.college_type,
+            seats: right.highlights.total_seats,
+            aiq_closing_rank: right.highlights.general_aiq
+          }
+        }
+      });
+      if (aiResponse && Array.isArray(aiResponse.insights)) {
+        aiInsights = aiResponse.insights;
+      }
+    } catch (e) {
+      console.error('AI comparison failed, falling back to basic verdict', e);
+      aiInsights = verdict(left, right);
+    }
+
     const fields = [
       { key: 'City', a: left.college.city, b: right.college.city },
       { key: 'State', a: left.college.state || '—', b: right.college.state || '—' },
@@ -194,7 +225,7 @@ export default async function handler(req, res) {
       b: right,
       fields,
       category_matrix,
-      insights: verdict(left, right),
+      insights: aiInsights.length > 0 ? aiInsights : verdict(left, right),
     });
   } catch (err) {
     console.error('college-compare error:', err);
