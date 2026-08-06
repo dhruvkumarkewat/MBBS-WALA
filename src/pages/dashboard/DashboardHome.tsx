@@ -158,12 +158,24 @@ function NewsWidget({ dark }: { dark: boolean }) {
   const [headline, setHeadline] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const MEDICAL_KEYWORDS = [
+    'neet', 'mbbs', 'bds', 'ayush', 'ayurveda', 'mcc', 'medical college',
+    'medical admission', 'medical seat', 'counselling', 'counseling',
+    'medical entrance', 'pg medical', 'ug medical', 'medical cutoff',
+    'aiims', 'medical student', 'medical exam', 'medical university',
+    'state quota', 'all india quota', 'merit list'
+  ];
+
   useEffect(() => {
-    fetch('https://newsdata.io/api/1/news?apikey=pub_cff7c67139b447a58b649e9cc2d292ac&q=NEET%20OR%20%22MBBS%20admission%22%20OR%20%22medical%20college%20admission%22%20OR%20%22MCC%20counselling%22&country=in&language=en')
+    fetch('https://newsdata.io/api/1/news?apikey=pub_cff7c67139b447a58b649e9cc2d292ac&q=NEET%20OR%20MBBS%20OR%20%22medical%20college%22&country=in&language=en&category=health')
       .then(r => r.json())
       .then(d => {
         if (d && d.results && d.results.length > 0) {
-          setHeadline(d.results[0]);
+          const filtered = d.results.filter((item: any) => {
+            const text = ((item.title || '') + ' ' + (item.description || '')).toLowerCase();
+            return MEDICAL_KEYWORDS.some(kw => text.includes(kw));
+          });
+          if (filtered.length > 0) setHeadline(filtered[0]);
         }
       })
       .catch(() => {})

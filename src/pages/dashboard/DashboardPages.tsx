@@ -2348,13 +2348,26 @@ export function NotificationsPage() {
     }
   }, []);
 
+  const MEDICAL_KEYWORDS = [
+    'neet', 'mbbs', 'bds', 'ayush', 'ayurveda', 'mcc', 'medical college',
+    'medical admission', 'medical seat', 'counselling', 'counseling',
+    'medical entrance', 'pg medical', 'ug medical', 'medical cutoff',
+    'aiims', 'medical student', 'medical exam', 'medical university',
+    'state quota', 'all india quota', 'merit list', 'mbbs seat', 'neet ug',
+    'neet pg', 'dnb', 'md ms admission', 'medical counselling'
+  ];
+
   const loadNews = useCallback(async () => {
     setNewsLoading(true);
     try {
-      const res = await fetch('https://newsdata.io/api/1/news?apikey=pub_cff7c67139b447a58b649e9cc2d292ac&q=NEET%20OR%20%22MBBS%20admission%22%20OR%20%22medical%20college%20admission%22%20OR%20%22MCC%20counselling%22&country=in&language=en');
+      const res = await fetch('https://newsdata.io/api/1/news?apikey=pub_cff7c67139b447a58b649e9cc2d292ac&q=NEET%20OR%20MBBS%20OR%20%22medical%20college%22&country=in&language=en&category=health');
       const data = await res.json();
       if (data && data.results) {
-        setNews(data.results.slice(0, 10)); // Top 10 news
+        const filtered = data.results.filter((item: any) => {
+          const text = ((item.title || '') + ' ' + (item.description || '')).toLowerCase();
+          return MEDICAL_KEYWORDS.some(kw => text.includes(kw));
+        });
+        setNews(filtered.slice(0, 10));
       }
     } catch (e) {
       console.error("Failed to load news", e);
