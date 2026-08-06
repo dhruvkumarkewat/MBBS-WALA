@@ -165,42 +165,52 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                               return (
                                 <div className="relative h-48 mt-8 mb-6 rounded-xl bg-black/5 border border-white/10 p-4">
                                   {/* Chart Area */}
-                                  <div className="relative w-full h-full flex items-end justify-around gap-2">
-                                    {/* Candidate Rank Line */}
-                                    {candidateRank > 0 && maxVal > 0 && (
-                                      <div 
-                                        className="absolute left-0 right-0 border-t-2 border-dashed border-orange-500/50 z-0 flex items-center pointer-events-none transition-all duration-500"
-                                        style={{
-                                          bottom: `${Math.min(100, Math.max(0, (candidateRank / maxVal) * 100))}%`
-                                        }}
-                                      >
-                                        <span className="absolute left-0 -top-5 text-[9px] font-bold text-orange-500 bg-orange-500/10 px-1.5 py-0.5 rounded backdrop-blur-md border border-orange-500/20">
-                                          Your Rank: {candidateRank}
-                                        </span>
-                                      </div>
-                                    )}
-                                
+                                  <div className="relative w-full h-full flex items-end justify-around gap-2 pb-6">
                                     {/* Histogram Bars */}
                                     {trendData.map((t, idx) => {
                                        const val = parseInt(String(t.closing_rank).replace(/\D/g, '')) || 0;
                                        const pct = maxVal > 0 ? (val / maxVal) * 100 : 0;
+                                       const candPct = maxVal > 0 ? (candidateRank / maxVal) * 100 : 0;
                                        return (
-                                         <div key={idx} className="relative flex flex-col justify-end items-center group w-full max-w-[60px] h-full z-10">
-                                           {/* Value */}
-                                           <div className={`absolute -top-6 text-[10px] font-bold opacity-70 group-hover:opacity-100 transition-opacity whitespace-nowrap ${s.dark ? 'text-white' : 'text-slate-800'}`}>
-                                             {t.closing_rank}
-                                           </div>
+                                         <div key={idx} className="relative flex flex-col justify-end items-center group w-full max-w-[90px] h-full z-10">
                                            
-                                           {/* Bar */}
-                                           <div 
-                                             className="w-full bg-primary/40 hover:bg-primary/80 transition-all duration-500 rounded-t-sm border-x border-t border-primary/50 relative overflow-hidden group-hover:shadow-[0_0_15px_rgba(var(--color-primary),0.3)]"
-                                             style={{ height: `${Math.max(2, pct)}%` }}
-                                           >
-                                              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
+                                           {/* Double Bars Container */}
+                                           <div className="flex items-end justify-center w-full h-full gap-1 sm:gap-2">
+                                             
+                                             {/* Your Rank Bar */}
+                                             {candidateRank > 0 && (
+                                               <div className="relative flex flex-col justify-end items-center group/bar w-full max-w-[35px] h-full">
+                                                 <div className="absolute -top-6 text-[9px] font-bold opacity-70 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap text-orange-400">
+                                                   {candidateRank}
+                                                 </div>
+                                                 <div 
+                                                   className="w-full bg-orange-500/30 hover:bg-orange-500/70 transition-all duration-500 rounded-t-sm border-x border-t border-orange-500/50 relative overflow-hidden group-hover/bar:shadow-[0_0_15px_rgba(249,115,22,0.3)]"
+                                                   style={{ height: `${Math.max(2, candPct)}%` }}
+                                                 >
+                                                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
+                                                 </div>
+                                                 <div className="absolute -bottom-4 text-[8px] text-orange-400/80">You</div>
+                                               </div>
+                                             )}
+
+                                             {/* Closing Rank Bar */}
+                                             <div className="relative flex flex-col justify-end items-center group/bar w-full max-w-[35px] h-full">
+                                               <div className={`absolute -top-6 text-[9px] font-bold opacity-70 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap ${s.dark ? 'text-white' : 'text-slate-800'}`}>
+                                                 {t.closing_rank}
+                                               </div>
+                                               <div 
+                                                 className="w-full bg-primary/40 hover:bg-primary/80 transition-all duration-500 rounded-t-sm border-x border-t border-primary/50 relative overflow-hidden group-hover/bar:shadow-[0_0_15px_rgba(var(--color-primary),0.3)]"
+                                                 style={{ height: `${Math.max(2, pct)}%` }}
+                                               >
+                                                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
+                                               </div>
+                                               <div className="absolute -bottom-4 text-[8px] text-primary/80">Close</div>
+                                             </div>
+
                                            </div>
                                            
                                            {/* X-Axis Label */}
-                                           <div className={`absolute -bottom-6 text-[10px] font-bold ${s.muted}`}>
+                                           <div className={`absolute -bottom-9 text-[10px] font-bold ${s.muted}`}>
                                              {t.year}
                                            </div>
                                          </div>
