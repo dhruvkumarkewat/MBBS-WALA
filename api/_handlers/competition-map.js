@@ -212,6 +212,8 @@ export default async function handler(req, res) {
         stateQuota = liveSeats.reduce((a, s) => a + (s.open_seats || s.remaining_seats || 0), 0) || stateQuota;
       }
 
+
+
       let displaySeats = totalSeats;
       if (quota === 'AIQ') displaySeats = aiqSeats;
       else if (quota === 'State') displaySeats = stateQuota;
@@ -439,6 +441,32 @@ export default async function handler(req, res) {
       moderate_chance: userRank ? [...list].filter(r => r.admission_probability >= 0.45 && r.admission_probability < 0.75).sort((a,b) => b.admission_probability - a.admission_probability).slice(0, 5).map(r => ({ state_name: r.state_name, competition_score: Math.round(r.admission_probability * 100) + '%' })) : undefined,
       very_difficult: userRank ? [...list].filter(r => r.admission_probability < 0.45).sort((a,b) => a.admission_probability - b.admission_probability).slice(0, 5).map(r => ({ state_name: r.state_name, competition_score: Math.round(r.admission_probability * 100) + '%' })) : undefined,
     };
+
+    try {
+      const { callAI } = await import('./ai-service.js');
+      const aiPrompt = `You are an expert NEET Medical Admissions Counsellor. 
+Analyze this map data for a student with AIR ${userRank || 'Not provided'}, Category: ${category}, Quotas: ${quota}.
+The safest states for them are: ${summary.easiest.map(e => e.state_name).join(', ')}.
+The toughest states are: ${summary.hottest.map(e => e.state_name).join(', ')}.
+Total states analyzed: ${list.length}.
+
+Write a personalized 2-sentence summary providing strategic advice on which state quotas or management quotas they should target. Do not use markdown, just plain text. Return it in JSON format: {"summary_text": "..."}`;
+      
+      const aiResponseText = await callAI(
+        "You are an expert NEET Admissions Analyst. ONLY RETURN VALID JSON.",
+        aiPrompt,
+        true
+      );
+      
+      if (aiResponseText) {
+        const aiJson = JSON.parse(aiResponseText);
+        if (aiJson.summary_text) {
+          summary.ai_analysis = aiJson.summary_text;
+        }
+      }
+    } catch (e) {
+      console.error("AI Map Summary Error:", e);
+    }
 
     if (req.query.detail === '1' && list.length === 1) {
       return res.status(200).json({ state: list[0], summary });

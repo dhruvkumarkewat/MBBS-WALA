@@ -215,6 +215,20 @@ export default function CompetitionMapModule({ dark, embedded }: Props) {
         />
       </div>
 
+      {summary?.ai_analysis && (
+        <div className={`mx-3 sm:mx-5 mb-3 p-4 rounded-2xl border flex items-start gap-3 ${dark ? 'bg-orange-500/10 border-orange-500/20' : 'bg-orange-50 border-orange-200/60'}`}>
+          <div className="shrink-0 p-2 bg-gradient-to-br from-orange-400 to-amber-500 rounded-xl shadow-md text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+          </div>
+          <div>
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-orange-500 mb-1">AI Map Analysis</h4>
+            <p className={`text-[13px] font-bold leading-relaxed ${dark ? 'text-white/90' : 'text-slate-800'}`}>
+              {summary.ai_analysis}
+            </p>
+          </div>
+        </div>
+      )}
+
       {error && (
         <div className="mx-3 sm:mx-5 mb-3 flex items-start gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2.5 text-sm font-semibold text-rose-600 dark:text-rose-300">
           <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
