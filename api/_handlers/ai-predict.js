@@ -225,7 +225,7 @@ const DEEMED_KEYWORDS = [
       continue;
     }
 
-    seenNames.add(normalizedName);
+    seenNames.add(dedupKey);
     deduplicated.push(item);
   }
 
