@@ -287,7 +287,31 @@ export function buildFallbackResponse(query, context, resolved) {
       }
     }
 
-    const feeAmount = cr.fee_amount || (cr.type && cr.type.toLowerCase().includes('govt') ? 50000 : 1200000);
+    let parsedFee = null;
+    let isApprox = false;
+    
+    if (typeof cr.fee_amount === 'number') {
+      parsedFee = cr.fee_amount;
+    } else if (typeof cr.fee_amount === 'string') {
+      const nums = cr.fee_amount.replace(/\D/g, '');
+      if (nums) parsedFee = parseInt(nums, 10);
+    }
+    
+    // AI Fallback approximation for missing fees
+    if (!parsedFee || parsedFee <= 0) {
+      const isGovt = (cr.type && cr.type.toLowerCase().includes('govt')) || quotaCode === 'AIQ' || (quotaCode === 'State' && !(cr.college_name || '').toLowerCase().includes('private'));
+      parsedFee = isGovt ? 100000 : 1400000; // AI Approximation: ~1L for Govt, ~14L for Private
+      isApprox = true;
+    }
+
+    const feeAmount = parsedFee;
+    let formattedFee = feeAmount >= 100000 
+      ? `₹${(feeAmount / 100000).toFixed(1)}L/yr` 
+      : `₹${feeAmount.toLocaleString('en-IN')}/yr`;
+      
+    if (isApprox) {
+      formattedFee = `~ ${formattedFee} (Est.)`;
+    }
 
     return {
       college_name: cr.college_name,
@@ -301,7 +325,7 @@ export function buildFallbackResponse(query, context, resolved) {
         quota_tier: cr.type && cr.type.toLowerCase().includes('govt') ? 'Govt/AIQ' : 'Private/Deemed',
         amount_min: feeAmount,
         amount_max: feeAmount,
-        formatted: `₹${(feeAmount / 100000).toFixed(1)}L/yr`
+        formatted: formattedFee
       },
       source_ids: [],
       seats: cr.seats || null,

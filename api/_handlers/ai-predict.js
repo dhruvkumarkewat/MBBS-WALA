@@ -505,7 +505,7 @@ export default async function handler(req, res) {
         margin: margin >= 0 ? `+${margin}` : `${margin}`,
         
         fees: feeString,
-        is_fee_verified: !!feeString,
+        is_fee_verified: !!feeString && !feeString.includes('Est.'),
         tuition_fee: feeString,
         
         hostel_fee: null,
