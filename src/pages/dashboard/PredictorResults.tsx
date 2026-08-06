@@ -27,7 +27,7 @@ const getQuotaStyle = (quota: string) => {
   return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
 };
 
-const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borderClass, isReach, onCollegeClick }: any) => {
+const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borderClass, isReach, onCollegeClick, candidateRank }: any) => {
   if (!colleges || colleges.length === 0) return null;
   const displayColleges = isPremium ? colleges : [...colleges].sort((a, b) => {
     const rankA = parseInt(String(a.expected_rank || '0').replace(/\D/g, '')) || 999999;
@@ -74,8 +74,16 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                       <span className={s.muted}>Last Year Closing: </span>
                       <span className="font-bold">{c.closing_rank}</span>
                     </div>
-                    <div>
-                      <span className={s.muted}>Est. Fees: </span>
+                    {candidateRank > 0 && c.closing_rank && !isNaN(Number(String(c.closing_rank).replace(/\D/g, ''))) && (
+                      <div>
+                        <span className={s.muted}>Difference: </span>
+                        <span className="font-bold text-emerald-500">
+                          +{Math.max(0, Number(String(c.closing_rank).replace(/\D/g, '')) - candidateRank)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="col-span-2">
+                      <span className={s.muted}>Est. Tuition: </span>
                       <span className="font-bold">{c.fees}</span>
                     </div>
                   </div>
@@ -168,7 +176,15 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             <span className="text-lg">✅</span>
             <h3 className="font-black text-sm uppercase tracking-wider">Safe Colleges (High Chance)</h3>
           </div>
-          <CollegeGroupList colleges={aiResponse.college_predictions?.safe} s={s} isPremium={isPremium} maxFreeCount={1} bgClass="bg-emerald-500/5" borderClass="border-emerald-500/20" isReach={false} onCollegeClick={setSelectedCollegeInfo} />
+          <CollegeGroupList 
+            colleges={aiResponse.college_predictions?.safe || []} 
+            s={s} isPremium={isPremium} maxFreeCount={3}
+            bgClass={s.dark ? 'bg-emerald-900/10' : 'bg-emerald-50'} 
+            borderClass="border-emerald-500/30" 
+            isReach={false}
+            onCollegeClick={setSelectedCollegeInfo}
+            candidateRank={aiResponse.query?.score_or_rank?.value || 0}
+          />
           
           {!isPremium && aiResponse.college_predictions.safe.length > 1 && (
              <div className="mt-4 p-4 rounded-xl border border-primary/20 bg-primary/5 text-center">
@@ -188,7 +204,15 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             <h3 className="font-black text-sm uppercase tracking-wider">Moderate Colleges</h3>
           </div>
           {isPremium ? (
-            <CollegeGroupList colleges={aiResponse.college_predictions?.moderate} s={s} isPremium={true} maxFreeCount={100} bgClass="bg-amber-500/5" borderClass="border-amber-500/20" isReach={false} onCollegeClick={setSelectedCollegeInfo} />
+            <CollegeGroupList 
+              colleges={aiResponse.college_predictions?.moderate || []} 
+              s={s} isPremium={isPremium} maxFreeCount={100}
+              bgClass={s.dark ? 'bg-amber-900/10' : 'bg-amber-50'} 
+              borderClass="border-amber-500/30" 
+              isReach={false}
+              onCollegeClick={setSelectedCollegeInfo}
+              candidateRank={aiResponse.query?.score_or_rank?.value || 0}
+            />
           ) : (
             <div className="p-6 rounded-xl border border-primary/20 bg-primary/5 text-center">
                <Crown className="w-6 h-6 text-primary mx-auto mb-3" />
@@ -208,7 +232,15 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             <h3 className="font-black text-sm uppercase tracking-wider">Reach Colleges</h3>
           </div>
           {isPremium ? (
-            <CollegeGroupList colleges={aiResponse.college_predictions?.reach} s={s} isPremium={true} maxFreeCount={100} bgClass="bg-orange-500/5" borderClass="border-orange-500/20" isReach={true} onCollegeClick={setSelectedCollegeInfo} />
+            <CollegeGroupList 
+              colleges={aiResponse.college_predictions?.reach || []} 
+              s={s} isPremium={isPremium} maxFreeCount={100}
+              bgClass={s.dark ? 'bg-orange-900/10' : 'bg-orange-50'} 
+              borderClass="border-orange-500/30" 
+              isReach={true}
+              onCollegeClick={setSelectedCollegeInfo}
+              candidateRank={aiResponse.query?.score_or_rank?.value || 0}
+            />
           ) : (
             <div className="p-6 rounded-xl border border-primary/20 bg-primary/5 text-center">
                <Crown className="w-6 h-6 text-primary mx-auto mb-3" />

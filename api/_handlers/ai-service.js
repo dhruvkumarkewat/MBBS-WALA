@@ -34,8 +34,11 @@ Return ONLY valid JSON exactly matching this structure (be concise to avoid time
 Rules:
 1. ONLY return JSON.
 2. If Govt MBBS is unlikely, provide Private/Management/Alternative options.
-3. For colleges, use EXACTLY the colleges provided in the context_cutoff_data.
-4. NEVER guarantee admission or seats. Use phrases like "high probability" instead of "guaranteed".`;
+3. For colleges, use EXACTLY the colleges provided in the context_cutoff_data. 
+4. Group the colleges into "safe", "moderate", and "reach" STRICTLY based on the "tier" field provided in the context_cutoff_data (High=safe, Moderate=moderate, Reach=reach). Do not override the tier.
+5. For fees, output EXACTLY the "fee_amount" string from context_cutoff_data. Do not invent fee numbers.
+6. NEVER guarantee admission or seats. Use phrases like "high probability" instead of "guaranteed".
+7. Be accurate with explanations (e.g. if closing rank is 1308 and user rank is 800, say "Comfortably within recent trends", not "Close to your rank").`;
 
 // ── Provider Calling ────────────────────────────────────────────────────────
 
@@ -123,7 +126,7 @@ const PROVIDER_CONFIGS = {
           body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
             temperature: 0.1,
-            max_tokens: 4000,
+            max_tokens: 8000,
             response_format: { type: 'json_object' },
             messages: [
               { role: 'system', content: payload.system_prompt || SYSTEM_PROMPT },
