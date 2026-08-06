@@ -342,6 +342,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
         collegeName={selectedCollegeInfo} 
         isOpen={!!selectedCollegeInfo} 
         onClose={() => setSelectedCollegeInfo(null)} 
+        s={s}
       />
     </div>
   );

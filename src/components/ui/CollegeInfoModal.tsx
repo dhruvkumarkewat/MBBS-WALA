@@ -5,9 +5,10 @@ interface CollegeInfoModalProps {
   collegeName: string | null;
   isOpen: boolean;
   onClose: () => void;
+  s?: any;
 }
 
-export function CollegeInfoModal({ collegeName, isOpen, onClose }: CollegeInfoModalProps) {
+export function CollegeInfoModal({ collegeName, isOpen, onClose, s = { dark: true } }: CollegeInfoModalProps) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -50,17 +51,17 @@ export function CollegeInfoModal({ collegeName, isOpen, onClose }: CollegeInfoMo
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       
-      <div className="relative w-full max-w-3xl bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-white">
+      <div className={`relative w-full max-w-3xl ${s.dark ? 'bg-slate-900 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]`}>
         {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-white/10 bg-slate-800/80">
-          <h2 className="text-lg sm:text-xl font-black pr-8 truncate text-white">
+        <div className={`flex items-center justify-between p-4 sm:p-6 border-b ${s.dark ? 'border-white/10 bg-slate-800/80' : 'border-slate-100 bg-slate-50'}`}>
+          <h2 className={`text-lg sm:text-xl font-black pr-8 truncate ${s.dark ? 'text-white' : 'text-slate-900'}`}>
             {collegeName}
           </h2>
           <button 
             onClick={onClose}
-            className="absolute top-4 sm:top-6 right-4 sm:right-6 p-2 rounded-full bg-white/5 hover:bg-white/20 transition-colors"
+            className={`absolute top-4 sm:top-6 right-4 sm:right-6 p-2 rounded-full ${s.dark ? 'bg-white/5 hover:bg-white/20' : 'bg-slate-200 hover:bg-slate-300'} transition-colors`}
           >
-            <X className="w-5 h-5 text-slate-300 hover:text-white" />
+            <X className={`w-5 h-5 ${s.dark ? 'text-slate-300 hover:text-white' : 'text-slate-500 hover:text-slate-800'}`} />
           </button>
         </div>
 
@@ -88,52 +89,52 @@ export function CollegeInfoModal({ collegeName, isOpen, onClose }: CollegeInfoMo
               
               {/* Quick Info Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-                <div className="bg-slate-800/80 border border-orange-500/20 rounded-xl p-3 sm:p-4 hover:border-orange-500/40 transition-colors">
+                <div className={`${s.dark ? 'bg-slate-800/80' : 'bg-orange-50/50'} border ${s.dark ? 'border-orange-500/20 hover:border-orange-500/40' : 'border-orange-200 hover:border-orange-300'} rounded-xl p-3 sm:p-4 transition-colors`}>
                   <div className="flex items-center gap-2 mb-2">
                     <MapPin className="w-4 h-4 text-orange-500" />
                     <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-orange-500/80">Location</span>
                   </div>
-                  <p className="font-bold text-sm text-slate-200">{data.location || 'N/A'}</p>
+                  <p className={`font-bold text-sm ${s.dark ? 'text-slate-200' : 'text-slate-800'}`}>{data.location || 'N/A'}</p>
                 </div>
                 
-                <div className="bg-slate-800/80 border border-emerald-500/20 rounded-xl p-3 sm:p-4 hover:border-emerald-500/40 transition-colors">
+                <div className={`${s.dark ? 'bg-slate-800/80' : 'bg-emerald-50/50'} border ${s.dark ? 'border-emerald-500/20 hover:border-emerald-500/40' : 'border-emerald-200 hover:border-emerald-300'} rounded-xl p-3 sm:p-4 transition-colors`}>
                   <div className="flex items-center gap-2 mb-2">
                     <Building className="w-4 h-4 text-emerald-500" />
                     <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-emerald-500/80">Type</span>
                   </div>
-                  <p className="font-bold text-sm text-slate-200">{data.type || 'N/A'}</p>
+                  <p className={`font-bold text-sm ${s.dark ? 'text-slate-200' : 'text-slate-800'}`}>{data.type || 'N/A'}</p>
                 </div>
 
-                <div className="bg-slate-800/80 border border-blue-500/20 rounded-xl p-3 sm:p-4 hover:border-blue-500/40 transition-colors">
+                <div className={`${s.dark ? 'bg-slate-800/80' : 'bg-blue-50/50'} border ${s.dark ? 'border-blue-500/20 hover:border-blue-500/40' : 'border-blue-200 hover:border-blue-300'} rounded-xl p-3 sm:p-4 transition-colors`}>
                   <div className="flex items-center gap-2 mb-2">
                     <ShieldCheck className="w-4 h-4 text-blue-500" />
                     <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-blue-500/80">Established</span>
                   </div>
-                  <p className="font-bold text-sm text-slate-200">{data.established || 'N/A'}</p>
+                  <p className={`font-bold text-sm ${s.dark ? 'text-slate-200' : 'text-slate-800'}`}>{data.established || 'N/A'}</p>
                 </div>
 
-                <div className="bg-slate-800/80 border border-rose-500/20 rounded-xl p-3 sm:p-4 hover:border-rose-500/40 transition-colors">
+                <div className={`${s.dark ? 'bg-slate-800/80' : 'bg-rose-50/50'} border ${s.dark ? 'border-rose-500/20 hover:border-rose-500/40' : 'border-rose-200 hover:border-rose-300'} rounded-xl p-3 sm:p-4 transition-colors`}>
                   <div className="flex items-center gap-2 mb-2">
                     <Bed className="w-4 h-4 text-rose-500" />
                     <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-rose-500/80">Hospital Beds</span>
                   </div>
-                  <p className="font-bold text-sm text-slate-200">{data.hospital_beds || 'N/A'}</p>
+                  <p className={`font-bold text-sm ${s.dark ? 'text-slate-200' : 'text-slate-800'}`}>{data.hospital_beds || 'N/A'}</p>
                 </div>
 
-                <div className="bg-slate-800/80 border border-purple-500/20 rounded-xl p-3 sm:p-4 hover:border-purple-500/40 transition-colors">
+                <div className={`${s.dark ? 'bg-slate-800/80' : 'bg-purple-50/50'} border ${s.dark ? 'border-purple-500/20 hover:border-purple-500/40' : 'border-purple-200 hover:border-purple-300'} rounded-xl p-3 sm:p-4 transition-colors`}>
                   <div className="flex items-center gap-2 mb-2">
                     <GraduationCap className="w-4 h-4 text-purple-500" />
                     <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-purple-500/80">MBBS Seats</span>
                   </div>
-                  <p className="font-bold text-sm text-slate-200">{data.total_mbbs_seats || 'N/A'}</p>
+                  <p className={`font-bold text-sm ${s.dark ? 'text-slate-200' : 'text-slate-800'}`}>{data.total_mbbs_seats || 'N/A'}</p>
                 </div>
 
-                <div className="bg-slate-800/80 border border-amber-500/20 rounded-xl p-3 sm:p-4 hover:border-amber-500/40 transition-colors">
+                <div className={`${s.dark ? 'bg-slate-800/80' : 'bg-amber-50/50'} border ${s.dark ? 'border-amber-500/20 hover:border-amber-500/40' : 'border-amber-200 hover:border-amber-300'} rounded-xl p-3 sm:p-4 transition-colors`}>
                   <div className="flex items-center gap-2 mb-2">
                     <Banknote className="w-4 h-4 text-amber-500" />
                     <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-amber-500/80">Est. Fees</span>
                   </div>
-                  <p className="font-bold text-sm text-slate-200">{data.estimated_fees || 'N/A'}</p>
+                  <p className={`font-bold text-sm ${s.dark ? 'text-slate-200' : 'text-slate-800'}`}>{data.estimated_fees || 'N/A'}</p>
                 </div>
               </div>
 
@@ -151,32 +152,32 @@ export function CollegeInfoModal({ collegeName, isOpen, onClose }: CollegeInfoMo
               )}
 
               {/* About Section */}
-              <div className="space-y-3 bg-slate-800/50 p-4 sm:p-5 rounded-xl border border-white/5">
-                <h3 className="text-sm font-black uppercase tracking-wider text-orange-400 border-b border-white/10 pb-2">About the College</h3>
-                <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
+              <div className={`space-y-3 ${s.dark ? 'bg-slate-800/50 border-white/5' : 'bg-slate-50 border-slate-200'} p-4 sm:p-5 rounded-xl border`}>
+                <h3 className={`text-sm font-black uppercase tracking-wider ${s.dark ? 'text-orange-400 border-white/10' : 'text-orange-600 border-slate-200'} border-b pb-2`}>About the College</h3>
+                <p className={`text-sm leading-relaxed whitespace-pre-wrap ${s.dark ? 'text-slate-300' : 'text-slate-600'}`}>
                   {data.about || 'Information not available.'}
                 </p>
               </div>
 
               {/* University & Ranking */}
               <div className="grid sm:grid-cols-2 gap-4">
-                <div className="bg-slate-800/80 p-4 rounded-xl border border-blue-500/20">
-                  <h4 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-blue-400 mb-2">Affiliated University</h4>
-                  <p className="text-sm font-semibold text-slate-200">{data.affiliated_university || 'N/A'}</p>
+                <div className={`${s.dark ? 'bg-slate-800/80 border-blue-500/20' : 'bg-blue-50 border-blue-200'} p-4 rounded-xl border`}>
+                  <h4 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-blue-500 mb-2">Affiliated University</h4>
+                  <p className={`text-sm font-semibold ${s.dark ? 'text-slate-200' : 'text-slate-800'}`}>{data.affiliated_university || 'N/A'}</p>
                 </div>
-                <div className="bg-slate-800/80 p-4 rounded-xl border border-pink-500/20">
-                  <h4 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-pink-400 mb-2">Ranking & Reputation</h4>
-                  <p className="text-sm font-semibold text-slate-200">{data.ranking_and_reputation || 'N/A'}</p>
+                <div className={`${s.dark ? 'bg-slate-800/80 border-pink-500/20' : 'bg-pink-50 border-pink-200'} p-4 rounded-xl border`}>
+                  <h4 className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider ${s.dark ? 'text-pink-400' : 'text-pink-600'} mb-2`}>Ranking & Reputation</h4>
+                  <p className={`text-sm font-semibold ${s.dark ? 'text-slate-200' : 'text-slate-800'}`}>{data.ranking_and_reputation || 'N/A'}</p>
                 </div>
               </div>
 
               {/* Facilities */}
               {data.facilities && data.facilities.length > 0 && (
-                <div className="space-y-3 bg-slate-800/50 p-4 sm:p-5 rounded-xl border border-white/5">
-                  <h3 className="text-sm font-black uppercase tracking-wider text-emerald-400 border-b border-white/10 pb-2">Facilities</h3>
+                <div className={`space-y-3 ${s.dark ? 'bg-slate-800/50 border-white/5' : 'bg-slate-50 border-slate-200'} p-4 sm:p-5 rounded-xl border`}>
+                  <h3 className={`text-sm font-black uppercase tracking-wider ${s.dark ? 'text-emerald-400 border-white/10' : 'text-emerald-600 border-slate-200'} border-b pb-2`}>Facilities</h3>
                   <div className="flex flex-wrap gap-2">
                     {data.facilities.map((fac: string, i: number) => (
-                      <span key={i} className="px-3 py-1.5 bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 rounded-full text-xs font-bold shadow-sm shadow-emerald-500/10">
+                      <span key={i} className={`px-3 py-1.5 ${s.dark ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20 shadow-emerald-500/10' : 'bg-emerald-100 text-emerald-700 border-emerald-200 shadow-emerald-100'} border rounded-full text-xs font-bold shadow-sm`}>
                         {fac}
                       </span>
                     ))}

@@ -975,6 +975,7 @@ export function FinderPage() {
         collegeName={selectedCollegeInfo} 
         isOpen={!!selectedCollegeInfo} 
         onClose={() => setSelectedCollegeInfo(null)} 
+        s={s}
       />
     </div>
   );
@@ -1863,6 +1864,7 @@ export function DashSeatMatrixPage() {
         collegeName={selectedCollegeInfo} 
         isOpen={!!selectedCollegeInfo} 
         onClose={() => setSelectedCollegeInfo(null)} 
+        s={s}
       />
     </div>
   );
