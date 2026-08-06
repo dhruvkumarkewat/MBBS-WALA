@@ -99,31 +99,130 @@ export default async function handler(req, res) {
     let aiInsights = [];
     try {
       const aiResponse = await callAI({
-        system_prompt: `You are an expert MBBS counsellor in India. Compare the two provided medical colleges and generate exactly 3-5 deep, meaningful, highly professional comparison insights for a student deciding between them. Focus on academics, location advantages, fees, cutoffs, and overall reputation. 
-Return ONLY a valid JSON object matching this structure: { "insights": ["insight 1", "insight 2", "insight 3"] }. DO NOT return markdown formatting like \`\`\`json.`,
+        system_prompt: `You are an expert medical admission counsellor and data analyst in India. Compare the two provided medical colleges and return a detailed JSON profile containing both verified data from the context and AI-estimated approximations for facilities, hospital exposure, and rankings based on your extensive knowledge of Indian medical colleges.
+DO NOT return markdown formatting like \`\`\`json. ONLY return a valid JSON object matching this exact structure:
+{
+  "winner_card": {
+    "winner_id": "id of the winning college",
+    "recommended_college": "Name of winning college",
+    "confidence_score": "e.g., 92%",
+    "overall_rating": "4.8/5",
+    "reason": "1 sentence why",
+    "strengths": ["...", "..."],
+    "weaknesses": ["...", "..."],
+    "ideal_student": "..."
+  },
+  "overall_scores": {
+    "college_a": { "overall": 92, "academics": 95, "hospital": 90, "infrastructure": 85, "fees": 90, "roi": 95, "location": 90, "hostel": 80, "research": 85, "faculty": 92, "student_satisfaction": 90 },
+    "college_b": { "overall": 85, "academics": 80, "hospital": 85, "infrastructure": 90, "fees": 70, "roi": 80, "location": 85, "hostel": 90, "research": 70, "faculty": 80, "student_satisfaction": 85 }
+  },
+  "admission_comparison": {
+    "established_year": { "a": "1956", "b": "2001" },
+    "nmc_status": { "a": "Recognized", "b": "Recognized" },
+    "aiq_eligible": { "a": "Yes", "b": "No" },
+    "minority_status": { "a": "None", "b": "Jain Minority" },
+    "management_quota": { "a": "No", "b": "Yes" }
+  },
+  "cutoff_trends": {
+    "General": [
+      { "year": 2023, "a_closing": 50, "b_closing": 15000 },
+      { "year": 2024, "a_closing": 47, "b_closing": 14000 }
+    ]
+  },
+  "fees_comparison": {
+    "tuition_fee": { "a": "₹1,628/yr", "b": "₹15,00,000/yr" },
+    "hostel_fee": { "a": "₹1,000/yr", "b": "₹1,50,000/yr" },
+    "total_5_5_year": { "a": "₹10,000", "b": "₹80,00,000" },
+    "cheaper_option": "college_a_id"
+  },
+  "hospital_exposure": {
+    "hospital_beds": { "a": "2500+", "b": "1000+" },
+    "daily_opd": { "a": "10000+", "b": "1500+" },
+    "icu_beds": { "a": "200+", "b": "50+" },
+    "clinical_score": { "a": 95, "b": 75 }
+  },
+  "academic_quality": {
+    "faculty_count": { "a": "600+", "b": "150+" },
+    "cadaver_labs": { "a": "Excellent", "b": "Good" },
+    "teaching_score": { "a": 95, "b": 80 }
+  },
+  "infrastructure": {
+    "campus_area": { "a": "100+ Acres", "b": "30 Acres" },
+    "ac_hostel": { "a": "No", "b": "Yes" },
+    "sports": { "a": "Excellent", "b": "Good" },
+    "campus_rating": { "a": 90, "b": 95 }
+  },
+  "internship": {
+    "stipend": { "a": "₹30,000/mo", "b": "₹15,000/mo" },
+    "bond": { "a": "No Bond", "b": "1 Year" }
+  },
+  "student_life": {
+    "festivals": { "a": "Pulse", "b": "Euphoria" },
+    "food_rating": { "a": "3.5/5", "b": "4.5/5" }
+  },
+  "research": {
+    "publications": { "a": "1000+/yr", "b": "50+/yr" },
+    "grants": { "a": "High", "b": "Low" }
+  },
+  "placement": {
+    "pg_selection_rate": { "a": "High", "b": "Moderate" },
+    "alumni_network": { "a": "Global", "b": "Regional" }
+  },
+  "location": {
+    "city": { "a": "Delhi", "b": "Pune" },
+    "climate": { "a": "Extreme", "b": "Pleasant" },
+    "cost_of_living": { "a": "High", "b": "High" }
+  },
+  "rankings": {
+    "nirf": { "a": "1", "b": "Not Ranked" }
+  },
+  "student_reviews": {
+    "aggregate": { "a": "4.8", "b": "4.2" }
+  },
+  "ai_decision_insights": {
+    "choose_a_if": ["...", "..."],
+    "choose_b_if": ["...", "..."],
+    "pros_a": ["...", "..."],
+    "cons_a": ["...", "..."],
+    "pros_b": ["...", "..."],
+    "cons_b": ["...", "..."]
+  },
+  "winner_badges": {
+    "best_overall": "id",
+    "best_hospital": "id",
+    "best_academics": "id",
+    "best_roi": "id",
+    "best_hostel": "id",
+    "best_location": "id"
+  },
+  "ai_recommendation": "Detailed 3-4 paragraph verdict..."
+}`,
         user_prompt: {
-          college_A: {
+          college_a: {
+            id: left.college.id,
             name: left.college.name,
             state: left.college.state,
             type: left.college.college_type,
             seats: left.highlights.total_seats,
             aiq_closing_rank: left.highlights.general_aiq
           },
-          college_B: {
+          college_b: {
+            id: right.college.id,
             name: right.college.name,
             state: right.college.state,
             type: right.college.college_type,
             seats: right.highlights.total_seats,
-            aiq_closing_rank: right.highlights.general_aiq
+            aiq_closing_rank: right.highlights.general_aiq,
+            cutoffs: right.cutoff_by_category
           }
         }
       });
-      if (aiResponse && Array.isArray(aiResponse.insights)) {
-        aiInsights = aiResponse.insights;
+      if (aiResponse && aiResponse.winner_card) {
+        aiInsights = aiResponse;
       }
     } catch (e) {
-      console.error('AI comparison failed, falling back to basic verdict', e);
-      aiInsights = verdict(left, right);
+      console.error('AI comparison failed:', e);
+      aiInsights = null;
     }
 
     const fields = [
@@ -204,9 +303,7 @@ Return ONLY a valid JSON object matching this structure: { "insights": ["insight
     return res.status(200).json({
       a: left,
       b: right,
-      fields,
-      category_matrix,
-      insights: aiInsights.length > 0 ? aiInsights : verdict(left, right),
+      aiData: aiInsights,
     });
   } catch (err) {
     console.error('college-compare error:', err);

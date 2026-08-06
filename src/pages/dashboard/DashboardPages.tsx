@@ -32,6 +32,7 @@ import {
   MapPin,
   Newspaper,
 } from 'lucide-react';
+import { CompareResultUI } from '../../components/CompareResultUI';
 import { useDashboard } from '../../contexts/DashboardContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { CollegeInfoModal } from '../../components/ui/CollegeInfoModal';
@@ -1134,121 +1135,9 @@ export function ComparePage() {
           )}
 
           {payload && !cmpLoading && (
-            <>
-              {payload.insights?.length > 0 && (
-                <div className={`rounded-2xl border p-4 mb-4 space-y-2 ${s.card}`}>
-                  <p className="text-xs font-bold uppercase tracking-wide text-primary">Insights</p>
-                  {payload.insights.map((t) => (
-                    <p key={t} className="text-sm font-medium flex items-start gap-2">
-                      <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" /> {t}
-                    </p>
-                  ))}
-                </div>
-              )}
-
-              <div className={`rounded-2xl border overflow-hidden ${s.card}`}>
-                <div
-                  className={`grid grid-cols-3 gap-2 p-4 border-b font-bold text-sm ${
-                    s.dark ? 'border-white/8 bg-white/5' : 'border-primary-dark/8 bg-grey-bg-light'
-                  }`}
-                >
-                  <span className={s.muted}>Field</span>
-                  <span className="truncate">{payload.a.college.name}</span>
-                  <span className="truncate">{payload.b.college.name}</span>
-                </div>
-                {payload.fields.map((r) => (
-                  <div
-                    key={r.key}
-                    className={`grid grid-cols-3 gap-2 p-4 text-sm border-b last:border-0 ${
-                      s.dark ? 'border-white/5' : 'border-primary-dark/5'
-                    }`}
-                  >
-                    <span className={`font-bold ${s.muted}`}>{r.key}</span>
-                    <span className={`font-semibold ${r.better === 'a' ? 'text-emerald-500' : ''}`}>
-                      {r.a}
-                    </span>
-                    <span className={`font-semibold ${r.better === 'b' ? 'text-emerald-500' : ''}`}>
-                      {r.b}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {isPremium ? (
-                <div className={`mt-4 rounded-2xl border overflow-x-auto ${s.card}`}>
-                  <table className="w-full text-sm min-w-[640px]">
-                    <thead>
-                      <tr className={s.dark ? 'bg-white/5' : 'bg-grey-bg-light'}>
-                        <th className="text-left p-3 font-bold">Category</th>
-                        <th className="text-left p-3 font-bold">A AIQ</th>
-                        <th className="text-left p-3 font-bold">A State</th>
-                        <th className="text-left p-3 font-bold">B AIQ</th>
-                        <th className="text-left p-3 font-bold">B State</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {payload.category_matrix.map((row) => (
-                        <tr
-                          key={row.category}
-                          className={`border-t ${s.dark ? 'border-white/5' : 'border-primary-dark/5'}`}
-                        >
-                          <td className="p-3 font-bold text-primary">{row.category}</td>
-                          <td className="p-3 font-semibold">
-                            {row.a?.aiq_rank?.toLocaleString() || '—'}
-                          </td>
-                          <td className={`p-3 ${s.muted}`}>{row.a?.state_rank_range || '—'}</td>
-                          <td className="p-3 font-semibold">
-                            {row.b?.aiq_rank?.toLocaleString() || '—'}
-                          </td>
-                          <td className={`p-3 ${s.muted}`}>{row.b?.state_rank_range || '—'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="relative mt-4">
-                  <div className={`rounded-2xl border overflow-hidden ${s.card} select-none filter blur-sm pointer-events-none opacity-40`}>
-                    <table className="w-full text-sm min-w-[640px]">
-                      <thead>
-                        <tr className={s.dark ? 'bg-white/5' : 'bg-grey-bg-light'}>
-                          <th className="text-left p-3 font-bold">Category</th>
-                          <th className="text-left p-3 font-bold">A AIQ</th>
-                          <th className="text-left p-3 font-bold">A State</th>
-                          <th className="text-left p-3 font-bold">B AIQ</th>
-                          <th className="text-left p-3 font-bold">B State</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {payload.category_matrix.slice(0, 3).map((row, i) => (
-                          <tr key={i} className={`border-t ${s.dark ? 'border-white/5' : 'border-primary-dark/5'}`}>
-                            <td className="p-3 font-bold text-primary">{row.category}</td>
-                            <td className="p-3 font-semibold">--</td>
-                            <td className={`p-3 ${s.muted}`}>--</td>
-                            <td className="p-3 font-semibold">--</td>
-                            <td className={`p-3 ${s.muted}`}>--</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
-                    <div className="w-full max-w-2xl bg-card rounded-2xl shadow-2xl border border-orange-500/20 overflow-hidden">
-                      <UpgradePrompt 
-                        featureName="Compare Cutoffs & Fees" 
-                        title="Content Locked"
-                        description="Please purchase a NEET UG package to view detailed AIQ & State cutoff comparisons, fee structures, and precise insights." 
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <p className={`mt-3 text-xs flex items-center gap-1 ${s.muted}`}>
-                <GitCompareArrows className="w-3.5 h-3.5" /> Enriched from colleges + cutoffs + seat_matrix.
-                Green = relatively better on that metric.
-              </p>
-            </>
+            <div className="mt-8">
+              <CompareResultUI payload={payload} s={s} isPremium={isPremium} />
+            </div>
           )}
         </>
       )}
