@@ -74,6 +74,12 @@ export async function retrieveContext(query) {
     cutoffQuery = cutoffQuery.ilike('state', `%${domicileState}%`);
   }
 
+  // Filter out any garbage data that might have been incorrectly labelled as MBBS
+  cutoffQuery = cutoffQuery
+    .not('college_name', 'ilike', '%ITI %')
+    .not('college_name', 'ilike', '%NCVT%')
+    .not('college_name', 'eq', 'Regulations');
+
   const { data: directCutoffs } = await cutoffQuery;
 
   // 4. Also fetch from colleges table to ensure full 1,000 college database coverage
