@@ -196,7 +196,9 @@ export function CompareResultUI({ payload, s, isPremium }: { payload: any, s: an
         <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl"></div>
         <h3 className="text-xl font-black mb-4 flex items-center gap-2"><HeartHandshake className="w-5 h-5 text-primary" /> Final Verdict</h3>
         <p className="text-sm md:text-base leading-relaxed opacity-90 font-medium">{ai.ai_recommendation}</p>
-        <p className="text-xs opacity-50 mt-4 italic">* Hospital, infrastructure, and ranking data are AI-estimated based on extensive knowledge base models. Always verify official NMC data before making final admission decisions.</p>
+        <p className="text-xs opacity-60 mt-6 italic bg-black/10 dark:bg-white/5 p-4 rounded-xl border border-white/10 leading-relaxed">
+          <strong>Disclaimer:</strong> This comparison is AI-generated using the information supplied to the model. Institutional facts such as fees, cutoffs, seats, and bond policies are shown only when verified data is available. If verified data is unavailable, MBBS Wala explicitly displays "Data Not Available" rather than generating estimates. The AI opinions are intended to help students understand the relative strengths and trade-offs between colleges and should not be treated as official counselling advice.
+        </p>
       </div>
       
       {/* Action Bar */}
