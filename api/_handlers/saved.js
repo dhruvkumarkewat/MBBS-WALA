@@ -1,6 +1,26 @@
 import supabase from './db-client.js';
 import { setCors, requireUser } from './_auth.js';
 
+async function parseBody(req) {
+  let body = req.body;
+  // If body is a Buffer or readable stream, read it manually
+  if (body === undefined || body === null) {
+    try {
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      const raw = Buffer.concat(chunks).toString('utf-8');
+      body = raw ? JSON.parse(raw) : {};
+    } catch {
+      body = {};
+    }
+  }
+  // If body is a string, parse it
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch { body = {}; }
+  }
+  return body || {};
+}
+
 export default async function handler(req, res) {
   setCors(res);
   if (req.method === 'OPTIONS') return res.status(204).end();
@@ -41,7 +61,8 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const collegeId = Number(req.body?.college_id);
+      const body = await parseBody(req);
+      const collegeId = Number(body?.college_id || req.query?.college_id);
       if (!collegeId) return res.status(400).json({ error: 'college_id is required' });
 
       // Ensure college exists
@@ -77,7 +98,8 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'DELETE') {
-      const collegeId = Number(req.body?.college_id || req.query?.college_id);
+      const body = await parseBody(req);
+      const collegeId = Number(body?.college_id || req.body?.college_id || req.query?.college_id);
       if (!collegeId) return res.status(400).json({ error: 'college_id is required' });
       const { error } = await supabase
         .from('saved_colleges')
