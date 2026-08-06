@@ -114,19 +114,24 @@ export default function Compare() {
         const qa = params.get('a');
         const qb = params.get('b');
         if (list.length) {
+          // Generate valid options array first (same logic as in useMemo)
+          const validList = list.filter((c: College) => c.name && c.name.trim().length > 2 && c.name.trim() !== 'N/A');
+          
           // Find two different AIIMS colleges to set as defaults
-          const aiimsList = list.filter((c: College) =>
+          const aiimsList = validList.filter((c: College) =>
             c.name?.toLowerCase().includes('aiims')
           );
-          const defaultA = aiimsList[0] || list[0];
-          const defaultB = aiimsList[1] || list[Math.min(1, list.length - 1)];
+          
+          // Fallback to first two valid options if AIIMS not found
+          const defaultA = aiimsList[0] || validList[0];
+          const defaultB = aiimsList[1] || validList[Math.min(1, validList.length - 1)];
 
-          setA(qa && list.some((c: College) => String(c.id) === qa) ? qa : String(defaultA.id));
-          setB(
-            qb && list.some((c: College) => String(c.id) === qb)
-              ? qb
-              : String(defaultB.id)
-          );
+          // Ignore url params if they point to an invalid/filtered college
+          const isAValid = qa && validList.some((c: College) => String(c.id) === qa);
+          const isBValid = qb && validList.some((c: College) => String(c.id) === qb);
+
+          setA(isAValid ? qa : String(defaultA?.id || ''));
+          setB(isBValid ? qb : String(defaultB?.id || ''));
         } else {
           setA('');
           setB('');
