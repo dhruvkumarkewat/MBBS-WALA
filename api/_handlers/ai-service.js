@@ -144,6 +144,40 @@ const PROVIDER_CONFIGS = {
       };
     },
   },
+  openai: {
+    name: 'OpenAI (gpt-4o-mini)',
+    buildRequest: (payload) => {
+      const key = process.env.OPENAI_API_KEY;
+      if (!key) return null;
+      return {
+        url: 'https://api.openai.com/v1/chat/completions',
+        options: {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${key}`,
+          },
+          signal: AbortSignal.timeout(15000),
+          body: JSON.stringify({
+            model: 'gpt-5.4-mini',
+            temperature: 0.1,
+            max_tokens: 4000,
+            response_format: { type: 'json_object' },
+            messages: [
+              { role: 'system', content: payload.system_prompt || SYSTEM_PROMPT },
+              { role: 'user', content: JSON.stringify(payload.user_prompt || payload) },
+            ],
+          }),
+        },
+        parseResponse: async (res) => {
+          const data = await res.json();
+          const text = data?.choices?.[0]?.message?.content;
+          if (!text) throw new Error('Empty OpenAI response');
+          return JSON.parse(text);
+        },
+      };
+    },
+  },
 };
 
 for (let i = 1; i <= 15; i++) {
@@ -187,7 +221,7 @@ function getProviderOrder() {
   if (envOrder) {
     return envOrder.split(',').map((s) => s.trim().toLowerCase()).filter((p) => PROVIDER_CONFIGS[p]);
   }
-  return ['gemini_1', 'gemini_2', 'gemini_3', 'gemini_4', 'gemini_5', 'gemini_6', 'gemini_7', 'gemini_8', 'gemini_9', 'gemini_10', 'gemini_11', 'gemini_12', 'gemini_13', 'gemini_14', 'gemini_15', 'groq'];
+  return ['openai', 'gemini_1', 'gemini_2', 'gemini_3', 'gemini_4', 'gemini_5', 'gemini_6', 'gemini_7', 'gemini_8', 'gemini_9', 'gemini_10', 'gemini_11', 'gemini_12', 'gemini_13', 'gemini_14', 'gemini_15', 'groq'];
 }
 
 /**

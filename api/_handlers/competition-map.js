@@ -25,47 +25,41 @@ function parseScoreMid(range) {
   return Math.round((Number(nums[0]) + Number(nums[1])) / 2);
 }
 
-// Generates probability strictly based on user's margin against historical cutoffs
-// Lower rank is better. Positive margin means user is below the cutoff (better).
-function getProbabilityForMargin(margin) {
-  if (margin > 0.15) return 0.95; // Safe (90-95%)
-  if (margin > 0.05) return 0.85; // Very High (75-89%)
-  if (margin > 0.00) return 0.70; // High (60-74%)
-  if (margin >= -0.10) return 0.55; // Moderate (45-59%)
-  if (margin >= -0.20) return 0.35; // Borderline (30-44%)
-  if (margin >= -0.30) return 0.20; // Low (15-29%)
-  if (margin >= -0.50) return 0.10; // Very Low (5-14%)
-  return 0.0; // Impossible (<5%)
+function difficultyFromScore(score) {
+  if (score >= 88) return 'Extreme';
+  if (score >= 78) return 'Very High';
+  if (score >= 65) return 'High';
+  if (score >= 48) return 'Moderate';
+  return 'Low';
 }
 
-function calculateMedian(arr) {
-  if (!arr.length) return 0;
-  const s = [...arr].sort((a, b) => a - b);
-  const mid = Math.floor(s.length / 2);
-  return s.length % 2 !== 0 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+function buildInsight(row, live) {
+  if (row.insight) return row.insight;
+  const parts = [];
+  parts.push(`${row.state_name} shows ${row.difficulty || difficultyFromScore(row.competition_score)} competition`);
+  if (live?.avgClosingRank) parts.push(`avg closing rank near ${live.avgClosingRank.toLocaleString('en-IN')}`);
+  if (live?.govt != null && live?.priv != null) parts.push(`${live.govt} govt / ${live.priv} private colleges in catalogue`);
+  parts.push('Blend AIQ with state quota and re-check seat matrix each round.');
+  return parts.join('. ') + '.';
 }
 
-// Maps 0-1 probability back to UI color ranges
-function difficultyFromProbability(prob) {
-  if (prob >= 0.90) return 'Excellent';
-  if (prob >= 0.75) return 'Very Good';
-  if (prob >= 0.60) return 'Good';
-  if (prob >= 0.45) return 'Moderate';
-  if (prob >= 0.30) return 'Borderline';
-  if (prob >= 0.15) return 'Low';
-  if (prob >= 0.05) return 'Very Low';
-  return 'Impossible';
-}
+function calculateProbability(userRank, closingRank) {
+  if (!userRank || !closingRank || closingRank <= 0) return 0.5;
 
-function scoreFromDifficulty(diff) {
-    if (diff === 'Excellent') return 10;
-    if (diff === 'Very Good') return 20;
-    if (diff === 'Good') return 35;
-    if (diff === 'Moderate') return 55;
-    if (diff === 'Borderline') return 70;
-    if (diff === 'Low') return 85;
-    if (diff === 'Very Low') return 95;
-    return 99; // Impossible
+  // User rank lower is better.
+  const diff = closingRank - userRank; 
+  // Ratio = diff / closingRank (how far inside or outside the cutoff)
+  const ratio = diff / closingRank;
+  
+  // Safe >= 0.15 * CR -> 95%
+  // Impossible <= -0.15 * CR -> 5%
+  let prob = (ratio + 0.15) / 0.30; 
+  
+  if (ratio >= 0.5) return 0.99;
+  if (ratio <= -0.5) return 0.01;
+  
+  prob = Math.max(0.05, Math.min(0.95, prob));
+  return prob;
 }
 
 export default async function handler(req, res) {
@@ -86,7 +80,7 @@ export default async function handler(req, res) {
       category = 'All',
       quota = 'All',
       college_type = 'All',
-      year = '2024',
+      year = '2026',
       round = 'Round 1',
       min_score,
       max_fees,
@@ -97,13 +91,10 @@ export default async function handler(req, res) {
       studied_in_govt_school
     } = req.query;
 
-    let yearNum = Number(year) || 2024;
-    // Base data uses the selected year or fallback to 2024 if future
-    const baseYearNum = yearNum > 2024 ? 2024 : yearNum;
-    
-    // User rank parsing, ignore if invalid/negative
-    let userRank = Number(rank);
-    if (isNaN(userRank) || userRank <= 0) userRank = null;
+    const userRank = Number(rank) || null;
+    const isPrediction = Number(year) >= 2026;
+    let baseYearNum = Number(year);
+    if (baseYearNum > 2024) baseYearNum = 2024; // Use 2024 as base for base metrics
 
     async function fetchAll(table, select, modifier = q => q, maxPages = 1) {
       const pageSize = 1000;
@@ -111,37 +102,34 @@ export default async function handler(req, res) {
       const res = await Promise.all(ranges.map(r => modifier(supabase.from(table).select(select)).range(r[0], r[1])));
       return res.flatMap(r => r.data || []);
     }
-
-    const [baseRowsRes, colleges, seats, cuts] =
-      await Promise.all([
-        supabase.from('state_competition').select('*').eq('year', baseYearNum).order('competition_score', { ascending: false }),
-        fetchAll('colleges', 'id,name,city,state,country,college_type,course,feePvt,feeGovt', q => q.ilike('country', 'INDIA'), 3),
-        fetchAll('seat_matrix', '*', q => q, 2),
-        // Fetch cutoffs for all recent years for trend analysis
-        fetchAll('cutoffs', 'state, category, score, closing_rank, aiq_rank, aiq_score, state_rank_range, college_name, quota_code, year, round_name, course_name', q => {
-          let query = q;
-          if (category !== 'All') {
-             query = query.in('category', [category, 'General', 'UR', 'Unreserved', 'OPEN']);
-          } else {
-             query = query.in('category', ['General', 'UR', 'Unreserved', 'OPEN']);
-          }
-          return query;
-        }, 15)
-      ]);
+    
+    // Fetch base metadata, colleges, seat matrix, and cutoffs in parallel
+    const [baseRowsRes, colleges, seats, cuts] = await Promise.all([
+      supabase.from('state_competition').select('*').order('competition_score', { ascending: false }),
+      fetchAll('colleges', 'id,name,city,state,country,college_type,course,feePvt,feeGovt', q => q.ilike('country', 'INDIA'), 4),
+      fetchAll('seat_matrix', '*', q => q, 3),
+      fetchAll('cutoffs', 'state, category, score, closing_rank, aiq_rank, aiq_score, state_rank_range, college_name, quota_code, year, round_name', q => {
+        let query = q;
+        if (category !== 'All') {
+          query = query.eq('category', category);
+        } else {
+          query = query.in('category', ['General', 'UR', 'Unreserved', 'OPEN']);
+        }
+        if (round && round !== 'All') {
+          query = query.ilike('round_name', `%${round}%`);
+        }
+        return query;
+      }, 15) // Fetch multiple years for weighting
+    ]);
 
     const baseRows = baseRowsRes.data || [];
-    const baseErr = baseRowsRes.error;
 
-    if (baseErr) console.warn('base query note:', baseErr.message);
-
-    // Filter 1, 2, 6, 7: Course, College Type, Fees
+    // Filter Colleges matching UI state
     const collegesByState = new Map();
     for (const c of colleges || []) {
       const cCourse = (c.course || 'MBBS').toUpperCase();
-      if (course && course !== 'All' && cCourse !== String(course).toUpperCase()) {
-        continue;
-      }
-      if (college_type && college_type !== 'All' && c.college_type !== college_type) continue;
+      if (course && course !== 'All' && cCourse !== String(course).toUpperCase()) continue;
+      if (college_type && college_type !== 'Both' && college_type !== 'All' && c.college_type !== college_type) continue;
       
       if (fees && fees !== 'All') {
         const pvtFee = Number(c.feePvt) || 0;
@@ -153,9 +141,9 @@ export default async function handler(req, res) {
         const bypassFee = isMPPriv && isMPScholarshipEligible;
 
         if (fee > 0 && !bypassFee) {
-          if (fees === 'Under ₹5L' && fee > 500000) continue;
-          if (fees === '₹5L–₹15L' && (fee < 500000 || fee > 1500000)) continue;
-          if (fees === 'Above ₹15L' && fee < 1500000) continue;
+          if (fees === 'Below ₹5L' || fees === 'Under ₹5L') { if (fee > 500000) continue; }
+          else if (fees === '₹5L–₹15L') { if (fee < 500000 || fee > 1500000) continue; }
+          else if (fees === 'Above ₹15L') { if (fee < 1500000) continue; }
         }
       }
 
@@ -164,9 +152,10 @@ export default async function handler(req, res) {
       collegesByState.get(key).push(c);
     }
 
+    // Filter Seat Matrix
     const seatsByState = new Map();
     for (const s of seats || []) {
-      if (college_type && college_type !== 'All') {
+      if (college_type && college_type !== 'Both' && college_type !== 'All') {
         const kind = String(s.college_kind || '');
         if (college_type === 'Government' && !/gov/i.test(kind)) continue;
         if (college_type === 'Private' && !/priv/i.test(kind)) continue;
@@ -176,36 +165,18 @@ export default async function handler(req, res) {
       seatsByState.get(key).push(s);
     }
 
-    // Filter 3, 4, 5: Category, Quota, Round (Course is also checked here if available)
+    // Filter Cutoffs (apply Quota strictly)
     const cutsByState = new Map();
     for (const c of cuts || []) {
-      if (category && category !== 'All') {
-        const allowedCats = [category, 'General', 'UR', 'Unreserved', 'OPEN'];
-        if (!allowedCats.includes(c.category)) continue;
-      }
-      
-      if (course && course !== 'All' && c.course_name && c.course_name.toUpperCase() !== String(course).toUpperCase()) continue;
-
-
       if (quota && quota !== 'All') {
-         const cQuota = String(c.quota_code || '').toUpperCase();
-         if (cQuota) {
-           if (quota === 'AIQ' && !cQuota.includes('AIQ') && !cQuota.includes('AI')) continue;
-           if (quota === 'State' && !cQuota.includes('SQ') && !cQuota.includes('STATE')) continue;
-           if (quota === 'Management' && !cQuota.includes('MGT')) continue;
-           if (quota === 'NRI' && !cQuota.includes('NRI')) continue;
-           if (quota === 'AACCC' && !cQuota.includes('AACCC')) continue;
-         }
-      }
-      
-      // Strict Round Matching
-      if (round && round !== 'All' && c.round_name) {
-          const rName = String(c.round_name).toLowerCase();
-          const targetR = String(round).toLowerCase();
-          if (targetR.includes('1') && !rName.includes('1')) continue;
-          if (targetR.includes('2') && !rName.includes('2')) continue;
-          if (targetR.includes('3') && !rName.includes('3')) continue;
-          if (targetR.includes('stray') && !rName.includes('stray')) continue;
+        const cQuota = String(c.quota_code || '').toUpperCase();
+        if (cQuota) {
+          if (quota === 'AIQ' && !cQuota.includes('AIQ') && !cQuota.includes('AI')) continue;
+          if (quota === 'State' && !cQuota.includes('SQ') && !cQuota.includes('STATE')) continue;
+          if (quota === 'Management' && !cQuota.includes('MGT')) continue;
+          if (quota === 'NRI' && !cQuota.includes('NRI')) continue;
+          if (quota === 'AACCC' && !cQuota.includes('AACCC')) continue;
+        }
       }
 
       const key = normalizeState(c.state);
@@ -217,6 +188,7 @@ export default async function handler(req, res) {
     const uniqueBaseRows = (baseRows || []).filter((row) => {
       const k = normalizeState(row.state_name || row.state_key);
       if (!k || seenStates.has(k)) return false;
+      if (row.year !== baseYearNum && row.year !== 2024) return false;
       seenStates.add(k);
       return true;
     });
@@ -227,6 +199,9 @@ export default async function handler(req, res) {
       const liveCols = collegesByState.get(key) || collegesByState.get(key2) || [];
       const liveSeats = seatsByState.get(key) || seatsByState.get(key2) || [];
       const liveCuts = cutsByState.get(key) || cutsByState.get(key2) || [];
+
+      const govtLive = liveCols.filter((c) => /gov/i.test(c.college_type || '')).length;
+      const privLive = liveCols.filter((c) => /priv/i.test(c.college_type || '')).length;
 
       let totalSeats = row.total_seats || 0;
       let aiqSeats = row.aiq_seats || 0;
@@ -242,19 +217,12 @@ export default async function handler(req, res) {
       else if (quota === 'State') displaySeats = stateQuota;
       else if (quota === 'Management') displaySeats = Math.round(stateQuota * 0.1);
       else if (quota === 'NRI') displaySeats = Math.round(totalSeats * 0.08);
-      else if (quota === 'AACCC') displaySeats = Math.round(totalSeats * 0.15);
-
-      const ranks = liveCuts.map((c) => c.closing_rank || c.aiq_rank || parseRankMid(c.state_rank_range)).filter((n) => typeof n === 'number' && !Number.isNaN(n));
-      const scores = liveCuts.map((c) => c.score || c.aiq_score || parseScoreMid(c.state_score_range)).filter((n) => typeof n === 'number' && !Number.isNaN(n));
-
-      const avgClosingRank = ranks.length ? Math.round(ranks.reduce((a, b) => a + b, 0) / ranks.length) : row.avg_closing_rank;
-      const avgCutoff = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : row.avg_cutoff;
 
       const totalColleges = liveCols.length || row.total_colleges || 0;
-      const govtColleges = liveCols.filter((c) => /gov/i.test(c.college_type || '')).length || row.govt_colleges || 0;
-      const privateColleges = liveCols.filter((c) => /priv/i.test(c.college_type || '')).length || row.private_colleges || 0;
+      const govtColleges = govtLive || row.govt_colleges || 0;
+      const privateColleges = privLive || row.private_colleges || 0;
 
-      let matchingColleges = 0;
+      let matchingCollegesCount = 0;
       let safestCollege = null;
       let mostCompetitiveCollege = null;
       let bestCollege = null;
@@ -262,186 +230,148 @@ export default async function handler(req, res) {
       let highestCR = -Infinity;
       
       const collegeProbs = [];
+      let totalValidCollegesForRank = 0;
 
       for (const col of liveCols) {
-        let colCuts = liveCuts.filter(c => String(c.college_name || '').toLowerCase().includes(String(col.name || '').toLowerCase().slice(0, 12)));
+        const colCuts = liveCuts.filter(c => String(c.college_name || '').toLowerCase().includes(String(col.name || '').toLowerCase().slice(0, 12)));
         
-        // --- ADDED FIX FOR "All" QUOTA REALISM ---
-        // If quota is 'All', including all state quotas makes every state look easy (unrealistic).
-        // To provide a realistic map, 'All' should behave as a Non-Domicile view:
-        // Govt Colleges: Only AIQ/Central
-        // Private Colleges: Only Open/Management/NRI in Open States
-        if (quota === 'All' || !quota) {
-            const isGovt = /gov/i.test(col.college_type || '');
-            const OPEN_STATES = ['ANDHRA_PRADESH', 'BIHAR', 'CHHATTISGARH', 'HARYANA', 'HIMACHAL_PRADESH', 'JHARKHAND', 'KARNATAKA', 'KERALA', 'MANIPUR', 'PUDUCHERRY', 'RAJASTHAN', 'SIKKIM', 'TAMIL_NADU', 'TELANGANA', 'TRIPURA', 'UTTAR_PRADESH', 'UTTARAKHAND', 'WEST_BENGAL'];
-            
-            colCuts = colCuts.filter(c => {
-                const cQuota = String(c.quota_code || '').toUpperCase();
-                if (isGovt) {
-                    return cQuota.includes('AIQ') || cQuota.includes('AI') || cQuota.includes('CENTRAL');
-                } else {
-                    if (!OPEN_STATES.includes(key)) return false; // Closed state private college
-                    if (cQuota.includes('SQ') || cQuota.includes('STATE')) return false; // State quota in private colleges is closed
-                    return true;
-                }
-            });
-        }
-        // ------------------------------------------
+        let weightedCR = 0;
+        let totalWeight = 0;
 
-        let colOverallCR = null;
-        
-        // Year weights: 2025 (40%), 2024 (30%), 2023 (20%), 2022 (10%)
-        const weights = { 2025: 0.40, 2024: 0.30, 2023: 0.20, 2022: 0.10 };
-        const availableYears = {};
+        const yearWeights = {
+          2025: 0.40,
+          2024: 0.30,
+          2023: 0.20,
+          2022: 0.10
+        };
 
-        for (const c of colCuts) {
-            const yr = Number(c.year) || 2024;
-            const r = c.closing_rank || c.aiq_rank || parseRankMid(c.state_rank_range);
-            if (r && !isNaN(r) && r > 0) {
-                if (!availableYears[yr] || availableYears[yr] < r) {
-                    availableYears[yr] = r; // use highest rank (most lenient) if multiple rounds matched
-                }
+        let lastKnownCR = null;
+
+        for (const [y, w] of Object.entries(yearWeights)) {
+          const cY = colCuts.filter(c => c.year === Number(y));
+          if (cY.length > 0) {
+            const ranks = cY.map((c) => c.closing_rank || c.aiq_rank || parseRankMid(c.state_rank_range)).filter(n => typeof n === 'number' && !Number.isNaN(n));
+            if (ranks.length > 0) {
+              const avgYRank = ranks.reduce((a, b) => a + b, 0) / ranks.length;
+              weightedCR += avgYRank * w;
+              totalWeight += w;
+              lastKnownCR = avgYRank;
             }
+          }
         }
 
-        // Apply MP Private overrides if applicable
+        let finalCR = null;
+        if (totalWeight > 0) {
+          finalCR = Math.round(weightedCR / totalWeight);
+        } else if (lastKnownCR) {
+          finalCR = lastKnownCR;
+        } else {
+          finalCR = row.avg_closing_rank;
+        }
+
+        if (!finalCR) continue;
+
+        // MP Private Override
         if (key === 'MADHYA_PRADESH' && /priv/i.test(col.college_type || '')) {
             const mpData = mpPrivateCutoffs['Madhya Pradesh'];
             if (mpData) {
                 const overrideKey = Object.keys(mpData).find(k => String(col.name).toLowerCase().includes(k.split(',')[0].toLowerCase()));
                 if (overrideKey && mpData[overrideKey]) {
                     const catData = mpData[overrideKey][category] || mpData[overrideKey]['UR'];
-                    if (catData && catData.rank) {
-                        availableYears[2024] = catData.rank; // Override 2024 data
-                    }
+                    if (catData && catData.rank) finalCR = catData.rank;
                 }
             }
         }
 
-        if (Object.keys(availableYears).length === 0) continue;
+        totalValidCollegesForRank++;
 
-        let totalWeight = 0;
-        let weightedProb = 0;
-        let latestCR = null;
-
-        for (const [yr, yrCR_raw] of Object.entries(availableYears)) {
-            let yrCR = yrCR_raw;
-            // GS Quota Inflation
-            if (studied_in_govt_school === 'true' && /gov/i.test(col.college_type || '')) {
-                yrCR = Math.round(yrCR * 1.3);
-            }
-
-            if (!latestCR || Number(yr) > latestCR.year) {
-                latestCR = { year: Number(yr), rank: yrCR };
-            }
-
-            if (userRank) {
-                const margin = (yrCR - userRank) / yrCR;
-                const p = getProbabilityForMargin(margin);
-                const w = weights[yr] || 0.1;
-                weightedProb += p * w;
-                totalWeight += w;
-            }
+        if (isPrediction) {
+          // Prediction tightening logic based on historical trend
+          const yearsDiff = Number(year) - 2024;
+          if (yearsDiff > 0) {
+             finalCR = Math.round(finalCR * Math.pow(0.97, yearsDiff));
+          }
         }
 
-        colOverallCR = latestCR ? latestCR.rank : null;
-
-        if (colOverallCR) {
-            if (colOverallCR < lowestCR) { lowestCR = colOverallCR; mostCompetitiveCollege = col.name; }
-            if (colOverallCR > highestCR) { highestCR = colOverallCR; safestCollege = col.name; }
+        if (studied_in_govt_school === 'true' && /gov/i.test(col.college_type || '')) {
+            finalCR = Math.round(finalCR * 1.3);
         }
 
-        if (userRank && totalWeight > 0) {
-            // Normalize probability by the weights of available years
-            const finalProb = weightedProb / totalWeight;
-            if (finalProb > 0.45) matchingColleges++;
-            collegeProbs.push({ name: col.name, cr: colOverallCR, prob: finalProb });
+        if (finalCR < lowestCR) { lowestCR = finalCR; mostCompetitiveCollege = col.name; }
+        if (finalCR > highestCR) { highestCR = finalCR; safestCollege = col.name; }
+
+        let prob = 0.5;
+        if (userRank) {
+          prob = calculateProbability(userRank, finalCR);
+          if (prob > 0.4) matchingCollegesCount++;
         }
+        collegeProbs.push({ name: col.name, cr: finalCR, prob });
       }
 
       if (lowestCR === Infinity) lowestCR = null;
       if (highestCR === -Infinity) highestCR = null;
 
       let admissionProbability = 0;
-      let stateDifficulty = 'Moderate';
-      let competitionScore = 50;
+      let competitionScore = Number(row.competition_score) || 50;
 
-      if (userRank) {
-        if (collegeProbs.length > 0) {
-            // Sort probabilities descending
-            collegeProbs.sort((a, b) => b.prob - a.prob);
-            
-            const topProb = collegeProbs[0].prob;
-            const medProb = calculateMedian(collegeProbs.map(c => c.prob));
-            const avgProb = collegeProbs.reduce((acc, c) => acc + c.prob, 0) / collegeProbs.length;
-            
-            // Success Ratio: % of colleges where prob > 45% (Moderate or better)
-            const successRatio = collegeProbs.filter(c => c.prob >= 0.45).length / collegeProbs.length;
+      if (userRank && collegeProbs.length > 0) {
+        collegeProbs.sort((a, b) => b.prob - a.prob);
+        
+        const probs = collegeProbs.map(c => c.prob);
+        const topProb = probs[0];
+        const avgProb = probs.reduce((a, b) => a + b, 0) / probs.length;
+        const midIndex = Math.floor(probs.length / 2);
+        const medianProb = probs.length % 2 !== 0 ? probs[midIndex] : (probs[midIndex - 1] + probs[midIndex]) / 2.0;
+        const successRatio = matchingCollegesCount / totalValidCollegesForRank;
 
-            // Final State Score Rollup
-            admissionProbability = (topProb * 0.20) + (medProb * 0.40) + (avgProb * 0.20) + (successRatio * 0.20);
-            
-            // Clamp between 0.0 and 1.0
-            admissionProbability = Math.max(0, Math.min(1, admissionProbability));
-            
-            bestCollege = collegeProbs[0]?.name;
-            stateDifficulty = difficultyFromProbability(admissionProbability);
-            competitionScore = scoreFromDifficulty(stateDifficulty);
-        } else {
-            // If rank provided but no colleges match, probability is 0 (Impossible)
-            admissionProbability = 0;
-            stateDifficulty = 'Impossible';
-            competitionScore = 99;
-        }
+        bestCollege = collegeProbs[0]?.name;
+
+        // Smart aggregation logic
+        admissionProbability = (topProb * 0.40) + (avgProb * 0.30) + (medianProb * 0.20) + (successRatio * 0.10);
+        admissionProbability = Math.max(0.05, Math.min(0.95, admissionProbability));
+        
+        competitionScore = 100 - (admissionProbability * 100);
+        competitionScore = Math.max(5, Math.min(99, competitionScore));
       } else {
-        // No rank provided, fallback to generic density calculation
         if (totalColleges > 0 && totalSeats > 0) {
-            const density = Math.min(20, Math.round(totalSeats / Math.max(totalColleges, 1) / 20));
-            competitionScore = Math.min(99, Math.max(20, 50 + (10 - density)));
-        } else {
-            competitionScore = 50;
+          const density = Math.min(20, Math.round(totalSeats / Math.max(totalColleges, 1) / 20));
+          competitionScore = Math.min(99, Math.max(20, competitionScore + (10 - density)));
         }
-        stateDifficulty = difficultyFromProbability(Math.max(0, 1 - (competitionScore/100)));
-        admissionProbability = Math.max(0.08, Math.min(0.85, (100 - competitionScore) / 100));
+        admissionProbability = Math.max(0.05, Math.min(0.95, (100 - competitionScore) / 100));
       }
+
+      const difficulty = userRank ? difficultyFromScore(competitionScore) : (row.difficulty || difficultyFromScore(competitionScore));
 
       const topFromLive = liveCols.slice(0, 6).map((c, i) => ({
         name: c.name,
         type: c.college_type || 'Government',
         city: c.city,
         seats: liveSeats.find((s) => String(s.college_name || '').toLowerCase().includes(String(c.name || '').toLowerCase().slice(0, 12)))?.total_seats,
-        closing_rank: ranks[i] || avgClosingRank,
+        closing_rank: collegeProbs.find(p => p.name === c.name)?.cr || row.avg_closing_rank,
       }));
 
       const top_colleges = Array.isArray(row.top_colleges) && row.top_colleges.length ? row.top_colleges : topFromLive;
-
-      const cutoff_trend = Array.isArray(row.cutoff_trend) ? row.cutoff_trend : [
-        (avgCutoff || 560) + 15, (avgCutoff || 560) + 10, (avgCutoff || 560) + 6,
-        (avgCutoff || 560) + 2, avgCutoff || 560, (avgCutoff || 560) - 2,
-      ];
-
-      const seat_split = row.seat_split && typeof row.seat_split === 'object' ? row.seat_split : {
-        AIQ: aiqSeats, State: stateQuota, Management: Math.round(stateQuota * 0.1), NRI: Math.round(totalSeats * 0.08),
-      };
-
+      const live = { avgClosingRank: row.avg_closing_rank, govt: govtColleges, priv: privateColleges };
+      
       let insightText = '';
       if (userRank) {
-        if (matchingColleges > 0) {
-          insightText = `Your AIR ${userRank.toLocaleString('en-IN')} gives ${stateDifficulty.toLowerCase()} admission chances in ${row.state_name}. ${matchingColleges} colleges historically closed near or below your rank in ${round}.`;
+        if (matchingCollegesCount > 0) {
+          const chanceLevel = admissionProbability >= 0.75 ? 'strong' : admissionProbability >= 0.45 ? 'moderate' : 'low';
+          insightText = `Your current AIR gives ${chanceLevel} admission chances in ${row.state_name} because ${matchingCollegesCount} colleges closed below your rank historically for ${round}.`;
         } else {
-          insightText = `Your AIR ${userRank.toLocaleString('en-IN')} makes admission impossible in ${row.state_name} based on current filters. Try relaxing your filters or exploring other states.`;
+          insightText = `Your current AIR makes admission very difficult in ${row.state_name}. Try looking at private quotas or other states.`;
         }
       } else {
-          insightText = `${row.state_name} shows ${stateDifficulty.toLowerCase()} competition. ${govtColleges} govt / ${privateColleges} private colleges in catalogue.`;
+        insightText = buildInsight(row, live);
       }
 
       return {
         id: row.id,
-        state_key: row.state_key || key2,
+        state_key: key2,
         state_name: row.state_name,
         map_name: row.state_name,
         competition_score: Math.round(competitionScore * 10) / 10,
-        difficulty: stateDifficulty,
+        difficulty,
         total_colleges: totalColleges,
         govt_colleges: govtColleges,
         private_colleges: privateColleges,
@@ -449,26 +379,26 @@ export default async function handler(req, res) {
         display_seats: displaySeats,
         aiq_seats: aiqSeats,
         state_quota_seats: stateQuota,
-        avg_closing_rank: avgClosingRank,
+        avg_closing_rank: row.avg_closing_rank,
         lowest_closing_rank: lowestCR,
         highest_closing_rank: highestCR,
         safest_college: safestCollege,
         most_competitive_college: mostCompetitiveCollege,
         best_college: bestCollege,
-        matching_colleges: matchingColleges,
-        avg_cutoff: avgCutoff,
+        matching_colleges: matchingCollegesCount,
+        avg_cutoff: row.avg_cutoff,
         admission_probability: Math.round(admissionProbability * 1000) / 1000,
         insight: insightText,
         demand_index: Number(row.demand_index) || competitionScore,
         supply_index: Number(row.supply_index) || Math.max(5, 100 - competitionScore),
         top_colleges,
-        cutoff_trend,
-        seat_split,
-        year: yearNum,
+        cutoff_trend: row.cutoff_trend || [],
+        seat_split: row.seat_split || {},
+        year: Number(year),
         colleges_sample: liveCols.slice(0, 12),
         seat_rows: liveSeats.slice(0, 20),
         cutoff_rows: liveCuts.slice(0, 24),
-        filters_applied: { course, category, quota, college_type, year: yearNum },
+        filters_applied: { course, category, quota, college_type, year: Number(year) },
       };
     });
 
@@ -496,32 +426,15 @@ export default async function handler(req, res) {
       );
     }
 
-    // Sort hottest first
     list.sort((a, b) => b.competition_score - a.competition_score);
 
     const summary = {
       states: list.length,
       total_colleges: list.reduce((a, r) => a + (r.total_colleges || 0), 0),
       total_seats: list.reduce((a, r) => a + (r.total_seats || 0), 0),
-      avg_competition:
-        list.length === 0
-          ? 0
-          : Math.round(
-              (list.reduce((a, r) => a + r.competition_score, 0) / list.length) * 10
-            ) / 10,
-      hottest: list.slice(0, 5).map((r) => ({
-        state_name: r.state_name,
-        competition_score: r.competition_score,
-        difficulty: r.difficulty,
-      })),
-      easiest: [...list]
-        .sort((a, b) => a.competition_score - b.competition_score)
-        .slice(0, 5)
-        .map((r) => ({
-          state_name: r.state_name,
-          competition_score: r.competition_score,
-          difficulty: r.difficulty,
-        })),
+      avg_competition: list.length === 0 ? 0 : Math.round((list.reduce((a, r) => a + r.competition_score, 0) / list.length) * 10) / 10,
+      hottest: list.slice(0, 5).map((r) => ({ state_name: r.state_name, competition_score: r.competition_score, difficulty: r.difficulty })),
+      easiest: [...list].sort((a, b) => a.competition_score - b.competition_score).slice(0, 5).map((r) => ({ state_name: r.state_name, competition_score: r.competition_score, difficulty: r.difficulty })),
       highest_chance: userRank ? [...list].filter(r => r.admission_probability >= 0.75).sort((a,b) => b.admission_probability - a.admission_probability).slice(0, 5).map(r => ({ state_name: r.state_name, competition_score: Math.round(r.admission_probability * 100) + '%' })) : undefined,
       moderate_chance: userRank ? [...list].filter(r => r.admission_probability >= 0.45 && r.admission_probability < 0.75).sort((a,b) => b.admission_probability - a.admission_probability).slice(0, 5).map(r => ({ state_name: r.state_name, competition_score: Math.round(r.admission_probability * 100) + '%' })) : undefined,
       very_difficult: userRank ? [...list].filter(r => r.admission_probability < 0.45).sort((a,b) => a.admission_probability - b.admission_probability).slice(0, 5).map(r => ({ state_name: r.state_name, competition_score: Math.round(r.admission_probability * 100) + '%' })) : undefined,
