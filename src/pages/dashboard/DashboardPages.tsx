@@ -30,6 +30,7 @@ import {
   CheckCircle2,
   Clock,
   MapPin,
+  Newspaper,
 } from 'lucide-react';
 import { useDashboard } from '../../contexts/DashboardContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -2306,7 +2307,9 @@ export function NotificationsPage() {
   const [items, setItems] = useState<
     Array<{ id: number; title: string; body: string; read: boolean; created_at: string }>
   >([]);
+  const [news, setNews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [newsLoading, setNewsLoading] = useState(true);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -2320,9 +2323,25 @@ export function NotificationsPage() {
     }
   }, []);
 
+  const loadNews = useCallback(async () => {
+    setNewsLoading(true);
+    try {
+      const res = await fetch('https://newsdata.io/api/1/news?apikey=pub_cff7c67139b447a58b649e9cc2d292ac&q=neet OR "medical college" OR "medical admission"&country=in&language=en');
+      const data = await res.json();
+      if (data && data.results) {
+        setNews(data.results.slice(0, 10)); // Top 10 news
+      }
+    } catch (e) {
+      console.error("Failed to load news", e);
+    } finally {
+      setNewsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     load();
-  }, [load]);
+    loadNews();
+  }, [load, loadNews]);
 
   const mark = async (id: number) => {
     try {
@@ -2347,39 +2366,106 @@ export function NotificationsPage() {
   };
 
   return (
-    <div className="max-w-2xl">
-      <div className="flex items-start justify-between gap-3 mb-5">
-        <PageHead title="Notifications" sub="GET/PUT /api/notifications" />
-        <button type="button" onClick={markAll} className="zn-cta text-xs py-2 shrink-0">
-          Mark all read
-        </button>
-      </div>
-      <ErrorBox message={error} />
-      {loading ? (
-        <div className={`h-32 rounded-2xl animate-pulse ${s.chip}`} />
-      ) : (
-        <div className="space-y-2">
-          {items.map((n) => (
-            <button
-              key={n.id}
-              type="button"
-              onClick={() => !n.read && mark(n.id)}
-              className={`w-full rounded-2xl border p-4 flex gap-3 text-left ${s.card} ${
-                !n.read ? 'ring-1 ring-primary/30' : ''
-              }`}
-            >
-              <Bell className="w-5 h-5 text-secondary shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-bold text-sm">{n.title}</p>
-                <p className={`text-xs ${s.muted}`}>{n.body}</p>
-              </div>
-              <span className={`text-[11px] font-semibold whitespace-nowrap ${s.muted}`}>
-                {n.read ? 'Read' : 'Unread'}
-              </span>
+    <div className="max-w-5xl">
+      <div className="grid md:grid-cols-2 gap-8">
+        
+        {/* Personal Notifications */}
+        <div>
+          <div className="flex items-start justify-between gap-3 mb-5">
+            <PageHead title="Alerts" sub="Your personal notifications" />
+            <button type="button" onClick={markAll} className="zn-cta text-xs py-2 shrink-0">
+              Mark all read
             </button>
-          ))}
+          </div>
+          <ErrorBox message={error} />
+          {loading ? (
+            <div className={`h-32 rounded-2xl animate-pulse ${s.chip}`} />
+          ) : items.length === 0 ? (
+            <div className={`p-8 text-center rounded-2xl border ${s.card}`}>
+              <Bell className={`w-8 h-8 mx-auto mb-3 opacity-20`} />
+              <p className={`font-bold ${s.muted}`}>No new alerts</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {items.map((n) => (
+                <button
+                  key={n.id}
+                  type="button"
+                  onClick={() => !n.read && mark(n.id)}
+                  className={`w-full rounded-2xl border p-4 flex gap-3 text-left transition-all ${s.card} ${
+                    !n.read ? 'ring-1 ring-primary/30 bg-primary/5' : 'hover:-translate-y-0.5'
+                  }`}
+                >
+                  <Bell className={`w-5 h-5 shrink-0 mt-0.5 ${!n.read ? 'text-primary' : 'text-secondary'}`} />
+                  <div className="flex-1">
+                    <p className={`text-sm ${!n.read ? 'font-extrabold text-primary' : 'font-bold'}`}>{n.title}</p>
+                    <p className={`text-xs mt-1 leading-relaxed ${s.muted}`}>{n.body}</p>
+                  </div>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${!n.read ? 'text-primary' : s.muted}`}>
+                    {n.read ? 'Read' : 'New'}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Real-time Medical News */}
+        <div>
+          <div className="mb-5">
+            <PageHead title="Live Updates" sub="Latest NEET & Medical Education News" />
+          </div>
+          {newsLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map(i => <div key={i} className={`h-24 rounded-2xl animate-pulse ${s.chip}`} />)}
+            </div>
+          ) : news.length === 0 ? (
+            <div className={`p-8 text-center rounded-2xl border ${s.card}`}>
+              <Newspaper className={`w-8 h-8 mx-auto mb-3 opacity-20`} />
+              <p className={`font-bold ${s.muted}`}>No news available right now</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {news.map((item, i) => (
+                <a
+                  key={i}
+                  href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`group block rounded-2xl border p-4 transition-all hover:-translate-y-1 hover:shadow-lg ${s.card}`}
+                >
+                  <div className="flex gap-4 items-start">
+                    {item.image_url && (
+                      <div className="w-20 h-20 shrink-0 rounded-xl overflow-hidden bg-white/5 border border-white/10 hidden sm:block">
+                        <img src={item.image_url} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-teal-500 bg-teal-500/10 px-2 py-0.5 rounded-full">
+                          {item.source_id || 'News'}
+                        </span>
+                        {item.pubDate && (
+                          <span className={`text-[10px] font-medium ${s.muted}`}>
+                            {new Date(item.pubDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="font-bold text-sm leading-tight mb-1 group-hover:text-primary transition-colors line-clamp-2">
+                        {item.title}
+                      </h3>
+                      <p className={`text-xs line-clamp-2 ${s.muted}`}>
+                        {item.description || item.content}
+                      </p>
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+
+      </div>
     </div>
   );
 }
