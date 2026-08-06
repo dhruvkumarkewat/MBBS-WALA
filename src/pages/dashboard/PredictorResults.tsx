@@ -375,7 +375,41 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
         </div>
       )}
 
-      {/* ── AI Recommendation & Strategy ── */}
+      {/* ── Scholarships ── */}
+      {aiResponse.scholarships && Object.values(aiResponse.scholarships).some((arr: any) => Array.isArray(arr) && arr.length > 0) && (
+        <div className={`rounded-2xl border p-5 ${s.card}`}>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-lg">🎓</span>
+            <h3 className="font-black text-sm uppercase tracking-wider">Eligible Scholarships</h3>
+          </div>
+          {isPremium ? (
+            <div className="grid sm:grid-cols-2 gap-4">
+              {Object.entries(aiResponse.scholarships).map(([type, list]: [string, any]) => {
+                if (!Array.isArray(list) || list.length === 0 || list[0] === '...') return null;
+                return (
+                  <div key={type} className={`rounded-xl p-3 border ${s.dark ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider mb-2 text-primary">{type.replace('_', ' ')}</h4>
+                    <ul className="space-y-1">
+                      {list.map((item: string, i: number) => (
+                        <li key={i} className={`text-xs ${s.muted}`}>• {item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-6 rounded-xl border border-primary/20 bg-primary/5 text-center">
+               <Crown className="w-6 h-6 text-primary mx-auto mb-3" />
+               <p className="text-sm font-bold mb-2">Premium Feature</p>
+               <p className="text-xs opacity-70 mb-4">Upgrade to view personalized scholarship opportunities you may be eligible for.</p>
+               <Link to="/dashboard/subscription" className="text-xs bg-primary text-white px-5 py-2.5 rounded-full font-bold inline-block hover:scale-105 transition">Upgrade Now</Link>
+             </div>
+          )}
+        </div>
+      )}
+
+      {/* ── AI Recommendation ── */}
       {aiResponse.ai_recommendation && (
         <div className={`rounded-2xl border p-5 ${s.card} border-l-4 border-l-primary/60`}>
           <div className="flex items-center gap-2 mb-3">
