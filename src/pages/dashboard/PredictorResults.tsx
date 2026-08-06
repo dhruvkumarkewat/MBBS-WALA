@@ -76,7 +76,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             <h3 className="font-black text-sm uppercase tracking-wider">Safe Colleges (High Chance)</h3>
           </div>
           <div className="space-y-3">
-            {aiResponse.college_predictions.safe.map((c: any, i: number) => (
+            {(aiResponse.college_predictions?.safe || []).map((c: any, i: number) => (
               <div key={i} className={`rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4`}>
                 <p className="font-bold text-sm mb-1">{c.name}</p>
                 <div className="flex flex-wrap gap-2 mb-2">
@@ -109,7 +109,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             <h3 className="font-black text-sm uppercase tracking-wider">Moderate Colleges</h3>
           </div>
           <div className="space-y-3">
-            {aiResponse.college_predictions.moderate.map((c: any, i: number) => (
+            {(aiResponse.college_predictions?.moderate || []).map((c: any, i: number) => (
               <div key={i} className={`rounded-xl border border-amber-500/20 bg-amber-500/5 p-4`}>
                 <p className="font-bold text-sm mb-1">{c.name}</p>
                 <div className="flex flex-wrap gap-2 mb-2">
@@ -142,7 +142,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             <h3 className="font-black text-sm uppercase tracking-wider">Reach Colleges</h3>
           </div>
           <div className="space-y-3">
-            {(isPremium ? aiResponse.college_predictions.reach : aiResponse.college_predictions.reach.slice(0, 1)).map((c: any, i: number) => (
+            {((isPremium ? aiResponse.college_predictions?.reach : aiResponse.college_predictions?.reach?.slice(0, 1)) || []).map((c: any, i: number) => (
               <div key={i} className={`rounded-xl border border-orange-500/20 bg-orange-500/5 p-4`}>
                 <p className="font-bold text-sm mb-1">{c.name}</p>
                 <div className="grid grid-cols-2 text-xs gap-2 mt-2">
@@ -181,7 +181,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
           {aiResponse.unlikely_mbbs_guidance.private_options?.length > 0 && (
             <div className="space-y-3">
               <h4 className="text-xs font-bold uppercase text-primary">Suggested Private Options</h4>
-              {aiResponse.unlikely_mbbs_guidance.private_options.map((opt: any, i: number) => (
+              {(aiResponse.unlikely_mbbs_guidance?.private_options || []).map((opt: any, i: number) => (
                 <div key={i} className={`rounded-xl border p-3 ${s.dark ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'} text-sm flex justify-between items-center`}>
                   <div>
                     <p className="font-bold">{opt.name}</p>
@@ -217,7 +217,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
                 </tr>
               </thead>
               <tbody>
-                {aiResponse.management_quota_opportunities.map((mq: any, i: number) => (
+                {(aiResponse.management_quota_opportunities || []).map((mq: any, i: number) => (
                   <tr key={i} className={`border-b ${s.dark ? 'border-white/5' : 'border-slate-100'}`}>
                     <td className="py-2 font-semibold pr-4">{mq.college}</td>
                     <td className="py-2 pr-4">{mq.expected_rank}</td>
@@ -242,7 +242,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             <h3 className="font-black text-sm uppercase tracking-wider">Alternative Courses</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {aiResponse.alternative_courses.map((alt: any, i: number) => (
+            {(aiResponse.alternative_courses || []).map((alt: any, i: number) => (
               <div key={i} className={`p-4 rounded-xl border ${s.dark ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-slate-50'}`}>
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-black text-lg text-primary">{alt.course}</h4>
@@ -275,7 +275,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             <div className="mt-4 pt-4 border-t border-primary/20">
               <h4 className="text-xs font-bold uppercase tracking-wider mb-3">Suggested Counselling Strategy</h4>
               <div className="space-y-2">
-                {Object.entries(aiResponse.counselling_strategy).map(([round, strategy]) => {
+                {Object.entries(aiResponse.counselling_strategy || {}).map(([round, strategy]) => {
                   if (!strategy || typeof strategy !== 'string') return null;
                   return (
                     <div key={round} className="flex gap-3 text-sm">
@@ -295,7 +295,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
         <div className={`rounded-xl border p-4 ${s.dark ? 'border-white/5 bg-white/3' : 'border-slate-200 bg-slate-50'}`}>
           <p className={`text-[10px] font-bold uppercase mb-2 ${s.muted}`}>⚖️ Important Disclaimers</p>
           <ul className="space-y-1.5">
-            {aiResponse.disclaimers_fraud_warnings.map((d: string, i: number) => (
+            {(aiResponse.disclaimers_fraud_warnings || []).map((d: string, i: number) => (
               <li key={i} className={`text-xs leading-relaxed ${s.muted}`}>• {d}</li>
             ))}
           </ul>
