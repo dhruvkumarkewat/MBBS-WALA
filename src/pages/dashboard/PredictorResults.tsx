@@ -164,7 +164,44 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                         {Array.isArray(c.historical_trend) && c.historical_trend.length > 0 && (
                           <div className="mt-4">
                             <h5 className={`text-[10px] uppercase font-bold mb-2 ${s.muted}`}>Historical Trends</h5>
-                            <div className="overflow-x-auto rounded border border-white/10">
+                            
+                            <div className="relative pt-6 mb-4 flex items-end gap-3 h-28 border-b border-white/10 pb-6 bg-black/10 rounded-lg px-4 border border-white/5">
+                              {candidateRank > 0 && (
+                                <div 
+                                  className="absolute left-0 right-0 border-t-2 border-dashed border-orange-500/50 z-0 flex items-center pointer-events-none"
+                                  style={{
+                                    bottom: `calc(1.5rem + ${Math.min(100, Math.max(0, (candidateRank / Math.max(candidateRank, ...c.historical_trend.map((x:any) => parseInt(String(x.closing_rank).replace(/\\D/g, '')) || 0))) * 100))}% * 0.7)` // 0.7 scales it so it fits in the container better
+                                  }}
+                                >
+                                  <span className="absolute left-2 -top-4 text-[9px] font-bold text-orange-500 bg-black/50 px-1 rounded">Your Rank: {candidateRank}</span>
+                                </div>
+                              )}
+                              
+                              {c.historical_trend.map((t: any, idx: number) => {
+                                const maxVal = Math.max(
+                                  candidateRank, 
+                                  ...c.historical_trend.map((x:any) => parseInt(String(x.closing_rank).replace(/\\D/g, '')) || 0)
+                                );
+                                const val = parseInt(String(t.closing_rank).replace(/\\D/g, '')) || 0;
+                                const pct = maxVal > 0 ? (val / maxVal) * 100 : 50;
+                                
+                                return (
+                                  <div key={idx} className="flex-1 flex flex-col justify-end items-center group relative h-full z-10">
+                                    <div className="absolute -top-5 text-[10px] font-bold text-white opacity-70 group-hover:opacity-100 transition-opacity">
+                                      {t.closing_rank}
+                                    </div>
+                                    <div 
+                                      className="w-full max-w-[40px] bg-primary/40 rounded-t-md hover:bg-primary transition-all duration-300 relative border-x border-t border-primary/50 shadow-[0_0_10px_rgba(var(--color-primary),0.2)]" 
+                                      style={{ height: `${Math.max(5, pct * 0.7)}%` }}
+                                    >
+                                    </div>
+                                    <div className={`absolute -bottom-5 text-[9px] font-bold uppercase ${s.muted}`}>{t.year}</div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                            
+                            <div className="overflow-x-auto rounded border border-white/10 hidden md:block">
                               <table className="w-full text-left text-[10px] border-collapse bg-black/10">
                                 <thead>
                                   <tr className={`border-b ${s.dark ? 'border-white/10' : 'border-black/10'}`}>
@@ -178,7 +215,7 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                                     <tr key={idx} className={`border-b last:border-0 ${s.dark ? 'border-white/5' : 'border-black/5'}`}>
                                       <td className="px-3 py-1">{t.year}</td>
                                       <td className="px-3 py-1 text-right opacity-80">{t.opening_rank || '-'}</td>
-                                      <td className="px-3 py-1 text-right font-bold">{t.closing_rank}</td>
+                                      <td className="px-3 py-1 text-right font-bold text-primary">{t.closing_rank}</td>
                                     </tr>
                                   ))}
                                 </tbody>
