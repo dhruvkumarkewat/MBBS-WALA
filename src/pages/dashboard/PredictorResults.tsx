@@ -142,22 +142,6 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                             <div className="font-bold">{c.seats || 'Data unavailable'}</div>
                           </div>
                           
-                          <div className="col-span-2 md:col-span-1">
-                            <div className="flex justify-between">
-                              <span className={s.muted}>Hospital Beds: </span>
-                              {c.is_hospital_beds_verified ? <span className="text-emerald-400">✔ Verified</span> : <span className="text-yellow-500">⚠ Not Verified</span>}
-                            </div>
-                            <div className="font-bold">{c.hospital_beds || 'Data unavailable'}</div>
-                          </div>
-                          
-                          <div className="col-span-2 md:col-span-1">
-                            <div className="flex justify-between">
-                              <span className={s.muted}>Stipend: </span>
-                              {c.is_internship_stipend_verified ? <span className="text-emerald-400">✔ Verified</span> : <span className="text-yellow-500">⚠ Not Verified</span>}
-                            </div>
-                            <div className="font-bold">{c.internship_stipend || 'Data unavailable'}</div>
-                          </div>
-                          
                           <div className="col-span-2">
                             <div className="flex justify-between">
                               <span className={s.muted}>Bond: </span>
