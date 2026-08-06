@@ -719,7 +719,7 @@ export function PredictorPage() {
               </p>
               {aiResponse.fallback?.alternative_courses && (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {aiResponse.fallback.alternative_courses.map((c) => (
+                  {(aiResponse.fallback.alternative_courses || []).map((c) => (
                     <span key={c} className="text-xs px-3 py-1 rounded-full bg-white/10 text-white/70 font-semibold">{c}</span>
                   ))}
                 </div>
@@ -930,7 +930,7 @@ export function PredictorPage() {
                   </div>
                   <p className={`text-xs mb-2 font-semibold ${s.muted}`}>If your goal is MBBS in {neetYear}, focus on:</p>
                   <ul className="space-y-2 mb-3">
-                    {aiResponse.ai_recommendation.focus_areas.map((area, i) => (
+                    {(aiResponse.ai_recommendation.focus_areas || []).map((area, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm">
                         <span className="text-emerald-400 mt-0.5 shrink-0">✅</span>
                         <span className="font-semibold">{area}</span>
@@ -1095,7 +1095,7 @@ export function PredictorPage() {
                       <p className="text-sm leading-relaxed">{aiResponse.fallback.message}</p>
                       {aiResponse.fallback.alternative_courses && (
                         <div className="mt-2 flex flex-wrap gap-2">
-                          {aiResponse.fallback.alternative_courses.map((c) => (
+                          {(aiResponse.fallback.alternative_courses || []).map((c) => (
                             <span key={c} className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-semibold">{c}</span>
                           ))}
                         </div>
@@ -1193,7 +1193,7 @@ export function PredictorPage() {
                 <div className={`rounded-xl border p-4 ${s.dark ? 'border-white/5 bg-white/3' : 'border-slate-200 bg-slate-50'}`}>
                   <p className={`text-[10px] font-bold uppercase mb-2 ${s.muted}`}>⚖️ Important Disclaimers</p>
                   <ul className="space-y-1.5">
-                    {aiResponse.disclaimers.map((d, i) => (
+                    {(aiResponse.disclaimers || []).map((d, i) => (
                       <li key={i} className={`text-xs leading-relaxed ${s.muted}`}>• {d}</li>
                     ))}
                   </ul>
