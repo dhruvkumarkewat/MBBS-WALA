@@ -86,107 +86,58 @@ export default async function (req, res) {
       }
     }
 
-    const openaiKey = process.env.OPENAI_API_KEY;
+    // Format messages for Gemini
+    // Gemini expects role to be 'user' or 'model'
+    const formattedMessages = messages.map(msg => ({
+      role: msg.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: msg.text }]
+    }));
+
+    const payload = {
+      systemInstruction: { parts: [{ text: contextualPrompt }] },
+      contents: formattedMessages,
+      generationConfig: {
+        temperature: 0.5,
+        maxOutputTokens: 1024,
+      },
+    };
 
     let data;
     let success = false;
     let lastError = null;
-    let replyText = null;
 
-    // Try OpenAI First
-    if (openaiKey) {
-      const openAiMessages = [
-        { role: 'system', content: contextualPrompt },
-        ...messages.map(msg => ({
-          role: msg.role === 'assistant' ? 'assistant' : 'user',
-          content: msg.text
-        }))
-      ];
-
+    for (const key of keys) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${key}`;
       try {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        const response = await fetch(url, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${openaiKey}`
-          },
-          body: JSON.stringify({
-            model: 'gpt-5.4-mini',
-            temperature: 0.5,
-            max_tokens: 1024,
-            messages: openAiMessages
-          })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
         });
 
         if (response.ok) {
-          const resData = await response.json();
-          replyText = resData.choices?.[0]?.message?.content;
-          if (replyText) {
-            success = true;
-          }
+          data = await response.json();
+          success = true;
+          break; // Exit loop on success
         } else {
           lastError = await response.text();
-          console.warn(`OpenAI Error: ${lastError}`);
+          console.warn(`Gemini API Error with a key (Status ${response.status}): ${lastError}`);
         }
-      } catch (err) {
-        lastError = err.message;
-        console.warn(`OpenAI fetch error: ${lastError}`);
-      }
-    }
-
-    // Fallback to Gemini
-    if (!success) {
-      // Format messages for Gemini
-      const formattedMessages = messages.map(msg => ({
-        role: msg.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: msg.text }]
-      }));
-
-      const payload = {
-        systemInstruction: { parts: [{ text: contextualPrompt }] },
-        contents: formattedMessages,
-        generationConfig: {
-          temperature: 0.5,
-          maxOutputTokens: 1024,
-        },
-      };
-
-      for (const key of keys) {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${key}`;
-        try {
-          const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-
-          if (response.ok) {
-            data = await response.json();
-            replyText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (replyText) {
-              success = true;
-              break; 
-            }
-          } else {
-            lastError = await response.text();
-            console.warn(`Gemini API Error with a key (Status ${response.status}): ${lastError}`);
-          }
-        } catch (fetchErr) {
-          lastError = fetchErr.message;
-          console.warn(`Fetch error with a Gemini key: ${lastError}`);
-        }
+      } catch (fetchErr) {
+        lastError = fetchErr.message;
+        console.warn(`Fetch error with a Gemini key: ${lastError}`);
       }
     }
 
     if (!success) {
-      console.error('All AI providers failed. Last error:', lastError);
+      console.error('All Gemini API keys failed. Last error:', lastError);
       res.writeHead(400, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ 
-        reply: "My AI brain isn't connected! Please go to your Vercel Dashboard and add your real Gemini or OpenAI API key." 
+        reply: "My AI brain isn't connected! Please go to your Vercel Dashboard and add your real Gemini API key (it should start with 'AIza...') as 'GEMINI_API_KEY' in the Environment Variables." 
       }));
     }
 
-    if (!replyText) replyText = "I'm sorry, I couldn't process that request right now.";
+    const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I couldn't process that request right now.";
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ reply: replyText }));
