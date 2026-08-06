@@ -554,7 +554,8 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
       )}
 
       {/* ── Scholarships ── */}
-      {aiResponse.scholarships && Object.values(aiResponse.scholarships).some((arr: any) => Array.isArray(arr) && arr.length > 0) && (
+      {((aiResponse.exact_scholarships && aiResponse.exact_scholarships.length > 0) || 
+        (aiResponse.scholarships && Object.values(aiResponse.scholarships).some((arr: any) => Array.isArray(arr) && arr.length > 0))) && (
         <div className={`rounded-2xl border p-5 ${s.card}`}>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-lg">🎓</span>
@@ -562,19 +563,54 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
           </div>
           {isPremium ? (
             <div className="grid sm:grid-cols-2 gap-4">
-              {Object.entries(aiResponse.scholarships).map(([type, list]: [string, any]) => {
-                if (!Array.isArray(list) || list.length === 0 || list[0] === '...') return null;
-                return (
-                  <div key={type} className={`rounded-xl p-3 border ${s.dark ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
-                    <h4 className="text-[10px] font-bold uppercase tracking-wider mb-2 text-primary">{type.replace('_', ' ')}</h4>
-                    <ul className="space-y-1">
-                      {list.map((item: string, i: number) => (
-                        <li key={i} className={`text-xs ${s.muted}`}>• {item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                );
-              })}
+              {aiResponse.exact_scholarships && aiResponse.exact_scholarships.length > 0 ? (
+                aiResponse.exact_scholarships.map((sch: any, i: number) => (
+                  <a 
+                    key={i} 
+                    href={sch.official_portal || '#'} 
+                    target={sch.official_portal ? "_blank" : undefined} 
+                    rel={sch.official_portal ? "noopener noreferrer" : undefined}
+                    className={`block rounded-xl p-4 border transition-all hover:-translate-y-1 hover:shadow-lg ${sch.official_portal ? 'cursor-pointer hover:border-primary/50' : 'cursor-default'} ${s.dark ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}
+                  >
+                    <div className="flex justify-between items-start mb-2 gap-2">
+                      <h4 className="text-sm font-black text-primary leading-tight">{sch.name}</h4>
+                      {sch.provider && (
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary shrink-0 border border-primary/20">
+                          {sch.provider}
+                        </span>
+                      )}
+                    </div>
+                    <p className={`text-xs mb-3 font-medium leading-relaxed ${s.muted}`}>{sch.match_reason}</p>
+                    
+                    <div className="flex justify-between items-end mt-auto pt-2 border-t border-primary/10">
+                      <div>
+                        {sch.estimated_amount && (
+                          <p className="text-xs font-black text-emerald-500">{sch.estimated_amount}</p>
+                        )}
+                      </div>
+                      {sch.official_portal && (
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-blue-500 hover:text-blue-400 flex items-center gap-1 transition-colors">
+                          Apply Now →
+                        </div>
+                      )}
+                    </div>
+                  </a>
+                ))
+              ) : (
+                Object.entries(aiResponse.scholarships).map(([type, list]: [string, any]) => {
+                  if (!Array.isArray(list) || list.length === 0 || list[0] === '...') return null;
+                  return (
+                    <div key={type} className={`rounded-xl p-3 border ${s.dark ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
+                      <h4 className="text-[10px] font-bold uppercase tracking-wider mb-2 text-primary">{type.replace('_', ' ')}</h4>
+                      <ul className="space-y-1">
+                        {list.map((item: string, i: number) => (
+                          <li key={i} className={`text-xs ${s.muted}`}>• {item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })
+              )}
             </div>
           ) : (
             <div className="p-6 rounded-xl border border-primary/20 bg-primary/5 text-center">

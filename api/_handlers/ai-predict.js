@@ -560,6 +560,9 @@ export default async function handler(req, res) {
         moderate: exactData.colleges.filter(c => c.chance_tier === 'Moderate').map(mapCollege),
         reach: exactData.colleges.filter(c => c.chance_tier === 'Reach').map(mapCollege)
       };
+      
+      // Pass the verified scholarships with official portals to the UI
+      aiResponse.exact_scholarships = exactData.scholarships;
 
       // Step 5: Verify grounding
       const groundingCheck = verifyGrounding(aiResponse, context);
@@ -581,6 +584,7 @@ export default async function handler(req, res) {
         moderate: response.colleges.filter(c => c.chance_tier === 'Moderate').map(mapCollege),
         reach: response.colleges.filter(c => c.chance_tier === 'Reach').map(mapCollege)
       };
+      response.exact_scholarships = response.scholarships;
     }
 
     // Ensure meta always has timing info
