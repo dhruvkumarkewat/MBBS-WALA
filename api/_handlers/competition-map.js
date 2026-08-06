@@ -257,8 +257,30 @@ export default async function handler(req, res) {
       const collegeProbs = [];
 
       for (const col of liveCols) {
-        const colCuts = liveCuts.filter(c => String(c.college_name || '').toLowerCase().includes(String(col.name || '').toLowerCase().slice(0, 12)));
+        let colCuts = liveCuts.filter(c => String(c.college_name || '').toLowerCase().includes(String(col.name || '').toLowerCase().slice(0, 12)));
         
+        // --- ADDED FIX FOR "All" QUOTA REALISM ---
+        // If quota is 'All', including all state quotas makes every state look easy (unrealistic).
+        // To provide a realistic map, 'All' should behave as a Non-Domicile view:
+        // Govt Colleges: Only AIQ/Central
+        // Private Colleges: Only Open/Management/NRI in Open States
+        if (quota === 'All' || !quota) {
+            const isGovt = /gov/i.test(col.college_type || '');
+            const OPEN_STATES = ['ANDHRA_PRADESH', 'BIHAR', 'CHHATTISGARH', 'HARYANA', 'HIMACHAL_PRADESH', 'JHARKHAND', 'KARNATAKA', 'KERALA', 'MANIPUR', 'PUDUCHERRY', 'RAJASTHAN', 'SIKKIM', 'TAMIL_NADU', 'TELANGANA', 'TRIPURA', 'UTTAR_PRADESH', 'UTTARAKHAND', 'WEST_BENGAL'];
+            
+            colCuts = colCuts.filter(c => {
+                const cQuota = String(c.quota_code || '').toUpperCase();
+                if (isGovt) {
+                    return cQuota.includes('AIQ') || cQuota.includes('AI') || cQuota.includes('CENTRAL');
+                } else {
+                    if (!OPEN_STATES.includes(key)) return false; // Closed state private college
+                    if (cQuota.includes('SQ') || cQuota.includes('STATE')) return false; // State quota in private colleges is closed
+                    return true;
+                }
+            });
+        }
+        // ------------------------------------------
+
         let colOverallCR = null;
         
         // Year weights: 2025 (40%), 2024 (30%), 2023 (20%), 2022 (10%)
