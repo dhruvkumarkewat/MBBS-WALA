@@ -31,11 +31,9 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
     <div className="space-y-5">
       {sortedQuotas.map((quota) => (
         <div key={quota} className="space-y-3">
-          {sortedQuotas.length > 1 && (
-            <h4 className={`text-[11px] font-bold uppercase tracking-wider ${s.muted} border-b ${s.dark ? 'border-white/10' : 'border-slate-200'} pb-1.5`}>
-              {quota} Quota Colleges
-            </h4>
-          )}
+          <h4 className={`text-[11px] font-bold uppercase tracking-wider ${s.muted} border-b ${s.dark ? 'border-white/10' : 'border-slate-200'} pb-1.5`}>
+            {quota} Quota Colleges
+          </h4>
           {grouped[quota].map((c: any, i: number) => (
             <div key={i} className={`rounded-xl border ${bgClass} ${borderClass} p-4`}>
               <p className="font-bold text-sm mb-1">{c.name}</p>
