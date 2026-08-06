@@ -167,10 +167,9 @@ const DEEMED_KEYWORDS = [
   const normalizedDirect = (directCutoffs || []).map((item) => {
     const stateMatch = Boolean(domicileState && (item.state || '').toLowerCase().includes(domicileState.toLowerCase()));
     let quotaCode = item.quota_code || 'AIQ';
-    if (stateMatch && quotas.includes('State')) {
+    const isStateQuota = quotaCode.toUpperCase().includes('STATE') || quotaCode.toUpperCase().includes('SQ');
+    if (stateMatch && quotas.includes('State') && isStateQuota) {
       quotaCode = 'State';
-    } else if (quotaCode === 'State' && !stateMatch) {
-      quotaCode = 'AIQ';
     }
     
     // Attempt to enrich direct cutoffs with exact college details if available
