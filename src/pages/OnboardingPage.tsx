@@ -142,6 +142,15 @@ export default function OnboardingPage() {
         setError('Please enter a valid 10-digit WhatsApp phone number.');
         return false;
       }
+      if (form.date_of_birth) {
+        const dob = new Date(form.date_of_birth);
+        const minAgeDate = new Date();
+        minAgeDate.setFullYear(minAgeDate.getFullYear() - 16);
+        if (dob > minAgeDate) {
+          setError('You must be at least 16 years old to register.');
+          return false;
+        }
+      }
       return true;
     }
     if (currentStep === 2) {

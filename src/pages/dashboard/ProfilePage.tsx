@@ -204,6 +204,17 @@ export function ProfilePage() {
     setError('');
 
     try {
+      if (form.date_of_birth) {
+        const dob = new Date(form.date_of_birth);
+        const minAgeDate = new Date();
+        minAgeDate.setFullYear(minAgeDate.getFullYear() - 16);
+        if (dob > minAgeDate) {
+          toastError('Validation Error', 'You must be at least 16 years old.');
+          setSaving(false);
+          return;
+        }
+      }
+
       const payload = {
         full_name: form.full_name,
         phone: form.phone,
