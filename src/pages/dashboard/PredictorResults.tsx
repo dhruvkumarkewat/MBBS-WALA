@@ -29,11 +29,11 @@ const getQuotaStyle = (quota: string) => {
 
 const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borderClass, isReach, onCollegeClick, candidateRank }: any) => {
   if (!colleges || colleges.length === 0) return null;
-  const displayColleges = isPremium ? colleges : [...colleges].sort((a, b) => {
-    const rankA = parseInt(String(a.expected_rank || '0').replace(/\D/g, '')) || 999999;
-    const rankB = parseInt(String(b.expected_rank || '0').replace(/\D/g, '')) || 999999;
-    return rankA - rankB;
-  }).slice(0, maxFreeCount);
+  const displayColleges = [...colleges].sort((a, b) => {
+    const probA = parseInt(String(a.probability || '0').replace(/\D/g, '')) || 0;
+    const probB = parseInt(String(b.probability || '0').replace(/\D/g, '')) || 0;
+    return probB - probA;
+  }).slice(0, isPremium ? 1000 : maxFreeCount);
   const grouped = displayColleges.reduce((acc: any, c: any) => {
     const q = c.quota || 'Other';
     if (!acc[q]) acc[q] = [];
@@ -144,7 +144,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             <h3 className="font-black text-sm uppercase tracking-wider">Admission Summary</h3>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
              <div className="bg-primary/10 rounded-xl p-3 border border-primary/20">
                <p className="text-[10px] uppercase font-bold text-primary mb-1">Status</p>
                <p className="text-sm font-black text-primary">{aiResponse.admission_summary.status}</p>
@@ -157,11 +157,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
                <p className={`text-[10px] uppercase font-bold ${s.muted} mb-1`}>Data Reliability</p>
                <p className="text-sm font-black text-blue-500">{aiResponse.admission_summary.data_reliability || 'High'}</p>
              </div>
-             <div className={`${s.dark ? 'bg-white/5' : 'bg-slate-50'} rounded-xl p-3 border border-slate-500/20`}>
-               <p className={`text-[10px] uppercase font-bold ${s.muted} mb-1`}>Overall Match</p>
-               <p className="text-sm font-black text-amber-500">{aiResponse.admission_summary.overall_confidence}</p>
-             </div>
-          </div>
+           </div>
           
           <p className={`text-sm leading-relaxed ${s.muted}`}>
             {aiResponse.admission_summary.explanation}

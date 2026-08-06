@@ -13,14 +13,14 @@ Return ONLY valid JSON exactly matching this structure (be concise to avoid time
 {
   "admission_summary": { "status": "Excellent Chances|High Chances|Moderate Chances|Low Chances|Very Low Chances", "data_reliability": "High (Based on 5-Year Trends)", "expected_probability": "85%", "explanation": "2-3 sentences explaining why" },
   "college_predictions": {
-    "safe": [{ "name": "...", "probability": "High", "expected_round": "Round 1", "fees": "...", "quota": "MUST BE EXACTLY 'AIQ' OR 'State' OR 'Management Quota'", "opening_rank": "...", "closing_rank": "...", "reason": "..." }],
-    "moderate": [{ "name": "...", "probability": "Moderate", "expected_round": "Round 2", "fees": "...", "quota": "MUST BE EXACTLY 'AIQ' OR 'State' OR 'Management Quota'", "opening_rank": "...", "closing_rank": "...", "reason": "..." }],
-    "reach": [{ "name": "...", "probability": "Low", "expected_round": "Stray", "fees": "...", "quota": "MUST BE EXACTLY 'AIQ' OR 'State' OR 'Management Quota'", "opening_rank": "...", "closing_rank": "...", "reason": "..." }]
+    "safe": [{ "name": "...", "probability": "96%", "expected_round": "Round 1", "fees": "...", "quota": "MUST BE EXACTLY 'AIQ' OR 'State' OR 'Management Quota'", "opening_rank": "...", "closing_rank": "...", "reason": "..." }],
+    "moderate": [{ "name": "...", "probability": "65%", "expected_round": "Round 2", "fees": "...", "quota": "MUST BE EXACTLY 'AIQ' OR 'State' OR 'Management Quota'", "opening_rank": "...", "closing_rank": "...", "reason": "..." }],
+    "reach": [{ "name": "...", "probability": "30%", "expected_round": "Stray", "fees": "...", "quota": "MUST BE EXACTLY 'AIQ' OR 'State' OR 'Management Quota'", "opening_rank": "...", "closing_rank": "...", "reason": "..." }]
   },
   "unlikely_mbbs_guidance": { "active": true, "message": "...", "private_options": [{ "name": "...", "state": "...", "fees": "...", "probability": "...", "rounds": "...", "management_quota": true, "nri_seats": true }] },
   "management_quota_opportunities": [{ "college": "...", "expected_rank": "...", "approx_fees": "...", "hostel_fees": "...", "bond": "...", "total_cost": "...", "chances": "...", "donation_expected": true }],
   "nri_quota": { "eligible_colleges": ["..."], "approx_fees": "...", "eligibility": "...", "required_documents": ["..."] },
-  "alternative_courses": [{ "course": "BDS", "career_scope": "...", "average_salary": "...", "higher_studies": "...", "admission_chances": "...", "top_colleges": ["..."] }],
+  "alternative_courses": [{ "course": "BDS / BAMS / BHMS / BUMS / BSMS (choose relevant)", "career_scope": "...", "average_salary": "...", "higher_studies": "...", "admission_chances": "...", "top_colleges": ["..."] }],
   "scholarships": { "government": ["..."], "state": ["..."], "private": ["..."], "minority": ["..."], "category": ["..."], "income_based": ["..."] },
   "counselling_strategy": { "round_1": "...", "round_2": "...", "round_3": "...", "stray_vacancy": "...", "aaccc": "...", "state_counselling": "..." },
   "expected_cutoff_comparison": [{ "college": "...", "last_year_closing_rank": "...", "your_rank": "...", "difference": "...", "admission_chance": "..." }],
@@ -37,8 +37,9 @@ Rules:
 3. For colleges, use EXACTLY the colleges provided in the context_cutoff_data. 
 4. Group the colleges into "safe", "moderate", and "reach" STRICTLY based on the "tier" field provided in the context_cutoff_data (High=safe, Moderate=moderate, Reach=reach). Do not override the tier.
 5. For fees, output EXACTLY the "fee_amount" string from context_cutoff_data. Do not invent fee numbers.
-6. NEVER guarantee admission or seats. Use phrases like "high probability" instead of "guaranteed".
-7. Be accurate with explanations (e.g. if closing rank is 1308 and user rank is 800, say "Comfortably within recent trends", not "Close to your rank").`;
+6. For probability, output EXACTLY the "admission_chance_percentage" followed by "%" from context_cutoff_data.
+7. NEVER guarantee admission or seats. Use phrases like "high probability" instead of "guaranteed".
+8. Be accurate with explanations (e.g. if closing rank is 1308 and user rank is 800, say "Comfortably within recent trends", not "Close to your rank").`;
 
 // ── Provider Calling ────────────────────────────────────────────────────────
 

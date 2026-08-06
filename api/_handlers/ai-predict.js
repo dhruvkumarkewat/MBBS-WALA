@@ -200,7 +200,7 @@ const DEEMED_KEYWORDS = [
     const isValidMedical = /MEDICAL|COLLEGE|INSTITUTE|UNIVERSITY|HOSPITAL|AIIMS|JIPMER|GMC|AMC|SMC|RIMS|VIMS|PIMS|MIMS|SIMS|AIMS|KIMS|BJMC|SCIENCE|ACADEMY|FACULTY|DENTAL|AYURVED|HOMOEOPATH|UNANI/i.test(nameUpper);
     if (!isValidMedical) continue;
 
-    const normalizedName = item.college_name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const normalizedName = item.college_name.split(',')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
     if (seenNames.has(normalizedName)) continue;
     
     // 1. STRICT QUOTA FILTER: If user specified quotas, NEVER include colleges of unselected quotas
@@ -425,7 +425,7 @@ export default async function handler(req, res) {
     // Step 3: Prepare payload for AI
     // Strip massive arrays (fees, seat_matrix) to fit inside Groq's 12k token limit
     // Also limit closing_ranks and scholarships to reduce payload size
-    const trimmedClosingRanks = (context.closing_ranks || []).slice(0, 15).map(r => ({
+    const trimmedClosingRanks = (context.closing_ranks || []).slice(0, 45).map(r => ({
       college_name: r.college_name,
       state: r.state,
       closing_rank: r.closing_rank,
