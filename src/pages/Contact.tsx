@@ -74,16 +74,16 @@ export default function Contact() {
               <p className="font-extrabold text-lg">7880119983</p>
             </div>
           </a>
-          <a href="mailto:info@mbbswala.in" className="zn-card p-5 flex items-center gap-4">
+          <div className="zn-card p-5 flex items-center gap-4">
             <span className="w-12 h-12 rounded-full bg-yellow-bg border-2 border-black grid place-items-center">
               <Mail className="w-5 h-5" />
             </span>
-            <div>
+            <div className="flex flex-col items-start">
               <p className="text-xs font-bold uppercase text-text-grey">Email</p>
-              <p className="font-extrabold">info@mbbswala.in</p>
-              <p className="text-sm font-medium text-text-grey">mbbswala023@gmail.com</p>
+              <a href="mailto:info@mbbswala.in" className="font-extrabold hover:underline hover:text-[#F97316] transition-colors">info@mbbswala.in</a>
+              <a href="mailto:mbbswala023@gmail.com" className="text-sm font-medium text-text-grey hover:underline hover:text-[#F97316] transition-colors">mbbswala023@gmail.com</a>
             </div>
-          </a>
+          </div>
           <div className="zn-card p-5 flex items-center gap-4">
             <span className="w-12 h-12 rounded-full bg-orange-bg border-2 border-black grid place-items-center">
               <MapPin className="w-5 h-5" />
