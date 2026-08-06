@@ -124,7 +124,8 @@ export default function Compare() {
       })
       .catch(() => setError('Failed to load colleges'))
       .finally(() => setLoadingList(false));
-  }, [params, course]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [course]); // Removed params to prevent reload loops
 
   useEffect(() => {
     if (!a || !b || a === b) {
@@ -151,22 +152,18 @@ export default function Compare() {
 
   useEffect(() => {
     if (a && b) {
-      const currentParams = Object.fromEntries(params);
-      if (a) currentParams.a = a;
-      if (b) currentParams.b = b;
-      if (course !== 'All') {
-        currentParams.course = course;
-      } else {
-        delete currentParams.course;
-      }
-      setParams(currentParams, { replace: true });
+      const qs = new URLSearchParams();
+      if (a) qs.set('a', a);
+      if (b) qs.set('b', b);
+      if (course !== 'All') qs.set('course', course);
+      setParams(qs, { replace: true });
     }
-  }, [a, b, course, params, setParams]);
+  }, [a, b, course, setParams]);
 
   const options = useMemo(
     () =>
       colleges
-        .filter(c => c.name && c.name.trim() !== '-' && c.name.trim() !== '')
+        .filter(c => c.name && c.name.trim().length > 2 && c.name.trim() !== 'N/A')
         .map((c) => ({
           id: String(c.id),
           label: `${c.name}${c.city && c.city.trim() !== '-' ? ` · ${c.city}` : ''}${c.course ? ` · ${c.course}` : ''}`,
