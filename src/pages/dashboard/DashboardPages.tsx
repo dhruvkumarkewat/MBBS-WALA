@@ -37,6 +37,7 @@ import { apiJson } from '../../lib/api';
 import { usePremium, UpgradePrompt, PremiumGate } from '../../lib/premium';
 import { INDIAN_STATES, COUNSELLING_ROUNDS } from '../../lib/courses';
 import { PredictorResults } from './PredictorResults';
+import Cutoffs from '../../pages/Cutoffs';
 
 export { ProfilePage } from './ProfilePage';
 export { SubscriptionPage } from './SubscriptionPage';
@@ -973,6 +974,8 @@ export function ComparePage() {
   const [colleges, setColleges] = useState<College[]>([]);
   const [a, setA] = useState('');
   const [b, setB] = useState('');
+  const [searchA, setSearchA] = useState('');
+  const [searchB, setSearchB] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [cmpLoading, setCmpLoading] = useState(false);
@@ -995,7 +998,9 @@ export function ComparePage() {
         setColleges(list);
         if (list.length) {
           setA(String(list[0].id));
+          setSearchA(list[0].name);
           setB(String(list[Math.min(1, list.length - 1)].id));
+          setSearchB(list[Math.min(1, list.length - 1)].name);
         }
       })
       .catch((e) => setError(e.message))
@@ -1027,28 +1032,35 @@ export function ComparePage() {
       ) : (
         <>
           <div className="grid sm:grid-cols-2 gap-3 mb-4">
-            <select
-              value={a}
-              onChange={(e) => setA(e.target.value)}
+            <input
+              type="text"
+              list="colleges-list"
+              value={searchA}
+              onChange={(e) => {
+                setSearchA(e.target.value);
+                const match = colleges.find(c => c.name === e.target.value);
+                if (match) setA(String(match.id));
+              }}
+              placeholder="Search College 1..."
               className={`rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
-            >
-              {colleges.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={b}
-              onChange={(e) => setB(e.target.value)}
+            />
+            <input
+              type="text"
+              list="colleges-list"
+              value={searchB}
+              onChange={(e) => {
+                setSearchB(e.target.value);
+                const match = colleges.find(c => c.name === e.target.value);
+                if (match) setB(String(match.id));
+              }}
+              placeholder="Search College 2..."
               className={`rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
-            >
+            />
+            <datalist id="colleges-list">
               {colleges.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
+                <option key={c.id} value={c.name} />
               ))}
-            </select>
+            </datalist>
           </div>
 
           {a === b && (
@@ -1427,20 +1439,16 @@ export function CounsellingPage() {
   const s = useShell();
   const { profile } = useAuth();
   
-  // Mock Data
-  const currentRank = profile?.rank ? Number(profile.rank) : 45000;
+  // Real Data
+  const currentRank = profile?.neet_rank || profile?.rank || 'Not updated';
   const currentCategory = profile?.category || 'General';
-  
-  const recommendedColleges = [
-    { name: 'GMC Bhopal', location: 'Bhopal, MP', note: `Expected closing: ${currentRank + 2000}` },
-    { name: 'MGM Medical College', location: 'Indore, MP', note: `Expected closing: ${currentRank + 1500}` },
-    { name: 'NSCB Medical College', location: 'Jabalpur, MP', note: `Expected closing: ${currentRank + 3000}` },
-  ];
+  const domicileState = profile?.domicile_state || profile?.state || 'Not updated';
+  const examTrack = (profile as any)?.exam_track || 'MBBS/BDS';
 
-  const updates = [
-    { text: 'Round 2 Seat Matrix released by MCC', time: '2h ago', unread: true },
-    { text: 'Choice filling for Round 2 is now open', time: '5h ago', unread: true },
-    { text: 'Round 1 final allotment results declared', time: '2d ago', unread: false },
+  const officialPortals = [
+    { title: 'MCC (Medical Counseling Committee)', desc: 'Official portal for 15% All India Quota (AIQ) & Deemed Universities', url: 'https://mcc.nic.in/', badge: 'AIQ / Deemed' },
+    { title: 'AACCC (AYUSH Counseling)', desc: 'Official portal for BAMS, BHMS, BUMS, BSMS', url: 'https://aaccc.gov.in/', badge: 'AYUSH' },
+    { title: 'NTA NEET Official Website', desc: 'Results, OMR sheets, and official notices', url: 'https://exams.nta.ac.in/NEET/', badge: 'NTA' },
   ];
 
   const faqs = [
@@ -1453,191 +1461,158 @@ export function CounsellingPage() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
   return (
-    <div className="max-w-4xl space-y-6 pb-10">
+    <div className="max-w-4xl space-y-8 pb-10">
       <PageHead
-        title="Counselling"
-        sub="Manage your counselling tracks, book experts, and jump into live data tools"
+        title="Counselling Hub"
+        sub="Your personalized command center for NEET Counselling, Official Portals, and Expert Support"
       />
 
-      {/* 1. Counselling Status Card */}
-      <div className={`rounded-2xl border p-5 ${s.card}`}>
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+      {/* 1. Profile Overview */}
+      <div className={`rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-indigo-900/40 via-[#0f1f2c] to-[#141a24] border ${s.dark ? 'border-indigo-500/20' : 'border-indigo-100'} relative overflow-hidden shadow-xl`}>
+        <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
+          <Sparkles className="w-48 h-48" />
+        </div>
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div>
-            <h3 className="font-bold text-lg">Round 2 Counselling</h3>
-            <p className={`text-sm ${s.muted}`}>Category: {currentCategory} · Rank: {currentRank.toLocaleString()}</p>
+            <h2 className="text-2xl font-black mb-2 tracking-tight">Your Counselling Profile</h2>
+            <p className={`text-sm ${s.muted} max-w-md`}>Keep your profile updated to get the most accurate AI predictions and personalized assistance.</p>
           </div>
-          <div className="bg-orange-500/10 text-orange-500 border border-orange-500/20 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2">
-            <Clock className="w-4 h-4" />
-            Choice filling closes in 2d 4h
-          </div>
+          <Link to="/dashboard/profile" className="px-5 py-2.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl font-medium text-sm transition-colors backdrop-blur-md">
+            Update Profile
+          </Link>
         </div>
         
-        {/* Stepper */}
-        <div className="flex items-center justify-between relative">
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-white/5 rounded-full z-0" />
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[40%] h-1 bg-teal-500/40 rounded-full z-0" />
-          
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 relative z-10">
           {[
-            { label: 'Registration', status: 'done' },
-            { label: 'Choice Filling', status: 'active' },
-            { label: 'Seat Allotment', status: 'pending' },
-            { label: 'Reporting', status: 'pending' },
-          ].map((step, i) => (
-            <div key={i} className="relative z-10 flex flex-col items-center gap-2 w-1/4">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                step.status === 'done' ? 'bg-teal-500/20 border-teal-500 text-teal-500' :
-                step.status === 'active' ? 'bg-orange-500 border-orange-500 text-white' :
-                `bg-[#141a24] border-white/20 ${s.muted}`
-              }`}>
-                {step.status === 'done' ? <CheckCircle2 className="w-5 h-5" /> : <span className="text-sm font-bold">{i + 1}</span>}
-              </div>
-              <span className={`text-xs font-medium text-center hidden sm:block ${
-                step.status === 'active' ? 'text-white' : s.muted
-              }`}>{step.label}</span>
+            { l: 'NEET Rank', v: typeof currentRank === 'number' ? currentRank.toLocaleString() : currentRank },
+            { l: 'Category', v: currentCategory },
+            { l: 'Domicile State', v: domicileState },
+            { l: 'Target Course', v: examTrack },
+          ].map((stat, i) => (
+            <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-white/50 mb-1">{stat.l}</p>
+              <p className="text-lg font-bold text-white/90 truncate">{stat.v}</p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* 2. Quick Stats Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { l: 'Your rank', v: currentRank.toLocaleString() },
-          { l: 'Category', v: currentCategory },
-          { l: 'Colleges shortlisted', v: '14' },
-          { l: 'Documents verified', v: '4 / 5' },
-        ].map((stat, i) => (
-          <div key={i} className={`rounded-2xl border p-4 flex flex-col justify-center items-center text-center ${s.card}`}>
-            <p className={`text-xs font-medium mb-1 ${s.muted}`}>{stat.l}</p>
-            <p className="text-lg font-bold">{stat.v}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* 3. Existing CTAs */}
-      <div className="grid sm:grid-cols-2 gap-3">
-        {[
-          { t: 'Book video call', d: 'WhatsApp to schedule a slot', href: 'https://wa.me/7880119983', icon: CalendarDays },
-          { t: 'Call helpline', d: '+91 78801 19983 · 7 days', href: 'tel:+917880119983', icon: Phone },
-        ].map((x) => (
-          <a key={x.t} href={x.href} className={`rounded-2xl border p-5 flex gap-3 transition-all hover:-translate-y-0.5 hover:shadow-md ${s.card}`}>
-            <span className="w-11 h-11 rounded-xl bg-orange-500/15 text-orange-600 grid place-items-center shrink-0">
-              <x.icon className="w-5 h-5" />
-            </span>
-            <div>
-              <p className="font-bold">{x.t}</p>
-              <p className={`text-xs font-medium ${s.muted}`}>{x.d}</p>
+      <div className="grid md:grid-cols-2 gap-8">
+        <div className="space-y-8">
+          {/* 2. Premium Support CTAs */}
+          <div>
+            <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+              <Phone className="w-5 h-5 text-orange-500" />
+              Expert Assistance
+            </h3>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {[
+                { t: 'WhatsApp Support', d: 'Schedule a video slot', href: 'https://wa.me/7880119983', icon: CalendarDays, bg: 'bg-emerald-500/10', text: 'text-emerald-500' },
+                { t: 'Call Helpline', d: '+91 78801 19983', href: 'tel:+917880119983', icon: Phone, bg: 'bg-orange-500/10', text: 'text-orange-500' },
+              ].map((x) => (
+                <a key={x.t} href={x.href} className={`rounded-2xl border p-5 flex flex-col gap-4 transition-all hover:-translate-y-1 hover:shadow-lg ${s.card} group`}>
+                  <div className={`w-12 h-12 rounded-full ${x.bg} ${x.text} grid place-items-center`}>
+                    <x.icon className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-base mb-1">{x.t}</p>
+                    <p className={`text-xs font-medium ${s.muted}`}>{x.d}</p>
+                  </div>
+                </a>
+              ))}
             </div>
-          </a>
-        ))}
-      </div>
-
-      {/* 7. Counsellor Profiles (Integrated right under CTAs) */}
-      <div className="grid sm:grid-cols-2 gap-3">
-        {[
-          { name: 'Dr. A. Sharma', spec: 'AIQ & Deemed Expert', initials: 'AS' },
-          { name: 'Mr. R. Verma', spec: 'State Quota Specialist', initials: 'RV' },
-        ].map((c, i) => (
-          <div key={i} className={`rounded-2xl border p-4 flex items-center justify-between ${s.card}`}>
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm bg-white/5 border border-white/10 ${s.muted}`}>
-                {c.initials}
+            <div className={`mt-4 rounded-xl border p-4 flex items-center gap-4 ${s.card} bg-gradient-to-r from-orange-500/5 to-transparent`}>
+              <div className="w-10 h-10 rounded-full bg-orange-500/20 grid place-items-center border border-orange-500/30 text-orange-500 font-bold shrink-0">
+                PRO
               </div>
               <div>
-                <p className="font-bold text-sm">{c.name}</p>
-                <p className={`text-xs ${s.muted}`}>{c.spec}</p>
+                <p className="font-bold text-sm">Dedicated Counsellor</p>
+                <p className={`text-xs ${s.muted}`}>Get 1-on-1 guidance for choice filling & state quotas.</p>
               </div>
+              <a href="https://wa.me/7880119983" className="ml-auto text-xs px-4 py-2 rounded-lg bg-orange-500 text-white font-bold hover:bg-orange-600 transition-colors whitespace-nowrap">
+                Book Now
+              </a>
             </div>
-            <a href="https://wa.me/7880119983" className={`text-xs px-3 py-1.5 rounded-lg border border-white/20 hover:bg-white/5 transition-colors font-medium`}>
-              Book
-            </a>
           </div>
-        ))}
-      </div>
 
-      {/* 4. Recommended Colleges */}
-      <div>
-        <h3 className="font-bold mb-3 text-lg">Recommended for you</h3>
-        <div className="grid sm:grid-cols-3 gap-3">
-          {recommendedColleges.map((c, i) => (
-            <div key={i} className={`rounded-2xl border p-4 flex flex-col justify-between ${s.card}`}>
-              <div>
-                <p className="font-bold text-sm mb-1">{c.name}</p>
-                <div className={`flex items-center gap-1 text-xs mb-3 ${s.muted}`}>
-                  <MapPin className="w-3 h-3" />
-                  {c.location}
+          {/* 3. Official Portals */}
+          <div>
+            <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+              <Bookmark className="w-5 h-5 text-blue-500" />
+              Official Portals
+            </h3>
+            <div className="space-y-3">
+              {officialPortals.map((portal, i) => (
+                <a key={i} href={portal.url} target="_blank" rel="noopener noreferrer" className={`block rounded-2xl border p-4 transition-colors hover:bg-white/5 ${s.card} group`}>
+                  <div className="flex items-start justify-between gap-4 mb-2">
+                    <p className="font-bold text-sm group-hover:text-blue-400 transition-colors">{portal.title}</p>
+                    <span className="text-[10px] font-bold px-2 py-1 bg-white/10 rounded border border-white/5 whitespace-nowrap">{portal.badge}</span>
+                  </div>
+                  <p className={`text-xs ${s.muted}`}>{portal.desc}</p>
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-8">
+          {/* 4. Data Tools */}
+          <div>
+            <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+              <Search className="w-5 h-5 text-teal-500" />
+              Smart Tools
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { label: 'Seat Matrix', sub: 'Category breakdown', link: '/dashboard/seat-matrix', primary: false },
+                { label: 'Public Cutoffs', sub: 'Previous years data', link: '/dashboard/cutoffs', primary: false },
+                { label: 'AI Predictor', sub: 'Check probabilities', link: '/dashboard/predictor', primary: true },
+                { label: 'College Finder', sub: '1200+ indexed', link: '/dashboard/finder', primary: false },
+              ].map((tool, i) => (
+                <Link key={i} to={tool.link} className={`flex flex-col items-center justify-center p-5 rounded-2xl border text-center transition-all hover:-translate-y-1 ${
+                  tool.primary ? 'bg-orange-600 border-orange-500 hover:bg-orange-500 shadow-lg shadow-orange-500/20' : `bg-white/5 border-white/10 hover:bg-white/10`
+                }`}>
+                  <span className={`font-bold text-sm mb-1 ${tool.primary ? 'text-white' : ''}`}>{tool.label}</span>
+                  <span className={`text-[10px] ${tool.primary ? 'text-white/80' : s.muted}`}>{tool.sub}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* 5. FAQs */}
+          <div>
+            <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+              <LifeBuoy className="w-5 h-5 text-purple-500" />
+              Counselling FAQ
+            </h3>
+            <div className={`rounded-2xl border overflow-hidden ${s.card}`}>
+              {faqs.map((faq, i) => (
+                <div key={i} className="border-b border-white/10 last:border-0">
+                  <button
+                    className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
+                    onClick={() => setExpandedFaq(expandedFaq === i ? null : i)}
+                  >
+                    <span className="font-medium text-sm">{faq.q}</span>
+                    {expandedFaq === i ? <ChevronUp className={`w-4 h-4 ${s.muted} shrink-0`} /> : <ChevronDown className={`w-4 h-4 ${s.muted} shrink-0`} />}
+                  </button>
+                  {expandedFaq === i && (
+                    <div className="px-5 pb-5">
+                      <p className={`text-sm ${s.muted} leading-relaxed`}>{faq.a}</p>
+                    </div>
+                  )}
                 </div>
-                <p className={`text-xs font-medium bg-white/5 p-2 rounded-lg border border-white/5 ${s.muted}`}>{c.note}</p>
-              </div>
-              <Link to={`/dashboard/finder?q=${encodeURIComponent(c.name)}`} className={`mt-4 text-xs text-center py-2 rounded-lg border border-white/20 hover:bg-white/5 transition-colors font-medium`}>
-                View details
-              </Link>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 5. Data Tools */}
-      <div className={`rounded-2xl border p-5 ${s.card}`}>
-        <h3 className="font-bold mb-4 text-lg">Data tools for counselling</h3>
-        <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-3">
-          {[
-            { label: 'Seat matrix', sub: 'Category-wise breakdown', link: '/dashboard/seat-matrix', primary: false },
-            { label: 'Public cutoffs', sub: 'Previous years data', link: '/cutoffs', primary: false },
-            { label: 'Predictor', sub: 'AI-driven probability', link: '/dashboard/predictor', primary: true },
-            { label: 'College finder', sub: '1200+ colleges indexed', link: '/dashboard/finder', primary: false },
-          ].map((tool, i) => (
-            <Link key={i} to={tool.link} className={`flex flex-col items-center justify-center p-4 rounded-xl border text-center transition-colors ${
-              tool.primary ? 'bg-orange-600 border-orange-500 hover:bg-orange-500' : `bg-white/5 border-white/10 hover:bg-white/10`
-            }`}>
-              <span className={`font-medium text-sm ${tool.primary ? 'text-white' : ''}`}>{tool.label}</span>
-              <span className={`text-[10px] mt-1 ${tool.primary ? 'text-white/80' : s.muted}`}>{tool.sub}</span>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* 6. Updates Feed */}
-      <div className={`rounded-2xl border p-5 ${s.card}`}>
-        <h3 className="font-bold mb-4 text-lg">Live Updates</h3>
-        <div className="space-y-1">
-          {updates.map((update, i) => (
-            <div key={i} className={`flex items-start justify-between py-3 px-4 rounded-lg border-l-2 transition-colors hover:bg-white/5 ${
-              update.unread ? 'border-l-orange-500 bg-white/[0.02]' : 'border-l-white/10'
-            }`}>
-              <p className={`text-sm ${update.unread ? 'font-medium' : s.muted}`}>{update.text}</p>
-              <span className={`text-xs whitespace-nowrap ml-4 ${s.muted}`}>{update.time}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 8. FAQ Accordion */}
-      <div>
-        <h3 className="font-bold mb-4 text-lg">Common Doubts</h3>
-        <div className={`rounded-2xl border overflow-hidden ${s.card}`}>
-          {faqs.map((faq, i) => (
-            <div key={i} className="border-b border-white/10 last:border-0">
-              <button
-                className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
-                onClick={() => setExpandedFaq(expandedFaq === i ? null : i)}
-              >
-                <span className="font-medium text-sm">{faq.q}</span>
-                {expandedFaq === i ? <ChevronUp className={`w-4 h-4 ${s.muted}`} /> : <ChevronDown className={`w-4 h-4 ${s.muted}`} />}
-              </button>
-              {expandedFaq === i && (
-                <div className="px-5 pb-4">
-                  <p className={`text-sm ${s.muted}`}>{faq.a}</p>
-                </div>
-              )}
-            </div>
-          ))}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
+export function DashCutoffsPage() {
+  return <Cutoffs />;
+}
 
 export function DashSeatMatrixPage() {
   const s = useShell();
