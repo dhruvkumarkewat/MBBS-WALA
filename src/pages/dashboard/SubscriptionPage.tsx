@@ -222,6 +222,7 @@ export function SubscriptionPage() {
             success('🎉 Premium Activated!', `Welcome to ${plan.name}! All predictor tools and cutoffs are unlocked.`);
             await refetchPremium();
             await loadData();
+            navigate('/dashboard');
           } catch (err: any) {
             toastError('Verification Failed', err.message || 'Could not verify payment');
           } finally {
