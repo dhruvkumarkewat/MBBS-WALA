@@ -422,7 +422,7 @@ export default function DashboardHome() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 shrink-0 w-full sm:w-auto sm:min-w-[210px]">
+          <div className="flex flex-col gap-3 shrink-0 w-full lg:w-[340px]">
             <ActivityChart dark={dark} />
             <div
               className={`rounded-2xl p-4 flex items-center justify-between ${
