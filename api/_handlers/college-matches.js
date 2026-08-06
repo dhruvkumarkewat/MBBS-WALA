@@ -87,6 +87,10 @@ export default async function handler(req, res) {
       query = query.in('name', courseNames);
     } else if (course) {
       query = query.eq('course', course);
+    } else if (examTrack === 'MBBS_BDS') {
+      query = query.in('course', ['MBBS', 'BDS']);
+    } else if (examTrack === 'AYUSH') {
+      query = query.in('course', ['BAMS', 'BUMS', 'BHMS', 'BSMS', 'BNYS']);
     }
 
     const { data: colleges, error } = await query;
