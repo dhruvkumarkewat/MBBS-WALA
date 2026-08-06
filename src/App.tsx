@@ -70,6 +70,7 @@ const ComparePage = lazyNamed(dash, 'ComparePage');
 const SavedPage = lazyNamed(dash, 'SavedPage');
 const CounsellingPage = lazyNamed(dash, 'CounsellingPage');
 const DashSeatMatrixPage = lazyNamed(dash, 'DashSeatMatrixPage');
+const DashCutoffsPage = lazyNamed(dash, 'DashCutoffsPage');
 const DocumentsPage = lazyNamed(dash, 'DocumentsPage');
 const DownloadsPage = lazyNamed(dash, 'DownloadsPage');
 const ApplicationsPage = lazyNamed(dash, 'ApplicationsPage');
@@ -196,6 +197,7 @@ export default function App() {
           <Route path="saved" element={<L><SavedPage /></L>} />
           <Route path="counselling" element={<L><CounsellingPage /></L>} />
           <Route path="seat-matrix" element={<L><DashSeatMatrixPage /></L>} />
+          <Route path="cutoffs" element={<L><DashCutoffsPage /></L>} />
           <Route path="documents" element={<L><DocumentsPage /></L>} />
           <Route path="downloads" element={<L><DownloadsPage /></L>} />
           <Route path="applications" element={<L><ApplicationsPage /></L>} />
