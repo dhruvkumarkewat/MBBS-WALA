@@ -818,14 +818,14 @@ export function FinderPage() {
     const isSaved = savedIds.has(id);
     try {
       if (isSaved) {
-        await apiJson('/api/saved', { method: 'DELETE', body: JSON.stringify({ college_id: id }) }, true);
+        await apiJson(`/api/saved?college_id=${id}`, { method: 'DELETE', body: JSON.stringify({ college_id: id }) }, true);
         setSavedIds((prev) => {
           const n = new Set(prev);
           n.delete(id);
           return n;
         });
       } else {
-        await apiJson('/api/saved', { method: 'POST', body: JSON.stringify({ college_id: id }) }, true);
+        await apiJson(`/api/saved?college_id=${id}`, { method: 'POST', body: JSON.stringify({ college_id: id }) }, true);
         setSavedIds((prev) => new Set(prev).add(id));
       }
     } catch (e: unknown) {
@@ -1290,7 +1290,7 @@ export function SavedPage() {
     setError('');
     try {
       await apiJson(
-        '/api/saved',
+        `/api/saved?college_id=${collegeId}`,
         { method: 'DELETE', body: JSON.stringify({ college_id: collegeId }) },
         true
       );
