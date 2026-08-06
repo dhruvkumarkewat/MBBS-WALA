@@ -1027,7 +1027,8 @@ const Autocomplete = ({ value, onChange, placeholder, colleges, s }: any) => {
             <div 
               key={m.id} 
               className={`px-3 py-2 text-sm cursor-pointer transition-colors ${s.dark ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}
-              onClick={() => {
+              onMouseDown={(e) => {
+                 e.preventDefault(); // Prevent input from losing focus immediately
                  setQuery(m.name);
                  setOpen(false);
                  onChange(m.id, m.name);
