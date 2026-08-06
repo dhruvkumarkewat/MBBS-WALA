@@ -1,4 +1,5 @@
 import aiPredict from './_handlers/ai-predict.js';
+import aiCollegeInfo from './_handlers/ai-college-info.js';
 import aiChat from './_handlers/ai-chat.js';
 import adminActivity from './_handlers/admin-activity.js';
 import adminAuth from './_handlers/admin-auth.js';
@@ -48,6 +49,7 @@ import withdrawals from './_handlers/withdrawals.js';
 
 const routes = {
   'ai-predict': aiPredict,
+  'ai-college-info': aiCollegeInfo,
   'ai-chat': aiChat,
   'admin-activity': adminActivity,
   'admin-auth': adminAuth,
