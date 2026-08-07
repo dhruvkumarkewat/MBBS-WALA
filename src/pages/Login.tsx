@@ -428,13 +428,19 @@ export default function Login({ defaultPortal }: LoginProps) {
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'Authentication failed. Please check your credentials.';
       const errLower = errMsg.toLowerCase();
-      if (
+      const cleanInput = email.trim().toLowerCase();
+
+      if (cleanInput === 'admin@gmail.com' && (errLower.includes('invalid login credentials') || errLower.includes('invalid') || errLower.includes('error'))) {
+        setError('Your registered Super Admin email is "dhruvkamar2005@gmail.com". Please switch to the "Admin & Counsellor" tab above to sign in.');
+      } else if (
         errLower.includes('already registered') ||
         errLower.includes('already exists') ||
         errLower.includes('user_already_exists')
       ) {
         setError(`An account with email "${email.trim()}" already exists. Please enter your password to log in.`);
         setMode('login');
+      } else if (errLower.includes('invalid login credentials') && portal === 'student') {
+        setError('Invalid login credentials. If you are logging in as Admin or Counsellor, please switch to the "Admin & Counsellor" tab above.');
       } else {
         setError(errMsg);
       }
