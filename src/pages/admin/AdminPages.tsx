@@ -731,7 +731,7 @@ export function AdminStudentsPage() {
                         </select>
                       </td>
                     )}
-                    <td className="p-4 text-xs text-slate-500 font-medium">{fmt(r.last_contact_at)}</td>
+                    <td className="p-4 text-xs text-slate-500 font-medium">{fmt(r.last_contact_at || r.updated_at)}</td>
                   </tr>
                 ))}
               </tbody>

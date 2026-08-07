@@ -65,7 +65,7 @@ export default async function handler(req, res) {
 
       await supabase
         .from('student_counselling')
-        .update({ last_contact_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .update({ updated_at: new Date().toISOString() })
         .eq('id', student_id);
 
       await logActivity(user.id, 'Contacted Student', 'student', student_id, { via: 'chat' });

@@ -57,7 +57,6 @@ export default async function handler(req, res) {
       await supabase
         .from('student_counselling')
         .update({
-          last_contact_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           counselling_status:
             st.counselling_status === 'new' || st.counselling_status === 'assigned'

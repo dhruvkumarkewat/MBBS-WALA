@@ -459,7 +459,7 @@ export default async function handler(req, res) {
           }
         }
         if (body.contacted) {
-          update.last_contact_at = new Date().toISOString();
+          update.updated_at = new Date().toISOString();
           await logActivity(user.id, 'Contacted Student', 'student', String(existing.id));
         }
       }
