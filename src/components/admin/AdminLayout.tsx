@@ -318,13 +318,12 @@ export default function AdminLayout() {
 
         <div className="flex min-h-screen">
           <aside
-            className={`admin-drawer fixed lg:sticky top-0 z-50 h-[100dvh] w-[min(268px,88vw)] shrink-0 transition-transform duration-300 ease-out ${
+            className={`admin-drawer fixed z-50 left-0 top-0 bottom-0 w-[min(268px,88vw)] shrink-0 transition-transform duration-300 ease-out flex flex-col bg-[#0b0d12] text-white border-r border-white/[0.06] ${
               mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
             }`}
           >
             {/* Matches student dashboard sidebar — clean dark SaaS, no photo clutter */}
-            <div className="h-full bg-[#0b0d12] text-white flex flex-col border-r border-white/[0.06]">
-              <div className="shrink-0 border-b border-white/[0.07] px-4 py-4">
+            <div className="shrink-0 border-b border-white/[0.07] px-4 py-4">
                 <div className="flex items-center gap-2.5">
                   <BrandLogo to="/admin" size="md" onDark imgClassName="!max-w-[168px]" />
                   <button
@@ -422,7 +421,6 @@ export default function AdminLayout() {
                   <LogOut className="w-[18px] h-[18px]" /> Sign out
                 </button>
               </div>
-            </div>
           </aside>
 
           {mobileOpen && (
@@ -434,7 +432,7 @@ export default function AdminLayout() {
             />
           )}
 
-          <main className="flex-1 min-w-0 admin-main">
+          <main className="flex-1 min-w-0 admin-main lg:ml-[268px]">
             <div
               className={`hidden lg:flex items-center justify-between px-8 py-5 sticky top-0 z-20 backdrop-blur-xl border-b ${
                 dark ? 'bg-[#0a0b10]/90 border-white/[0.06]' : 'bg-[#F4F7FB]/90 border-slate-200/80'
