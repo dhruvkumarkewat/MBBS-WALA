@@ -55,7 +55,7 @@ export default async function handler(req, res) {
         .insert({
           student_id: Number(student_id),
           sender_id: user.id,
-          sender_role: staff.role,
+          sender: 'staff',
           message: message.trim(),
           created_at: new Date().toISOString(),
         })
