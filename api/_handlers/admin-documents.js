@@ -50,10 +50,9 @@ export default async function handler(req, res) {
         .from('student_documents')
         .insert({
           student_id: Number(student_id),
-          staff_id: user.id,
-          title,
+          file_name: title,
           file_url: file_url || '',
-          created_at: new Date().toISOString(),
+          uploaded_at: new Date().toISOString(),
         })
         .select()
         .single();

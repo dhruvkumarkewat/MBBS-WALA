@@ -472,6 +472,7 @@ export default async function handler(req, res) {
                 await supabase.from('counselling_followups').insert({
                   student_id: Number(existing.id),
                   staff_id: user.id,
+                  staff_name: staff.full_name || staff.email,
                   due_at: tomorrow.toISOString(),
                   status: 'pending',
                   note: 'Auto-scheduled from status change',

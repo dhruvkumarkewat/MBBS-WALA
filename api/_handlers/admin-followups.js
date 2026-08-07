@@ -39,7 +39,8 @@ export default async function handler(req, res) {
         .insert({
           student_id: Number(student_id),
           staff_id: user.id,
-          due_at,
+          staff_name: staff.full_name || staff.email,
+          due_at: new Date(due_at).toISOString(),
           status: 'pending',
           note: note || '',
           created_at: new Date().toISOString(),
