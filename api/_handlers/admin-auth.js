@@ -1,6 +1,7 @@
 import supabase from './db-client.js';
 import { setCors, requireUser } from './_auth.js';
 import { getStaffProfile, logActivity, touchPresence } from './_admin.js';
+import { recordLogin, recordHeartbeat, recordLogout } from './_sessions.js';
 
 export default async function handler(req, res) {
   setCors(res);
@@ -30,24 +31,11 @@ export default async function handler(req, res) {
       }
 
       const now = new Date().toISOString();
+      const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1';
+      const userAgent = req.headers['user-agent'] || '';
 
       if (action === 'login') {
-        let sess = null;
-        try {
-          const { data } = await supabase
-            .from('login_history')
-            .insert({
-              user_id: user.id,
-              login_at: now,
-              ip: req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '',
-              user_agent: req.headers['user-agent'] || '',
-            })
-            .select()
-            .single();
-          sess = data;
-        } catch {
-          // ignore if table not present
-        }
+        const sess = recordLogin(staff, { ip, user_agent: userAgent });
 
         try {
           await supabase
@@ -66,35 +54,13 @@ export default async function handler(req, res) {
       }
 
       if (action === 'logout') {
-        let openId = null;
-        try {
-          const { data: open } = await supabase
-            .from('login_history')
-            .select('*')
-            .eq('user_id', user.id)
-            .is('logout_at', null)
-            .order('id', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (open) {
-            openId = open.id;
-            const loginAt = new Date(open.login_at).getTime();
-            const duration = Math.max(0, Math.round((Date.now() - loginAt) / 1000));
-            await supabase
-              .from('login_history')
-              .update({ logout_at: now, duration_seconds: duration })
-              .eq('id', open.id);
-          }
-        } catch {
-          // ignore
-        }
-
-        await logActivity(user.id, 'Logged Out', 'session', openId);
-        return res.status(200).json({ ok: true });
+        const sess = recordLogout(user.id);
+        await logActivity(user.id, 'Logged Out', 'session', sess?.id);
+        return res.status(200).json({ ok: true, session: sess });
       }
 
       if (action === 'heartbeat') {
+        recordHeartbeat(user.id);
         await touchPresence(user.id, 'online');
         return res.status(200).json({ ok: true });
       }

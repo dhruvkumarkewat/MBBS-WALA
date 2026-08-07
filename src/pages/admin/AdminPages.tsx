@@ -26,6 +26,7 @@ import {
   AlertCircle,
   IndianRupee,
   History,
+  RefreshCw,
 } from 'lucide-react';
 import { apiJson } from '../../lib/api';
 
@@ -1111,17 +1112,94 @@ export function AdminActivityPage() {
   );
 }
 
+function formatSessionDuration(seconds: number | null | undefined, isLive: boolean, loginAt?: string) {
+  let sec = seconds;
+  if (isLive && loginAt) {
+    const elapsed = Math.max(0, Math.round((Date.now() - new Date(loginAt).getTime()) / 1000));
+    sec = elapsed;
+  }
+
+  if (sec == null || isNaN(sec) || sec < 0) {
+    return isLive ? 'Active now' : '—';
+  }
+
+  const mins = Math.floor(sec / 60);
+  const hrs = Math.floor(mins / 60);
+  const remMins = mins % 60;
+
+  if (hrs > 0) {
+    return `${hrs}h ${remMins}m${isLive ? ' (Active)' : ''}`;
+  }
+  if (mins > 0) {
+    return `${mins} min${mins > 1 ? 's' : ''}${isLive ? ' (Active)' : ''}`;
+  }
+  return isLive ? 'Active (< 1m)' : '< 1 min';
+}
+
+function formatSessionDate(d?: string | null) {
+  if (!d) return '—';
+  try {
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return d;
+
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+
+    const timeStr = date.toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    if (isToday) {
+      return `Today, ${timeStr}`;
+    }
+
+    return date.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  } catch {
+    return d;
+  }
+}
+
 export function AdminSessionsPage() {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState('');
+  const [, setTick] = useState(0);
 
-  useEffect(() => {
-    apiJson<any[]>('/api/admin-sessions?limit=100', {}, true)
+  const fetchSessions = useCallback((silent = false) => {
+    if (!silent) setRefreshing(true);
+    return apiJson<any[]>('/api/admin-sessions?limit=100', {}, true)
       .then((data) => setRows(Array.isArray(data) ? data : []))
       .catch(() => setRows([]))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        setRefreshing(false);
+      });
   }, []);
+
+  useEffect(() => {
+    fetchSessions();
+    // Auto-refresh data every 30 seconds
+    const interval = setInterval(() => {
+      fetchSessions(true);
+    }, 30000);
+    // Dynamic timer tick every 10s to update active durations
+    const timer = setInterval(() => {
+      setTick((t) => t + 1);
+    }, 10000);
+    return () => {
+      clearInterval(interval);
+      clearInterval(timer);
+    };
+  }, [fetchSessions]);
 
   if (loading) return <Loader />;
 
@@ -1143,16 +1221,27 @@ export function AdminSessionsPage() {
           <h2 className="text-xl font-black flex items-center gap-2">
             <History className="w-5 h-5 text-orange-500" /> Login history & Active sessions
           </h2>
-          <p className="text-sm text-slate-500 font-medium">Monitor staff sign-ins, device details, and session duration</p>
+          <p className="text-sm text-slate-500 font-medium">Monitor staff sign-ins, session duration, and live online presence</p>
         </div>
-        <div className="w-full sm:w-64">
-          <input
-            type="text"
-            placeholder="Search by name, email, or role…"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-200"
-          />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="w-full sm:w-64">
+            <input
+              type="text"
+              placeholder="Search by name, email, or role…"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-200"
+            />
+          </div>
+          <button
+            onClick={() => fetchSessions()}
+            disabled={refreshing}
+            className="px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 flex items-center gap-1.5 transition-colors disabled:opacity-50 shrink-0"
+            title="Refresh sessions"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-orange-500' : ''}`} />
+            Refresh
+          </button>
         </div>
       </div>
 
@@ -1163,8 +1252,8 @@ export function AdminSessionsPage() {
               <th className="text-left p-3.5 font-bold">Staff Member</th>
               <th className="text-left p-3.5 font-bold">Status</th>
               <th className="text-left p-3.5 font-bold">Login Time</th>
-              <th className="text-left p-3.5 font-bold">Logout / Session</th>
-              <th className="text-left p-3.5 font-bold">Duration</th>
+              <th className="text-left p-3.5 font-bold">Logout Time</th>
+              <th className="text-left p-3.5 font-bold">Session Duration</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -1196,10 +1285,12 @@ export function AdminSessionsPage() {
                       {isOnline ? 'Active Now' : 'Signed Out'}
                     </span>
                   </td>
-                  <td className="p-3.5 text-slate-700 font-medium">{fmt(r.login_at)}</td>
-                  <td className="p-3.5 text-slate-500">{r.logout_at ? fmt(r.logout_at) : <span className="text-emerald-600 font-semibold">Active session</span>}</td>
+                  <td className="p-3.5 text-slate-700 font-medium">{formatSessionDate(r.login_at)}</td>
+                  <td className="p-3.5 text-slate-500">
+                    {r.logout_at ? formatSessionDate(r.logout_at) : <span className="text-emerald-600 font-semibold flex items-center gap-1">In progress</span>}
+                  </td>
                   <td className="p-3.5 font-semibold text-slate-800">
-                    {r.duration_seconds != null ? `${Math.round(r.duration_seconds / 60)} min` : <span className="text-emerald-600">Online</span>}
+                    {formatSessionDuration(r.duration_seconds, isOnline, r.login_at)}
                   </td>
                 </tr>
               );
