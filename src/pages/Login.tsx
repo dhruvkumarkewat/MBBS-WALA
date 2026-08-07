@@ -233,6 +233,35 @@ export default function Login({ defaultPortal }: LoginProps) {
     isSubmitting.current = true;
 
     try {
+      const cleanEmail = email.trim().toLowerCase();
+
+      // --- DIRECT SUPER ADMIN LOGIN (admin@gmail.com / admin@mbbswala.in) ---
+      if (cleanEmail === 'admin@gmail.com' || cleanEmail === 'admin@mbbswala.in') {
+        try {
+          const adminRes = await apiJson<{ ok: boolean; token: string; isStaff: boolean; role: string }>(
+            '/api/admin-auth',
+            {
+              method: 'POST',
+              body: JSON.stringify({
+                action: 'direct_login',
+                email: cleanEmail,
+                password,
+              }),
+            }
+          );
+
+          if (adminRes?.ok && adminRes?.token) {
+            localStorage.setItem('mbbswala_admin_token', adminRes.token);
+            localStorage.setItem('mbbswala_admin_email', cleanEmail);
+            setMsg('Super Admin credentials verified. Opening MBBSWALA CRM…');
+            window.location.href = '/admin';
+            return;
+          }
+        } catch (adminErr: any) {
+          throw new Error(adminErr?.message || 'Invalid Super Admin password.');
+        }
+      }
+
       if (portal === 'admin') {
         // --- ADMIN / COUNSELOR LOGIN FLOW ---
         const { data: authData, error: signErr } = await supabase.auth.signInWithPassword({
@@ -428,11 +457,8 @@ export default function Login({ defaultPortal }: LoginProps) {
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'Authentication failed. Please check your credentials.';
       const errLower = errMsg.toLowerCase();
-      const cleanInput = email.trim().toLowerCase();
 
-      if (cleanInput === 'admin@gmail.com' && (errLower.includes('invalid login credentials') || errLower.includes('invalid') || errLower.includes('error'))) {
-        setError('Your registered Super Admin email is "dhruvkamar2005@gmail.com". Please switch to the "Admin & Counsellor" tab above to sign in.');
-      } else if (
+      if (
         errLower.includes('already registered') ||
         errLower.includes('already exists') ||
         errLower.includes('user_already_exists')

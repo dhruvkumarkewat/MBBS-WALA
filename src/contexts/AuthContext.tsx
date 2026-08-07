@@ -232,6 +232,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+
+    // Check for direct super admin session
+    const adminToken = localStorage.getItem('mbbswala_admin_token');
+    const adminEmail = localStorage.getItem('mbbswala_admin_email') || 'admin@gmail.com';
+    if (adminToken && adminToken.startsWith('admin_token_')) {
+      const adminUser: any = {
+        id: 'bdcb6828-636a-43e7-99fe-9ccbbc7e6638',
+        email: adminEmail,
+        user_metadata: { full_name: 'Dhruv Kumar' },
+        app_metadata: { role: 'super_admin' },
+        role: 'authenticated',
+      };
+      setUser(adminUser);
+      setIsStaff(true);
+      setStaffRole('super_admin');
+      setProfile({
+        id: 'bdcb6828-636a-43e7-99fe-9ccbbc7e6638',
+        email: adminEmail,
+        full_name: 'Dhruv Kumar',
+        name: 'Dhruv Kumar',
+        role: 'super_admin',
+        profile_completed: true,
+        onboarding_done: true,
+      } as any);
+      setProfileLoading(false);
+      setLoading(false);
+      return;
+    }
+
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       if (!mounted) return;
       setSession(s);
@@ -296,6 +325,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(null);
         setIsStaff(false);
         setStaffRole(null);
+        localStorage.removeItem('mbbswala_admin_token');
+        localStorage.removeItem('mbbswala_admin_email');
         await supabase.auth.signOut();
         window.location.href = redirectUrl || '/';
       },

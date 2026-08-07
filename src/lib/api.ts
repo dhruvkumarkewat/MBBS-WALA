@@ -5,6 +5,11 @@ let refreshPromise: Promise<string | null> | null = null;
 
 export async function getAccessToken(forceRefresh = false): Promise<string | null> {
   try {
+    const adminToken = localStorage.getItem('mbbswala_admin_token');
+    if (adminToken) {
+      return adminToken;
+    }
+
     if (!forceRefresh) {
       const { data } = await supabase.auth.getSession();
       if (data.session?.access_token) {
