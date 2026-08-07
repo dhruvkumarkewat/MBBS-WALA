@@ -13,17 +13,26 @@ export async function getStaffProfile(userId) {
     // Fallback: If no staff profile found but user is the super admin by email, 
     // fetch their email from profiles and grant access or just grant directly if email matches.
     if (!data) {
-      const { data: prof } = await supabase.from('profiles').select('email').eq('id', userId).maybeSingle();
-      if (prof?.email === 'admin@mbbswala.in') {
-        // Auto-upsert staff profile for the hardcoded admin email
+      const { data: prof } = await supabase.from('profiles').select('email, full_name').eq('id', userId).maybeSingle();
+      const em = prof?.email?.toLowerCase().trim() || '';
+      if (em === 'admin@mbbswala.in' || em === 'admin@gmail.com') {
+        // Auto-upsert staff profile for the admin email
         const { data: newStaff } = await supabase.from('staff_profiles').upsert({
           user_id: userId,
-          email: 'admin@mbbswala.in',
-          name: 'Super Admin',
+          email: em,
+          name: prof?.full_name || 'Super Admin',
           role: 'super_admin',
           is_active: true
         }).select().single();
         if (newStaff) return newStaff;
+      }
+    }
+
+    if (data) {
+      // Normalize admin emails or role 'admin' to 'super_admin'
+      const em = data.email?.toLowerCase().trim() || '';
+      if (em === 'admin@gmail.com' || em === 'admin@mbbswala.in' || data.role === 'admin') {
+        data.role = 'super_admin';
       }
     }
 

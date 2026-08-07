@@ -19,7 +19,6 @@ export default async function handler(req, res) {
       const { data, error } = await supabase
         .from('staff_profiles')
         .select('*')
-        .eq('role', 'sub_admin')
         .order('created_at', { ascending: false });
       if (error) throw error;
 

@@ -32,44 +32,65 @@ export default async function handler(req, res) {
       const now = new Date().toISOString();
 
       if (action === 'login') {
-        // Removed non-existent presence and activity columns update
-        // We only fetch the session here
+        let sess = null;
+        try {
+          const { data } = await supabase
+            .from('login_history')
+            .insert({
+              user_id: user.id,
+              login_at: now,
+              ip: req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '',
+              user_agent: req.headers['user-agent'] || '',
+            })
+            .select()
+            .single();
+          sess = data;
+        } catch {
+          // ignore if table not present
+        }
 
-        const { data: sess } = await supabase
-          .from('login_history')
-          .insert({
-            user_id: user.id,
-            login_at: now,
-            ip: req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '',
-            user_agent: req.headers['user-agent'] || '',
-          })
-          .select()
-          .single();
+        try {
+          await supabase
+            .from('staff_profiles')
+            .update({
+              total_sessions: (staff.total_sessions || 0) + 1,
+              updated_at: now,
+            })
+            .eq('user_id', user.id);
+        } catch {
+          // ignore
+        }
 
         await logActivity(user.id, 'Logged In', 'session', sess?.id);
         return res.status(200).json({ ok: true, session: sess, staff: await getStaffProfile(user.id) });
       }
 
       if (action === 'logout') {
-        const { data: open } = await supabase
-          .from('login_history')
-          .select('*')
-          .eq('user_id', user.id)
-          .is('logout_at', null)
-          .order('id', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (open) {
-          const loginAt = new Date(open.login_at).getTime();
-          const duration = Math.max(0, Math.round((Date.now() - loginAt) / 1000));
-          await supabase
+        let openId = null;
+        try {
+          const { data: open } = await supabase
             .from('login_history')
-            .update({ logout_at: now, duration_seconds: duration })
-            .eq('id', open.id);
+            .select('*')
+            .eq('user_id', user.id)
+            .is('logout_at', null)
+            .order('id', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (open) {
+            openId = open.id;
+            const loginAt = new Date(open.login_at).getTime();
+            const duration = Math.max(0, Math.round((Date.now() - loginAt) / 1000));
+            await supabase
+              .from('login_history')
+              .update({ logout_at: now, duration_seconds: duration })
+              .eq('id', open.id);
+          }
+        } catch {
+          // ignore
         }
 
-        await logActivity(user.id, 'Logged Out', 'session', open?.id);
+        await logActivity(user.id, 'Logged Out', 'session', openId);
         return res.status(200).json({ ok: true });
       }
 

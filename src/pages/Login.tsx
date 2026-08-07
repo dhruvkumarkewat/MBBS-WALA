@@ -284,9 +284,31 @@ export default function Login({ defaultPortal }: LoginProps) {
         return;
       } else {
         // --- STUDENT LOGIN / SIGNUP FLOW ---
+        const cleanEmail = email.trim().toLowerCase();
+
         if (mode === 'signup') {
+          // 1. Pre-check if email already exists in profiles or students database
+          try {
+            const { data: existingList } = await supabase
+              .from('profiles')
+              .select('id, email')
+              .ilike('email', cleanEmail)
+              .limit(1);
+
+            if (existingList && existingList.length > 0) {
+              setError(`An account with email "${cleanEmail}" already exists. Please enter your password to log in.`);
+              setMode('login');
+              setLoading(false);
+              isSubmitting.current = false;
+              return;
+            }
+          } catch {
+            /* proceed with auth provider check */
+          }
+
+          // 2. Call Supabase signUp
           const { data, error: signErr } = await supabase.auth.signUp({
-            email: email.trim(),
+            email: cleanEmail,
             password,
             options: {
               data: {
@@ -296,9 +318,34 @@ export default function Login({ defaultPortal }: LoginProps) {
               },
             },
           });
-          if (signErr) throw signErr;
 
-          if (data.user) {
+          if (signErr) {
+            const errLower = signErr.message?.toLowerCase() || '';
+            if (
+              errLower.includes('already registered') ||
+              errLower.includes('already exists') ||
+              errLower.includes('user_already_exists') ||
+              (signErr as any).status === 422
+            ) {
+              setError(`An account with email "${cleanEmail}" already exists. Please enter your password to log in.`);
+              setMode('login');
+              setLoading(false);
+              isSubmitting.current = false;
+              return;
+            }
+            throw signErr;
+          }
+
+          // 3. Supabase empty identities detection (when email exists & email confirmation is active)
+          if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+            setError(`An account with email "${cleanEmail}" already exists. Please enter your password to log in.`);
+            setMode('login');
+            setLoading(false);
+            isSubmitting.current = false;
+            return;
+          }
+
+          if (data?.user) {
             try {
               await apiJson(
                 '/api/profile',
@@ -322,7 +369,7 @@ export default function Login({ defaultPortal }: LoginProps) {
           return;
         } else {
           const { error: signErr } = await supabase.auth.signInWithPassword({
-            email: email.trim(),
+            email: cleanEmail,
             password,
           });
           if (signErr) throw signErr;
@@ -379,7 +426,18 @@ export default function Login({ defaultPortal }: LoginProps) {
         navigate(from.startsWith('/admin') ? '/dashboard' : from, { replace: true });
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Authentication failed. Please check your credentials.');
+      const errMsg = err instanceof Error ? err.message : 'Authentication failed. Please check your credentials.';
+      const errLower = errMsg.toLowerCase();
+      if (
+        errLower.includes('already registered') ||
+        errLower.includes('already exists') ||
+        errLower.includes('user_already_exists')
+      ) {
+        setError(`An account with email "${email.trim()}" already exists. Please enter your password to log in.`);
+        setMode('login');
+      } else {
+        setError(errMsg);
+      }
       isSubmitting.current = false;
     } finally {
       setLoading(false);

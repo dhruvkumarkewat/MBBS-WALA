@@ -110,6 +110,33 @@ export default async function handler(req, res) {
     // ── 2. POST action=create-order ──────────────────────────────────────────
     if (req.method === 'POST' && (action === 'create-order' || !action)) {
       const { plan_slug = 'premium', referral_code } = req.body || {};
+
+      // Guard: Check if user already has active premium plan to prevent double-payment
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('is_premium, subscription_status, subscription_plan, payment_status')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      const { data: activeSubList } = await supabase
+        .from('subscriptions')
+        .select('id, plan_slug, plan_name, end_date')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('id', { ascending: false })
+        .limit(1);
+
+      const hasActiveSub = (activeSubList && activeSubList.length > 0 && (!activeSubList[0].end_date || new Date(activeSubList[0].end_date).getTime() > Date.now()));
+      const isAlreadyPaid = (Boolean(userProfile?.is_premium) && userProfile?.subscription_status === 'active') || hasActiveSub;
+
+      if (isAlreadyPaid) {
+        return res.status(400).json({
+          error: `You already have an active subscription (${userProfile?.subscription_plan || activeSubList?.[0]?.plan_name || 'Premium Plan'}). You cannot pay again for the same plan.`,
+          already_subscribed: true,
+          is_premium: true,
+          redirect: '/dashboard',
+        });
+      }
       
       const PLANS = {
         'neet-ug': { name: 'NEET UG Counselling Pro', price: 4999 },
@@ -437,15 +464,15 @@ export default async function handler(req, res) {
         console.warn('Referral payout processing warning:', refErr.message);
       }
 
-      // 5.5 Admin CRM Sync (student_counselling and purchases)
+      // 5.5 Admin CRM & Student Sync (student_counselling, purchases, and students)
       try {
         console.log(`[Admin CRM Sync] Starting sync for payment ${payment_id}, user ${user.id}`);
         
-        // 5.5.1 Ensure student_counselling record exists
+        // 5.5.1 Ensure student_counselling record exists and is marked Paid
         const { data: existingCounselling } = await supabase
           .from('student_counselling')
           .select('id')
-          .eq('user_id', user.id)
+          .or(`user_id.eq.${user.id},email.eq.${user.email || 'nonexistent@mbbswala.in'}`)
           .maybeSingle();
 
         let studentId = null;
@@ -457,7 +484,8 @@ export default async function handler(req, res) {
             .update({
               payment_status: 'paid',
               payment_amount: Number(amount),
-              purchased_course: plan_name,
+              purchased_counselling: plan_name,
+              purchased_course: String(plan_slug).includes('pg') ? 'MD/MS' : 'MBBS',
               updated_at: now.toISOString(),
             })
             .eq('id', studentId);
@@ -471,7 +499,8 @@ export default async function handler(req, res) {
               phone: user.user_metadata?.phone || '',
               payment_status: 'paid',
               payment_amount: Number(amount),
-              purchased_course: plan_name,
+              purchased_counselling: plan_name,
+              purchased_course: String(plan_slug).includes('pg') ? 'MD/MS' : 'MBBS',
               counselling_status: 'new',
               created_at: now.toISOString(),
               updated_at: now.toISOString(),
@@ -482,19 +511,18 @@ export default async function handler(req, res) {
           if (newCounselling) {
             studentId = newCounselling.id;
           } else if (ncErr) {
-             console.error('[Admin CRM Sync] Failed to create student_counselling:', ncErr.message);
+            console.error('[Admin CRM Sync] Failed to create student_counselling:', ncErr.message);
           }
         }
 
         // 5.5.2 Ensure purchases record exists
         if (studentId) {
-          // Idempotency check for purchases: verify if already synced recently
           const { data: existingPurchase } = await supabase
             .from('purchases')
             .select('id')
             .eq('user_id', user.id)
             .eq('item_name', plan_name)
-            .gte('created_at', new Date(now.getTime() - 10 * 60000).toISOString()) // within 10 minutes
+            .gte('created_at', new Date(now.getTime() - 10 * 60000).toISOString())
             .maybeSingle();
 
           if (!existingPurchase) {
@@ -512,12 +540,20 @@ export default async function handler(req, res) {
               
             if (pErr) {
               console.error('[Admin CRM Sync] Failed to create purchase:', pErr.message);
-            } else {
-              console.log(`[Admin CRM Sync] Successfully synced CRM for ${user.email}`);
             }
-          } else {
-            console.log(`[Admin CRM Sync] Purchase already exists for ${user.email}`);
           }
+        }
+
+        // 5.5.3 Update students table if exists
+        try {
+          await supabase
+            .from('students')
+            .update({
+              updated_at: now.toISOString(),
+            })
+            .eq('id', user.id);
+        } catch {
+          // ignore
         }
       } catch (syncErr) {
         console.error('[Admin CRM Sync] Exception during CRM sync:', syncErr.message);
@@ -535,9 +571,10 @@ export default async function handler(req, res) {
 
       return res.status(200).json({
         ok: true,
-        message: 'Payment verified and Premium activated successfully!',
+        message: 'Payment verified and Premium activated successfully! Welcome to MBBSWala Premium.',
         profile: updatedProfile,
         is_premium: true,
+        redirect: '/dashboard',
         referral_code: userWallet.referral_code,
       });
     }

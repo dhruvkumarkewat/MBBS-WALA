@@ -159,9 +159,16 @@ export function SubscriptionPage() {
 
   const handleUpgrade = async (plan: Plan) => {
     if (!user) {
-        toastError('Login Required', 'Please login to subscribe.');
-        return;
+      toastError('Login Required', 'Please login to subscribe.');
+      return;
     }
+
+    if (isPremium) {
+      success('Already Subscribed', `You already have an active ${subscriptionPlan || 'Premium'} plan. Taking you to your Dashboard...`);
+      navigate('/dashboard', { replace: true });
+      return;
+    }
+
     try {
       setUpgradingPlan(plan.id);
       setError('');
@@ -176,6 +183,13 @@ export function SubscriptionPage() {
           referral_code: referralCode.trim()
         }),
       }, true);
+
+      if (orderRes?.already_subscribed) {
+        success('Plan Active', 'You already have an active subscription. Redirecting to Dashboard...');
+        await refetchPremium();
+        navigate('/dashboard', { replace: true });
+        return;
+      }
 
       // Load Razorpay SDK dynamically
       const loadRazorpay = () => {
@@ -207,7 +221,7 @@ export function SubscriptionPage() {
         handler: async function (response: any) {
           try {
             setUpgradingPlan(plan.id);
-            await apiJson<any>('/api/payment?action=verify', {
+            const verifyRes = await apiJson<any>('/api/payment?action=verify', {
               method: 'POST',
               body: JSON.stringify({
                 order_id: response.razorpay_order_id || orderRes.orderId,
@@ -219,10 +233,11 @@ export function SubscriptionPage() {
               }),
             }, true);
 
-            success('🎉 Premium Activated!', `Welcome to ${plan.name}! All predictor tools and cutoffs are unlocked.`);
+            success('🎉 Payment Successful!', `Welcome to ${plan.name}! All predictor tools and cutoffs are unlocked.`);
             await refetchPremium();
             await loadData();
-            navigate('/dashboard');
+            // Direct redirect to Dashboard
+            navigate('/dashboard', { replace: true });
           } catch (err: any) {
             toastError('Verification Failed', err.message || 'Could not verify payment');
           } finally {
@@ -262,8 +277,14 @@ export function SubscriptionPage() {
       rzp.open();
 
     } catch (err: any) {
-      setError(err.message || 'Payment failed. Please try again.');
-      toastError('Upgrade Failed', err.message || 'Could not complete transaction');
+      if (err.message?.includes('already have an active subscription') || err.message?.includes('already_subscribed')) {
+        success('Already Subscribed', 'You already have an active plan. Redirecting to Dashboard...');
+        await refetchPremium();
+        navigate('/dashboard', { replace: true });
+      } else {
+        setError(err.message || 'Payment failed. Please try again.');
+        toastError('Upgrade Failed', err.message || 'Could not complete transaction');
+      }
       setUpgradingPlan(null);
     }
   };
@@ -317,13 +338,13 @@ export function SubscriptionPage() {
                     {subscriptionPlan || 'Premium Membership'}
                   </h3>
                   <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold">
-                    Active
+                    Active & Paid
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {premiumEndDate
                     ? `Valid until ${new Date(premiumEndDate).toLocaleDateString()}`
-                    : 'Unlimited 1-Year Access Active'}
+                    : 'Unlimited 1-Year Access Active'} • All AI predictions and cutoffs are unlocked.
                 </p>
                 <div className="flex items-center gap-4 mt-2 text-xs font-semibold text-primary">
                   <Link to="/dashboard/predictor" className="hover:underline">
@@ -340,7 +361,14 @@ export function SubscriptionPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="text-xs text-muted-foreground font-medium">Auto-renew is ON</span>
+              <button
+                type="button"
+                onClick={() => navigate('/dashboard')}
+                className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-primary to-orange-500 text-white text-xs font-bold shadow-lg shadow-primary/25 hover:opacity-95 transition-all flex items-center gap-2"
+              >
+                <span>Go to Dashboard</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>
@@ -424,11 +452,19 @@ export function SubscriptionPage() {
 
               <button
                 type="button"
-                onClick={() => handleUpgrade(plan)}
-                disabled={upgradingPlan !== null || isCurrent}
+                onClick={() => {
+                  if (isPremium) {
+                    navigate('/dashboard');
+                  } else {
+                    handleUpgrade(plan);
+                  }
+                }}
+                disabled={upgradingPlan !== null}
                 className={`w-full py-3 px-4 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all ${
                   isCurrent
-                    ? 'bg-muted text-muted-foreground cursor-default'
+                    ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/20'
+                    : isPremium
+                    ? 'bg-muted text-foreground hover:bg-muted/80'
                     : plan.popular
                     ? 'bg-gradient-to-r from-primary to-orange-500 text-white shadow-lg shadow-primary/25 hover:opacity-95 hover:scale-[1.02]'
                     : 'bg-primary text-primary-foreground hover:opacity-90'
@@ -441,8 +477,15 @@ export function SubscriptionPage() {
                   </>
                 ) : isCurrent ? (
                   <>
+                    <Check className="w-4 h-4 text-emerald-500" />
+                    <span>Active Plan — Open Dashboard</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                ) : isPremium ? (
+                  <>
                     <Check className="w-4 h-4" />
-                    <span>Current Active Plan</span>
+                    <span>Unlocked — Go to Dashboard</span>
+                    <ArrowRight className="w-4 h-4" />
                   </>
                 ) : (
                   <>

@@ -25,6 +25,7 @@ import {
   TrendingUp,
   AlertCircle,
   IndianRupee,
+  History,
 } from 'lucide-react';
 import { apiJson } from '../../lib/api';
 
@@ -525,6 +526,9 @@ export function AdminStaffPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <h3 className="font-bold text-lg text-slate-900">{s.name}</h3>
+                  <Badge tone={s.role === 'super_admin' ? 'purple' : 'orange'}>
+                    {s.role === 'super_admin' ? 'Super Admin' : 'Counsellor'}
+                  </Badge>
                   <Badge tone={statusTone(s.presence || 'offline')}>{s.presence || 'offline'}</Badge>
                   <Badge tone={s.is_active ? 'green' : 'red'}>{s.is_active ? 'Active' : 'Inactive'}</Badge>
                 </div>
@@ -1064,28 +1068,44 @@ export function AdminActivityPage() {
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     apiJson<any[]>('/api/admin-activity?limit=150', {}, true)
-      .then(setRows)
+      .then((data) => setRows(Array.isArray(data) ? data : []))
+      .catch(() => setRows([]))
       .finally(() => setLoading(false));
   }, []);
   if (loading) return <Loader />;
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-black flex items-center gap-2">
-        <Activity className="w-5 h-5 text-orange-500" /> Activity log
-      </h2>
+      <div>
+        <h2 className="text-xl font-black flex items-center gap-2">
+          <Activity className="w-5 h-5 text-orange-500" /> Activity log
+        </h2>
+        <p className="text-sm text-slate-500 font-medium">Audit trail of actions taken by counsellors & admins</p>
+      </div>
       <Card className="divide-y divide-slate-100">
         {rows.map((r) => (
-          <div key={r.id} className="px-5 py-3.5 flex flex-wrap items-center justify-between gap-2 text-sm">
-            <div>
-              <p className="font-bold text-slate-900">{r.action}</p>
-              <p className="text-xs text-slate-400">
-                {r.entity_type} {r.entity_id || ''} · staff {String(r.staff_id).slice(0, 8)}…
-              </p>
+          <div key={r.id} className="px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 text-sm">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center font-bold text-xs shrink-0">
+                {(r.staff_name || 'A').charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <p className="font-bold text-slate-900">{r.action}</p>
+                <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-xs text-slate-500">
+                  <span className="font-semibold text-slate-700">{r.staff_name || 'Staff'}</span>
+                  {r.staff_email && <span>({r.staff_email})</span>}
+                  {r.role && (
+                    <Badge tone={r.role === 'super_admin' ? 'purple' : 'orange'}>
+                      {r.role === 'super_admin' ? 'Super Admin' : 'Counsellor'}
+                    </Badge>
+                  )}
+                  {r.entity_type && <span className="text-slate-400">· {r.entity_type} {r.entity_id || ''}</span>}
+                </div>
+              </div>
             </div>
             <p className="text-xs font-semibold text-slate-500">{fmt(r.created_at)}</p>
           </div>
         ))}
-        {!rows.length && <p className="p-8 text-center text-slate-400">No activity yet</p>}
+        {!rows.length && <p className="p-8 text-center text-slate-400">No activity recorded yet</p>}
       </Card>
     </div>
   );
@@ -1094,34 +1114,103 @@ export function AdminActivityPage() {
 export function AdminSessionsPage() {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('');
+
   useEffect(() => {
     apiJson<any[]>('/api/admin-sessions?limit=100', {}, true)
-      .then(setRows)
+      .then((data) => setRows(Array.isArray(data) ? data : []))
+      .catch(() => setRows([]))
       .finally(() => setLoading(false));
   }, []);
+
   if (loading) return <Loader />;
+
+  const filtered = rows.filter((r) => {
+    if (!filter) return true;
+    const q = filter.toLowerCase();
+    return (
+      (r.user_name || '').toLowerCase().includes(q) ||
+      (r.user_email || '').toLowerCase().includes(q) ||
+      (r.role || '').toLowerCase().includes(q) ||
+      (r.ip || '').toLowerCase().includes(q)
+    );
+  });
+
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-black">Login history</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-black flex items-center gap-2">
+            <History className="w-5 h-5 text-orange-500" /> Login history & Active sessions
+          </h2>
+          <p className="text-sm text-slate-500 font-medium">Monitor staff sign-ins, device details, and session duration</p>
+        </div>
+        <div className="w-full sm:w-64">
+          <input
+            type="text"
+            placeholder="Search by name, email, or role…"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-200"
+          />
+        </div>
+      </div>
+
       <Card className="overflow-x-auto">
         <table className="w-full text-sm min-w-[700px]">
           <thead className="bg-slate-50 text-xs uppercase text-slate-400">
             <tr>
-              <th className="text-left p-3 font-bold">User</th>
-              <th className="text-left p-3 font-bold">Login</th>
-              <th className="text-left p-3 font-bold">Logout</th>
-              <th className="text-left p-3 font-bold">Duration</th>
+              <th className="text-left p-3.5 font-bold">Staff Member</th>
+              <th className="text-left p-3.5 font-bold">Status</th>
+              <th className="text-left p-3.5 font-bold">Login Time</th>
+              <th className="text-left p-3.5 font-bold">Logout / Session</th>
+              <th className="text-left p-3.5 font-bold">Duration</th>
             </tr>
           </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.id} className="border-t border-slate-100">
-                <td className="p-3 font-mono text-xs">{String(r.user_id).slice(0, 12)}…</td>
-                <td className="p-3">{fmt(r.login_at)}</td>
-                <td className="p-3">{fmt(r.logout_at)}</td>
-                <td className="p-3 font-semibold">{r.duration_seconds != null ? `${Math.round(r.duration_seconds / 60)} min` : 'Active'}</td>
+          <tbody className="divide-y divide-slate-100">
+            {filtered.map((r) => {
+              const isOnline = r.presence === 'online' || !r.logout_at;
+              return (
+                <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="p-3.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-xs shrink-0">
+                        {(r.user_name || 'U').charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-bold text-slate-900 leading-tight">{r.user_name || 'Staff User'}</p>
+                          <Badge tone={r.role === 'super_admin' ? 'purple' : 'orange'}>
+                            {r.role === 'super_admin' ? 'Super Admin' : 'Counsellor'}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-0.5">{r.user_email || String(r.user_id).slice(0, 12)}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-3.5">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                      isOnline ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                      {isOnline ? 'Active Now' : 'Signed Out'}
+                    </span>
+                  </td>
+                  <td className="p-3.5 text-slate-700 font-medium">{fmt(r.login_at)}</td>
+                  <td className="p-3.5 text-slate-500">{r.logout_at ? fmt(r.logout_at) : <span className="text-emerald-600 font-semibold">Active session</span>}</td>
+                  <td className="p-3.5 font-semibold text-slate-800">
+                    {r.duration_seconds != null ? `${Math.round(r.duration_seconds / 60)} min` : <span className="text-emerald-600">Online</span>}
+                  </td>
+                </tr>
+              );
+            })}
+            {!filtered.length && (
+              <tr>
+                <td colSpan={5} className="p-8 text-center text-slate-400">
+                  No sessions found matching your search
+                </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </Card>
