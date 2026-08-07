@@ -94,21 +94,47 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'email, password and full_name are required' });
       }
 
+      let uid;
       const { data: created, error: cErr } = await supabase.auth.admin.createUser({
         email: email.trim(),
         password,
         email_confirm: true,
         user_metadata: { full_name, phone: phone || '', role: 'sub_admin' },
       });
-      if (cErr) throw cErr;
+      
+      if (cErr) {
+        if (cErr.message && cErr.message.toLowerCase().includes('already been registered')) {
+          // Find existing user in profiles
+          const { data: existing } = await supabase
+            .from('profiles')
+            .select('id')
+            .ilike('email', email.trim())
+            .single();
+            
+          if (!existing) {
+            throw new Error('Email exists in auth but no profile found. Cannot promote to sub_admin.');
+          }
+          uid = existing.id;
 
-      const uid = created.user.id;
+          // Update existing user's password and role
+          const { error: upErr } = await supabase.auth.admin.updateUserById(uid, {
+            password,
+            user_metadata: { full_name, phone: phone || '', role: 'sub_admin' }
+          });
+          if (upErr) throw upErr;
+        } else {
+          throw cErr;
+        }
+      } else {
+        uid = created.user.id;
+      }
+
       const now = new Date().toISOString();
       const empId = employee_id || `EMP-${String(Date.now()).slice(-6)}`;
 
       const { data: staff, error: sErr } = await supabase
         .from('staff_profiles')
-        .insert({
+        .upsert({
           user_id: uid,
           name: full_name,
           email: email.trim(),
