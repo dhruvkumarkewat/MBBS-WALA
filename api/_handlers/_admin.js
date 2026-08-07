@@ -91,6 +91,7 @@ export async function notifyUsers(userIds, title, body) {
     user_id,
     title,
     body,
+    description: body,
     read: false,
     created_at: now,
   }));

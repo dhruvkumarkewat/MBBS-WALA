@@ -50,6 +50,7 @@ export default async function handler(req, res) {
       user_id: uid,
       title,
       body,
+      description: body,
       read: false,
       created_at: now,
     }));

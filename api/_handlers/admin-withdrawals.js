@@ -86,7 +86,11 @@ export default async function handler(req, res) {
           body:
             status === 'approved'
               ? `Your withdrawal of ₹${wd.amount} was approved.`
-              : `Your withdrawal of ₹${wd.amount} was rejected. ${remarks || ''}`.trim(),
+              : `Your withdrawal request was rejected. ${remarks ? 'Reason: ' + remarks : ''}`,
+          description:
+            status === 'approved'
+              ? `Your withdrawal of ₹${wd.amount} was approved.`
+              : `Your withdrawal request was rejected. ${remarks ? 'Reason: ' + remarks : ''}`,
           type: 'wallet',
           read: false,
           created_at: now,
