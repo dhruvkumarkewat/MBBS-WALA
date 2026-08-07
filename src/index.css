@@ -1621,38 +1621,58 @@ a .pkg-learn-more {
 }
 
 
-/* ═══ Admin drawer: always readable white text (never inherit marketing light overrides) ═══ */
-.admin-shell aside,
-.admin-shell .admin-drawer,
-.admin-shell aside * {
-  /* base */
-}
-.admin-shell aside {
+/* ═══ Admin drawer: adaptive light/dark theme ═══ */
+.admin-shell.admin-dark aside {
+  background-color: #0b0d12 !important;
   color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.07) !important;
 }
-.admin-shell aside a,
-.admin-shell aside button,
-.admin-shell aside p,
-.admin-shell aside span,
-.admin-shell aside h1,
-.admin-shell aside h2,
-.admin-shell aside h3 {
-  /* Keep intentional colors; default to white when utility is washed out */
+.admin-shell.admin-dark aside nav a {
+  color: rgba(255, 255, 255, 0.75) !important;
 }
-.admin-shell aside nav a {
-  color: rgba(255,255,255,0.82) !important;
+.admin-shell.admin-dark aside nav a:hover {
+  color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
 }
+
+.admin-shell.admin-light aside,
+.admin-shell:not(.admin-dark) aside {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+.admin-shell.admin-light aside nav a,
+.admin-shell:not(.admin-dark) aside nav a {
+  color: #475569 !important;
+}
+.admin-shell.admin-light aside nav a:hover,
+.admin-shell:not(.admin-dark) aside nav a:hover {
+  color: #0f172a !important;
+  background-color: #f1f5f9 !important;
+}
+
+/* Active navigation link in both modes */
 .admin-shell aside nav a[class*='bg-\[\#ff7a1a\]'],
 .admin-shell aside nav a.bg-\[\#ff7a1a\],
 .admin-shell aside nav a.active,
 .admin-shell aside nav a[aria-current='page'] {
+  background-color: #ff7a1a !important;
   color: #ffffff !important;
 }
+.admin-shell aside nav a[class*='bg-\[\#ff7a1a\]'] span,
+.admin-shell aside nav a.bg-\[\#ff7a1a\] span,
+.admin-shell aside nav a.active span,
+.admin-shell aside nav a[aria-current='page'] span {
+  color: #ffffff !important;
+}
+
 .admin-shell aside .text-orange-400,
-.admin-shell aside .text-orange-400\/90 {
-  color: #fb923c !important;
+.admin-shell aside .text-orange-400\/90,
+.admin-shell aside .text-orange-500 {
+  color: #f97316 !important;
 }
 .admin-shell .brand-logo {
   filter: none !important;
   background: transparent !important;
 }
+

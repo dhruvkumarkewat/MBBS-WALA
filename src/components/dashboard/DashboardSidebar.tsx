@@ -116,7 +116,7 @@ export default function DashboardSidebar() {
               className="flex items-center gap-2.5 min-w-0 !bg-transparent hover:opacity-95 transition-opacity"
             >
               {showLabels ? (
-                <BrandLogo to="" size="sm" onDark className="pointer-events-none" />
+                <BrandLogo to="" size="sm" onDark={dark} className="pointer-events-none" />
               ) : (
                 <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#ff7a1a] to-[#ea580c] text-white grid place-items-center text-[11px] font-black tracking-tight shadow-md shadow-orange-500/30 shrink-0">
                   MW

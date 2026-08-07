@@ -322,109 +322,147 @@ export default function AdminLayout() {
 
         <div className="flex min-h-screen">
           <aside
-            className={`admin-drawer fixed z-50 left-0 top-0 bottom-0 w-[min(268px,88vw)] shrink-0 transition-transform duration-300 ease-out flex flex-col bg-[#0b0d12] text-white border-r border-white/[0.06] ${
-              mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-            }`}
+            className={`admin-drawer fixed z-50 left-0 top-0 bottom-0 w-[min(268px,88vw)] shrink-0 transition-all duration-300 ease-out flex flex-col border-r ${
+              dark
+                ? 'bg-[#0b0d12] text-white border-white/[0.07]'
+                : 'bg-white text-slate-900 border-slate-200/90 shadow-sm'
+            } ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
           >
-            {/* Matches student dashboard sidebar — clean dark SaaS, no photo clutter */}
-            <div className="shrink-0 border-b border-white/[0.07] px-4 py-4">
-                <div className="flex items-center gap-2.5">
-                  <BrandLogo to="/admin" size="md" onDark imgClassName="!max-w-[168px]" />
-                  <button
-                    type="button"
-                    className="lg:hidden ml-auto p-2 rounded-xl bg-white/8 text-white/70"
-                    onClick={() => setMobileOpen(false)}
-                    aria-label="Close menu"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-                <div className="mt-3 rounded-2xl bg-white/[0.06] border border-white/[0.08] px-3 py-2.5 flex items-center gap-3">
-                  <img
-                    src={photo}
-                    alt=""
-                    className="w-10 h-10 rounded-xl object-cover ring-2 ring-orange-400/40 shrink-0"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=FF7A1A&color=fff&bold=true&size=128`;
-                    }}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-orange-400">
-                      {isSuper ? 'Super Admin' : 'Counsellor'}
+            {/* Clean Admin SaaS header */}
+            <div className={`shrink-0 border-b px-4 py-4 ${dark ? 'border-white/[0.07]' : 'border-slate-200'}`}>
+              <div className="flex items-center gap-2.5">
+                <BrandLogo to="/admin" size="md" onDark={dark} imgClassName="!max-w-[168px]" />
+                <button
+                  type="button"
+                  className={`lg:hidden ml-auto p-2 rounded-xl ${
+                    dark ? 'bg-white/8 text-white/70' : 'bg-slate-100 text-slate-600'
+                  }`}
+                  onClick={() => setMobileOpen(false)}
+                  aria-label="Close menu"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div
+                className={`mt-3 rounded-2xl border px-3 py-2.5 flex items-center gap-3 ${
+                  dark ? 'bg-white/[0.06] border-white/[0.08]' : 'bg-slate-50 border-slate-200/80 shadow-xs'
+                }`}
+              >
+                <img
+                  src={photo}
+                  alt=""
+                  className="w-10 h-10 rounded-xl object-cover ring-2 ring-orange-400/40 shrink-0"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=FF7A1A&color=fff&bold=true&size=128`;
+                  }}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-orange-500">
+                    {isSuper ? 'Super Admin' : 'Counsellor'}
+                  </p>
+                  <p className={`text-[13px] font-semibold truncate leading-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
+                    {name}
+                  </p>
+                  {staffInfo.staff?.employee_id && (
+                    <p className={`text-[11px] font-medium truncate ${dark ? 'text-white/60' : 'text-slate-500'}`}>
+                      {staffInfo.staff.employee_id}
                     </p>
-                    <p className="text-[13px] font-semibold text-white truncate leading-tight">
-                      {name}
-                    </p>
-                    {staffInfo.staff?.employee_id && (
-                      <p className="text-[11px] text-white/60 font-medium truncate">
-                        {staffInfo.staff.employee_id}
-                      </p>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
+            </div>
 
-              <nav className="flex-1 overflow-y-auto overscroll-contain px-2.5 py-3 space-y-0.5" data-lenis-prevent>
-                <p className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-white/50">
-                  {isSuper ? 'Admin menu' : 'Counsellor menu'}
-                </p>
-                {links.map((l) => (
-                  <NavLink
-                    key={l.to}
-                    to={l.to}
-                    end={l.end}
-                    onClick={() => setMobileOpen(false)}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition touch-manipulation ${
-                        isActive
-                          ? 'bg-[#ff7a1a] !text-white shadow-[0_8px_24px_rgba(255,122,26,0.35)]'
-                          : '!text-white/75 hover:!text-white hover:bg-white/[0.08]'
-                      }`
-                    }
-                  >
-                    <l.icon className="w-[18px] h-[18px] shrink-0 opacity-90" />
-                    <span className="min-w-0 flex-1">
-                      <span className="font-semibold block leading-tight text-[13.5px]">{l.label}</span>
-                      <span className="text-[10px] text-white/55 font-medium block mt-0.5 leading-snug">
-                        {l.hint}
+            <nav className="flex-1 overflow-y-auto overscroll-contain px-2.5 py-3 space-y-0.5" data-lenis-prevent>
+              <p
+                className={`px-3 mb-1.5 text-[10px] font-bold uppercase tracking-[0.16em] ${
+                  dark ? 'text-white/50' : 'text-slate-400'
+                }`}
+              >
+                {isSuper ? 'Admin menu' : 'Counsellor menu'}
+              </p>
+              {links.map((l) => (
+                <NavLink
+                  key={l.to}
+                  to={l.to}
+                  end={l.end}
+                  onClick={() => setMobileOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition touch-manipulation font-medium ${
+                      isActive
+                        ? 'bg-[#ff7a1a] !text-white shadow-[0_8px_24px_rgba(255,122,26,0.35)]'
+                        : dark
+                        ? '!text-white/75 hover:!text-white hover:bg-white/[0.08]'
+                        : '!text-slate-600 hover:!text-slate-900 hover:bg-slate-100'
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <l.icon className="w-[18px] h-[18px] shrink-0 opacity-90" />
+                      <span className="min-w-0 flex-1">
+                        <span className="font-semibold block leading-tight text-[13.5px]">{l.label}</span>
+                        <span
+                          className={`text-[10px] font-medium block mt-0.5 leading-snug ${
+                            isActive ? '!text-white/85' : dark ? 'text-white/55' : 'text-slate-400'
+                          }`}
+                        >
+                          {l.hint}
+                        </span>
                       </span>
-                    </span>
-                  </NavLink>
-                ))}
-              </nav>
+                    </>
+                  )}
+                </NavLink>
+              ))}
+            </nav>
 
-              <div className="p-2.5 border-t border-white/[0.07] space-y-0.5 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-                <button
-                  type="button"
-                  onClick={toggleDark}
-                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-white/55 hover:text-white hover:bg-white/[0.06] text-sm font-semibold"
-                >
-                  <span className="inline-flex items-center gap-3">
-                    {dark ? <Sun className="w-[18px] h-[18px] text-amber-300" /> : <Moon className="w-[18px] h-[18px]" />}
-                    {dark ? 'Light mode' : 'Dark mode'}
-                  </span>
-                  <span className={`w-9 h-5 rounded-full relative transition-colors ${dark ? 'bg-orange-500' : 'bg-white/20'}`}>
-                    <span
-                      className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${
-                        dark ? 'left-[18px]' : 'left-0.5'
-                      }`}
-                    />
-                  </span>
-                </button>
-                <Link
-                  to="/dashboard"
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/55 hover:text-white hover:bg-white/[0.06] text-[13.5px] font-semibold"
-                >
-                  <GraduationCap className="w-[18px] h-[18px]" /> Student dashboard
-                </Link>
-                <button
-                  type="button"
-                  onClick={logout}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-rose-300/85 hover:bg-rose-500/10 hover:text-rose-200 text-[13.5px] font-semibold touch-manipulation"
-                >
-                  <LogOut className="w-[18px] h-[18px]" /> Sign out
-                </button>
-              </div>
+            <div
+              className={`p-2.5 border-t space-y-0.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] ${
+                dark ? 'border-white/[0.07]' : 'border-slate-200'
+              }`}
+            >
+              <button
+                type="button"
+                onClick={toggleDark}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition ${
+                  dark
+                    ? 'text-white/60 hover:text-white hover:bg-white/[0.06]'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <span className="inline-flex items-center gap-3">
+                  {dark ? <Sun className="w-[18px] h-[18px] text-amber-300" /> : <Moon className="w-[18px] h-[18px] text-slate-500" />}
+                  {dark ? 'Light mode' : 'Dark mode'}
+                </span>
+                <span className={`w-9 h-5 rounded-full relative transition-colors ${dark ? 'bg-orange-500' : 'bg-slate-300'}`}>
+                  <span
+                    className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${
+                      dark ? 'left-[18px]' : 'left-0.5'
+                    }`}
+                  />
+                </span>
+              </button>
+              <Link
+                to="/dashboard"
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-semibold transition ${
+                  dark
+                    ? 'text-white/60 hover:text-white hover:bg-white/[0.06]'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <GraduationCap className="w-[18px] h-[18px]" /> Student dashboard
+              </Link>
+              <button
+                type="button"
+                onClick={logout}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-semibold touch-manipulation transition ${
+                  dark
+                    ? 'text-rose-300/85 hover:bg-rose-500/10 hover:text-rose-200'
+                    : 'text-rose-600 hover:bg-rose-50 hover:text-rose-700'
+                }`}
+              >
+                <LogOut className="w-[18px] h-[18px]" /> Sign out
+              </button>
+            </div>
           </aside>
 
           {mobileOpen && (
