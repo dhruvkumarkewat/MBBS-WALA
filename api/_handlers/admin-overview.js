@@ -18,12 +18,28 @@ export default async function handler(req, res) {
     if (!isSuper) studentsQ = studentsQ.eq('assigned_to', user.id);
     const { data: students } = await studentsQ;
 
-    // Deduplicate students list
+    // Deduplicate students list with priority to paid, assigned, and latest status
     const studentMap = new Map();
+    const getKey = (st) => (st.user_id ? `user:${st.user_id}` : st.email ? `email:${st.email.toLowerCase().trim()}` : `id:${st.id}`);
+
     for (const st of students || []) {
-      const key = st.user_id ? `user:${st.user_id}` : st.email ? `email:${st.email.toLowerCase().trim()}` : `id:${st.id}`;
+      const key = getKey(st);
       if (!studentMap.has(key)) {
-        studentMap.set(key, st);
+        studentMap.set(key, { ...st });
+      } else {
+        const existing = studentMap.get(key);
+        studentMap.set(key, {
+          ...existing,
+          ...st,
+          id: existing.id || st.id,
+          assigned_to: existing.assigned_to || st.assigned_to || null,
+          counselling_status:
+            existing.counselling_status && existing.counselling_status !== 'new' && existing.counselling_status !== 'unassigned'
+              ? existing.counselling_status
+              : st.counselling_status || existing.counselling_status || 'new',
+          payment_status: existing.payment_status === 'paid' ? 'paid' : st.payment_status || existing.payment_status || 'pending',
+          payment_amount: Math.max(existing.payment_amount || 0, st.payment_amount || 0),
+        });
       }
     }
     const list = Array.from(studentMap.values());

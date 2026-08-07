@@ -283,18 +283,23 @@ export function AdminOverviewPage() {
             </div>
           </div>
           <div className="space-y-3">
-            {pipeline.map((p: any) => (
-              <div key={p.key} className="grid grid-cols-[120px_1fr_40px] sm:grid-cols-[140px_1fr_48px] items-center gap-3">
-                <p className="text-xs font-bold text-slate-600">{p.label}</p>
-                <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-orange-500 to-rose-500 transition-all"
-                    style={{ width: `${Math.max(4, (p.count / maxPipe) * 100)}%` }}
-                  />
+            {pipeline.map((p: any) => {
+              const pct = maxPipe > 0 && p.count > 0 ? Math.round((p.count / maxPipe) * 100) : 0;
+              return (
+                <div key={p.key} className="grid grid-cols-[120px_1fr_40px] sm:grid-cols-[140px_1fr_48px] items-center gap-3">
+                  <p className="text-xs font-bold text-slate-600 admin-text">{p.label}</p>
+                  <div className="h-2.5 rounded-full bg-slate-100 dark:bg-white/[0.08] overflow-hidden">
+                    <div
+                      className={`h-full rounded-full bg-gradient-to-r from-orange-500 to-rose-500 transition-all duration-300 ${
+                        p.count === 0 ? 'opacity-0' : 'opacity-100'
+                      }`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <p className="text-sm font-black text-slate-900 admin-text text-right tabular-nums">{p.count}</p>
                 </div>
-                <p className="text-sm font-black text-slate-900 text-right tabular-nums">{p.count}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
 
