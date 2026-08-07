@@ -94,7 +94,7 @@ export default async function handler(req, res) {
           supabase.from('counselling_followups').select('*').eq('student_id', studentNumId).order('due_at', { ascending: true }),
           supabase.from('student_documents').select('*').eq('student_id', studentNumId).order('id', { ascending: false }),
           supabase.from('student_messages').select('*').eq('student_id', studentNumId).order('id', { ascending: true }),
-          supabase.from('purchases').select('*').eq('student_id', studentNumId).order('id', { ascending: false }),
+          supabase.from('purchases').select('id, student_id, user_id, item_type, item_name, amount, status, notes, created_at').eq('student_id', studentNumId).order('id', { ascending: false }),
         ]);
 
         await logActivity(user.id, 'Viewed Student', 'student', String(student.id));

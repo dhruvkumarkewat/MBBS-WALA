@@ -18,7 +18,7 @@ export default async function handler(req, res) {
       if (!ctx) return;
       const isSuper = ctx.staff.role === 'super_admin';
 
-      let query = supabase.from('purchases').select('*').order('id', { ascending: false });
+      let query = supabase.from('purchases').select('id, student_id, user_id, item_type, item_name, amount, status, notes, created_at').order('id', { ascending: false });
       const { data: purchases, error } = await query;
       if (error) throw error;
 

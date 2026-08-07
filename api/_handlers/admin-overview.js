@@ -75,7 +75,7 @@ export default async function handler(req, res) {
     }
 
     const { data: purchases } = isSuper
-      ? await supabase.from('purchases').select('*').order('id', { ascending: false }).limit(12)
+      ? await supabase.from('purchases').select('id, student_id, user_id, item_type, item_name, amount, status, notes, created_at').order('id', { ascending: false }).limit(12)
       : { data: [] };
 
     const { data: withdrawals } = isSuper
