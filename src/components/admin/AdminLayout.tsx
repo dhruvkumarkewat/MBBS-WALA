@@ -273,7 +273,11 @@ export default function AdminLayout() {
   const links = staffInfo.role === 'super_admin' ? superLinks : subLinks;
   const name = staffInfo.staff?.full_name || 'Admin';
   const isSuper = staffInfo.role === 'super_admin';
-  const photo = staffInfo.staff?.photo_url || '/images/mbbswala/avatar-1.jpg';
+  const photo =
+    user?.user_metadata?.avatar_url ||
+    user?.user_metadata?.picture ||
+    staffInfo.staff?.photo_url ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=FF7A1A&color=fff&bold=true&size=128`;
 
   return (
     <AdminThemeContext.Provider value={{ dark, toggleDark }}>
@@ -341,7 +345,7 @@ export default function AdminLayout() {
                     alt=""
                     className="w-10 h-10 rounded-xl object-cover ring-2 ring-orange-400/40 shrink-0"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/images/mbbswala/avatar-1.jpg';
+                      (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=FF7A1A&color=fff&bold=true&size=128`;
                     }}
                   />
                   <div className="min-w-0 flex-1">

@@ -351,11 +351,11 @@ export function AdminOverviewPage() {
               {(data.staffList || []).map((c: any, idx: number) => (
                 <div key={c.user_id} className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50/80">
                   <img
-                    src={c.photo_url || `/images/mbbswala/avatar-${(idx % 5) + 1}.jpg`}
+                    src={c.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name || c.email)}&background=FF7A1A&color=fff&bold=true&size=88`}
                     alt=""
                     className="w-11 h-11 rounded-xl object-cover ring-2 ring-white"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/images/mbbswala/avatar-1.jpg';
+                      (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name || c.email)}&background=FF7A1A&color=fff&bold=true&size=88`;
                     }}
                   />
                   <div className="flex-1 min-w-0">
@@ -515,11 +515,11 @@ export function AdminStaffPage() {
           <Card key={s.user_id} className="p-5">
             <div className="flex items-start gap-4">
               <img
-                src={s.photo_url || `/images/mbbswala/avatar-${(idx % 5) + 1}.jpg`}
-                alt=""
+                src={s.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name || s.email)}&background=FF7A1A&color=fff&bold=true&size=128`}
+                alt={s.name}
                 className="w-14 h-14 rounded-2xl object-cover ring-2 ring-orange-100"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/images/mbbswala/avatar-1.jpg';
+                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name || s.email)}&background=FF7A1A&color=fff&bold=true&size=128`;
                 }}
               />
               <div className="flex-1 min-w-0">

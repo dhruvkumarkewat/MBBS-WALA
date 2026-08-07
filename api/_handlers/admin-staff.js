@@ -60,6 +60,17 @@ export default async function handler(req, res) {
             .eq('staff_id', s.user_id)
             .eq('status', 'pending');
 
+          // Fetch Google avatar from Auth metadata if available
+          try {
+            const { data: authUser } = await supabase.auth.admin.getUserById(s.user_id);
+            if (authUser?.user?.user_metadata) {
+              const meta = authUser.user.user_metadata;
+              s.photo_url = s.photo_url || meta.avatar_url || meta.picture || '';
+            }
+          } catch (err) {
+            // ignore if unable to fetch user
+          }
+
           return {
             ...s,
             assigned_count: list.length,
