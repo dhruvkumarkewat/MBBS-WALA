@@ -888,9 +888,12 @@ export function AdminStudentDetailPage() {
         <div className="relative z-10 p-5 md:p-6 flex flex-wrap items-end justify-between gap-4 text-white">
           <div className="flex items-center gap-4">
             <img
-              src={`/images/mbbswala/avatar-${(Number(st.id) % 5) + 1}.jpg`}
+              src={st.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(st.full_name || st.email || 'S')}&background=FF7A1A&color=fff&bold=true&size=128`}
               alt=""
               className="w-16 h-16 rounded-2xl object-cover ring-2 ring-orange-400/50 shadow-xl"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(st.full_name || st.email || 'S')}&background=FF7A1A&color=fff&bold=true&size=128`;
+              }}
             />
             <div>
               <Link to="/admin/students" className="text-xs font-bold text-orange-300 hover:underline">

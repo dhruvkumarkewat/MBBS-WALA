@@ -97,7 +97,21 @@ export default async function handler(req, res) {
           supabase.from('purchases').select('id, student_id, user_id, item_type, item_name, amount, status, notes, created_at').eq('student_id', studentNumId).order('id', { ascending: false }),
         ]);
 
-        await logActivity(user.id, 'Viewed Student', 'student', String(student.id));
+        // Enrich student with Google avatar_url from profiles
+        if (student.user_id) {
+          try {
+            const { data: prof } = await supabase
+              .from('profiles')
+              .select('avatar_url')
+              .eq('id', student.user_id)
+              .maybeSingle();
+            if (prof?.avatar_url) {
+              student = { ...student, avatar_url: prof.avatar_url };
+            }
+          } catch {
+            // ignore — avatar is non-critical
+          }
+        }
 
         return res.status(200).json({
           student,
