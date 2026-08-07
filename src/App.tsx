@@ -116,6 +116,7 @@ const AdminStudentsPage = lazyNamed(adminPages, 'AdminStudentsPage');
 const AdminStudentDetailPage = lazyNamed(adminPages, 'AdminStudentDetailPage');
 const AdminActivityPage = lazyNamed(adminPages, 'AdminActivityPage');
 const AdminSessionsPage = lazyNamed(adminPages, 'AdminSessionsPage');
+const AdminAlertsPage = lazyNamed(adminPages, 'AdminAlertsPage');
 const AdminFollowupsPage = lazyNamed(adminPages, 'AdminFollowupsPage');
 const AdminPurchasesPage = lazyNamed(adminPages, 'AdminPurchasesPage');
 const AdminWithdrawalsPage = lazyNamed(adminPages, 'AdminWithdrawalsPage');
@@ -195,6 +196,7 @@ export default function App() {
           <Route path="purchases" element={<L><AdminPurchasesPage /></L>} />
           <Route path="withdrawals" element={<L><AdminWithdrawalsPage /></L>} />
           <Route path="notifications" element={<L><AdminNotifyPage /></L>} />
+          <Route path="alerts" element={<L><AdminAlertsPage /></L>} />
         </Route>
 
         <Route

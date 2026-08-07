@@ -32,6 +32,7 @@ import {
   Save,
   CheckCircle2,
   Megaphone,
+  Newspaper,
 } from 'lucide-react';
 import { apiJson } from '../../lib/api';
 
@@ -2247,6 +2248,243 @@ export function AdminNotifyPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+const STATIC_NEWS = [
+  {
+    title: 'NEET UG 2026 — Exam Date Announced',
+    description: 'National Testing Agency (NTA) has officially announced the NEET UG 2026 exam date. Students should begin preparations immediately.',
+    link: 'https://nta.ac.in',
+    source_id: 'NTA Official',
+    pubDate: new Date().toISOString(),
+    image_url: null,
+  },
+  {
+    title: 'All India Counselling — Registration Open',
+    description: 'MCC has opened registrations for the All India Quota MBBS/BDS counselling. Eligible candidates can apply on the official MCC portal.',
+    link: 'https://mcc.nic.in',
+    source_id: 'MCC',
+    pubDate: new Date().toISOString(),
+    image_url: null,
+  },
+  {
+    title: 'AIIMS Delhi — MBBS 2025 Closing Ranks Published',
+    description: 'AIIMS Delhi has published closing ranks for MBBS admissions. General category closing rank stood at 52 in Round 1.',
+    link: 'https://aiimsexams.ac.in',
+    source_id: 'AIIMS',
+    pubDate: new Date().toISOString(),
+    image_url: null,
+  },
+  {
+    title: 'MP State Quota Counselling Schedule Released',
+    description: 'DMET Madhya Pradesh has released the state counselling schedule for MBBS/BDS seats under 85% state quota.',
+    link: 'https://dme.mponline.gov.in',
+    source_id: 'DMET MP',
+    pubDate: new Date().toISOString(),
+    image_url: null,
+  },
+  {
+    title: 'NEET PG 2025 Results Declared by NBE',
+    description: 'National Board of Examinations (NBE) has declared NEET PG 2025 results. Candidates can check their scorecards on the official NBE portal.',
+    link: 'https://nbe.edu.in',
+    source_id: 'NBE',
+    pubDate: new Date().toISOString(),
+    image_url: null,
+  },
+  {
+    title: 'NEET UG 2025 — Stray Vacancy Round Details',
+    description: 'MCC has announced stray vacancy round schedule for NEET UG 2025. Candidates who have not been allotted a seat can participate.',
+    link: 'https://mcc.nic.in',
+    source_id: 'MCC',
+    pubDate: new Date().toISOString(),
+    image_url: null,
+  },
+];
+
+export function AdminAlertsPage() {
+  const [items, setItems] = useState<
+    Array<{ id: number; title: string; body: string; read: boolean; created_at: string }>
+  >([]);
+  const [news, setNews] = useState<any[]>(STATIC_NEWS);
+  const [loading, setLoading] = useState(true);
+  const [newsLoading, setNewsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      setItems(await apiJson('/api/notifications', {}, true));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const MEDICAL_KEYWORDS = [
+    'neet', 'mbbs', 'bds', 'ayush', 'ayurveda', 'mcc', 'medical college',
+    'medical admission', 'medical seat', 'counselling', 'counseling',
+    'medical entrance', 'pg medical', 'ug medical', 'medical cutoff',
+    'aiims', 'medical student', 'medical exam', 'medical university',
+    'state quota', 'all india quota', 'merit list', 'mbbs seat', 'neet ug',
+    'neet pg', 'dnb', 'md ms admission', 'medical counselling'
+  ];
+
+  const loadNews = useCallback(async () => {
+    try {
+      const res = await fetch('https://newsdata.io/api/1/news?apikey=pub_8e7f2b8fe15c4a13bb444bf2e8b0c195&q=NEET%20OR%20MBBS%20OR%20%22medical%20college%22&country=in&language=en&category=health');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && Array.isArray(data.results) && data.results.length > 0) {
+        const filtered = data.results.filter((item: any) => {
+          const text = ((item.title || '') + ' ' + (item.description || '')).toLowerCase();
+          return MEDICAL_KEYWORDS.some(kw => text.includes(kw));
+        });
+        if (filtered.length > 0) setNews(filtered.slice(0, 10));
+      }
+    } catch (e) {
+      console.error('News fetch failed, showing static news', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+    loadNews();
+  }, [load, loadNews]);
+
+  const mark = async (id: number) => {
+    try {
+      const updated = await apiJson<{ id: number; read: boolean }>(
+        '/api/notifications',
+        { method: 'PUT', body: JSON.stringify({ id, read: true }) },
+        true
+      );
+      setItems((prev) => prev.map((n) => (n.id === updated.id ? { ...n, read: true } : n)));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed');
+    }
+  };
+
+  const markAll = async () => {
+    try {
+      await apiJson('/api/notifications', { method: 'PUT', body: JSON.stringify({ mark_all: true }) }, true);
+      setItems((prev) => prev.map((n) => ({ ...n, read: true })));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed');
+    }
+  };
+
+  return (
+    <div className="max-w-5xl">
+      <div className="grid md:grid-cols-2 gap-8">
+        
+        {/* Personal Notifications */}
+        <div>
+          <div className="flex items-start justify-between gap-3 mb-5">
+            <div>
+              <h2 className="text-xl font-black flex items-center gap-2">
+                <Bell className="w-5 h-5 text-orange-500" /> Alerts
+              </h2>
+              <p className="text-sm text-slate-500 font-medium">Your personal notifications</p>
+            </div>
+            <button type="button" onClick={markAll} className="px-3 py-1.5 rounded-full border border-slate-200 text-xs font-bold hover:bg-slate-50 transition bg-white text-slate-700">
+              Mark all read
+            </button>
+          </div>
+          {error && <Toast text={error} tone="err" />}
+          {loading ? (
+            <div className="h-32 rounded-2xl animate-pulse bg-slate-100" />
+          ) : items.length === 0 ? (
+            <Card className="p-8 text-center text-slate-400">
+              <Bell className="w-8 h-8 mx-auto mb-3 opacity-20" />
+              <p className="font-bold">No new alerts</p>
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {items.map((n) => (
+                <button
+                  key={n.id}
+                  type="button"
+                  onClick={() => !n.read && mark(n.id)}
+                  className={`w-full rounded-2xl border p-4 flex gap-3 text-left transition-all bg-white ${
+                    !n.read ? 'ring-1 ring-orange-500/30 bg-orange-50/50' : 'hover:-translate-y-0.5'
+                  }`}
+                >
+                  <Bell className={`w-5 h-5 shrink-0 mt-0.5 ${!n.read ? 'text-orange-600' : 'text-slate-400'}`} />
+                  <div className="flex-1">
+                    <p className={`text-sm ${!n.read ? 'font-extrabold text-orange-600' : 'font-bold text-slate-800'}`}>{n.title}</p>
+                    <p className="text-xs mt-1 leading-relaxed text-slate-500 font-medium">{n.body}</p>
+                  </div>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${!n.read ? 'text-orange-600' : 'text-slate-400'}`}>
+                    {n.read ? 'Read' : 'New'}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Real-time Medical News */}
+        <div>
+          <div className="mb-5">
+            <h2 className="text-xl font-black flex items-center gap-2">
+              <Newspaper className="w-5 h-5 text-orange-500" /> Live Updates
+            </h2>
+            <p className="text-sm text-slate-500 font-medium">Latest NEET & Medical Education News</p>
+          </div>
+          {newsLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map(i => <div key={i} className="h-24 rounded-2xl animate-pulse bg-slate-100" />)}
+            </div>
+          ) : news.length === 0 ? (
+            <Card className="p-8 text-center text-slate-400">
+              <Newspaper className="w-8 h-8 mx-auto mb-3 opacity-20" />
+              <p className="font-bold">No news available right now</p>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {news.map((item, i) => (
+                <a
+                  key={i}
+                  href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group block rounded-2xl border bg-white p-4 transition-all hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <div className="flex gap-4 items-start">
+                    {item.image_url && (
+                      <div className="w-20 h-20 shrink-0 rounded-xl overflow-hidden bg-slate-50 border border-slate-100 hidden sm:block">
+                        <img src={item.image_url} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">
+                          {item.source_id || 'News'}
+                        </span>
+                        {item.pubDate && (
+                          <span className="text-[10px] font-medium text-slate-400">
+                            {new Date(item.pubDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="font-bold text-sm leading-tight mb-1 text-slate-800 group-hover:text-orange-600 transition-colors line-clamp-2">
+                        {item.title}
+                      </h3>
+                      <p className="text-xs line-clamp-2 text-slate-500 font-medium">
+                        {item.description || item.content}
+                      </p>
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+
+      </div>
     </div>
   );
 }
