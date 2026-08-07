@@ -19,24 +19,33 @@ export default async function handler(req, res) {
       const isSuper = ctx.staff.role === 'super_admin';
 
       let query = supabase.from('purchases').select('*').order('id', { ascending: false });
-      if (!isSuper) {
-        query = query.eq('assigned_staff_id', ctx.user.id);
-      }
       const { data: purchases, error } = await query;
       if (error) throw error;
 
       const studentIds = [...new Set((purchases || []).map((p) => p.student_id).filter(Boolean))];
-      const staffIds = [...new Set((purchases || []).map((p) => p.assigned_staff_id).filter(Boolean))];
 
       let students = [];
       let staff = [];
       if (studentIds.length) {
         const { data } = await supabase
           .from('student_counselling')
-          .select('id, full_name, email, phone, neet_rank, state, counselling_status, payment_status, user_id')
+          .select('id, full_name, email, phone, neet_rank, state, counselling_status, payment_status, user_id, assigned_to')
           .in('id', studentIds);
         students = data || [];
       }
+
+      const studentMap = Object.fromEntries(students.map((s) => [s.id, s]));
+      
+      let filteredPurchases = purchases || [];
+      if (!isSuper) {
+        filteredPurchases = filteredPurchases.filter(p => {
+           const s = studentMap[p.student_id];
+           return s && s.assigned_to === ctx.user.id;
+        });
+      }
+
+      const staffIds = [...new Set(students.map(s => s.assigned_to).filter(Boolean))];
+
       if (staffIds.length) {
         const { data } = await supabase
           .from('staff_profiles')
@@ -45,14 +54,17 @@ export default async function handler(req, res) {
         staff = data || [];
       }
 
-      const studentMap = Object.fromEntries(students.map((s) => [s.id, s]));
       const staffMap = Object.fromEntries(staff.map((s) => [s.user_id, s]));
 
-      const enriched = (purchases || []).map((p) => ({
-        ...p,
-        student: p.student_id ? studentMap[p.student_id] || null : null,
-        counsellor: p.assigned_staff_id ? staffMap[p.assigned_staff_id] || null : null,
-      }));
+      const enriched = filteredPurchases.map((p) => {
+        const s = p.student_id ? studentMap[p.student_id] || null : null;
+        return {
+          ...p,
+          student: s,
+          counsellor: s?.assigned_to ? staffMap[s.assigned_to] || null : null,
+          assigned_staff_id: s?.assigned_to || null
+        };
+      });
 
       return res.status(200).json(enriched);
     }
@@ -142,7 +154,6 @@ export default async function handler(req, res) {
           item_name: itemName,
           amount,
           status: body.status || 'paid',
-          assigned_staff_id: assignedStaffId,
           created_at: now,
         })
         .select()
@@ -185,18 +196,33 @@ export default async function handler(req, res) {
 
       const update = {};
       if (status !== undefined) update.status = status;
-      if (assigned_staff_id !== undefined) update.assigned_staff_id = assigned_staff_id || null;
 
-      const { data, error } = await supabase
-        .from('purchases')
-        .update(update)
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
+      let data = existing;
+      if (Object.keys(update).length > 0) {
+        const { data: updatedData, error } = await supabase
+          .from('purchases')
+          .update(update)
+          .eq('id', id)
+          .select()
+          .single();
+        if (error) throw error;
+        data = updatedData;
+      }
 
       let student = null;
+      let previousStaffId = null;
+      
       if (existing.student_id) {
+        const { data: currentStudent } = await supabase
+          .from('student_counselling')
+          .select('*')
+          .eq('id', existing.student_id)
+          .maybeSingle();
+          
+        if (currentStudent) {
+           previousStaffId = currentStudent.assigned_to;
+        }
+
         const patch = { updated_at: new Date().toISOString() };
         if (assigned_staff_id !== undefined) {
           patch.assigned_to = assigned_staff_id || null;
@@ -212,21 +238,23 @@ export default async function handler(req, res) {
         student = st;
       }
 
-      if (assigned_staff_id && assigned_staff_id !== existing.assigned_staff_id) {
-        const sp = await getStaffProfile(assigned_staff_id);
-        await notifyAssignment({
-          student: student || { full_name: `Student #${existing.student_id}`, user_id: existing.user_id },
-          staffId: assigned_staff_id,
-          staffName: sp?.name,
-          packageName: existing.item_name,
-          assignedByName: ctx.staff.name || 'Super Admin',
-        });
+      if (assigned_staff_id !== undefined && assigned_staff_id !== previousStaffId) {
+        const sp = assigned_staff_id ? await getStaffProfile(assigned_staff_id) : null;
+        if (assigned_staff_id) {
+          await notifyAssignment({
+            student: student || { full_name: `Student #${existing.student_id}`, user_id: existing.user_id },
+            staffId: assigned_staff_id,
+            staffName: sp?.name,
+            packageName: existing.item_name,
+            assignedByName: ctx.staff.name || 'Super Admin',
+          });
+        }
         await logActivity(ctx.user.id, 'Assigned Counsellor to Purchase', 'purchase', id, {
           staff_id: assigned_staff_id,
         });
       }
 
-      return res.status(200).json({ ...data, student });
+      return res.status(200).json({ ...data, student, assigned_staff_id: student?.assigned_to || null });
     }
 
     res.status(405).json({ error: 'Method not allowed' });
