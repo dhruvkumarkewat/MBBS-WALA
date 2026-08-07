@@ -144,7 +144,7 @@ export default async function handler(req, res) {
           total_sessions: 0,
           successful_admissions: 0,
           created_at: now,
-        })
+        }, { onConflict: 'user_id' })
         .select()
         .single();
       if (sErr) throw sErr;
