@@ -46,7 +46,8 @@ export default async function handler(req, res) {
         .from('counselling_notes')
         .insert({
           student_id: Number(student_id),
-          staff_id: user.id,
+          author_id: user.id,
+          author_name: staff.full_name || staff.email,
           note: note.trim(),
           created_at: new Date().toISOString(),
         })
