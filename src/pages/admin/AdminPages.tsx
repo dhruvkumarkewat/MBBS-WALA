@@ -1359,12 +1359,16 @@ export function AdminFollowupsPage() {
             <button type="button" className="text-left flex-1 min-w-0" onClick={() => navigate(`/admin/students/${f.student_id}`)}>
               <div className="flex items-center gap-3">
                 <img
-                  src={`/images/mbbswala/avatar-${(Number(f.student_id) % 5) + 1}.jpg`}
+                  src={
+                    f.student?.full_name || f.student?.email
+                      ? `https://ui-avatars.com/api/?name=${encodeURIComponent(f.student.full_name || f.student.email)}&background=FF7A1A&color=fff&bold=true&size=128`
+                      : `/images/mbbswala/avatar-${(Number(f.student_id) % 5) + 1}.jpg`
+                  }
                   alt=""
                   className="w-11 h-11 rounded-xl object-cover"
                 />
                 <div>
-                  <p className="font-bold">Student #{f.student_id}</p>
+                  <p className="font-bold">{f.student?.full_name || `Student #${f.student_id}`}</p>
                   <p className="text-sm text-slate-500">{f.note || 'Open profile for full context'}</p>
                   <p className="text-xs text-orange-600 font-bold mt-1">Due {fmt(f.due_at)}</p>
                 </div>

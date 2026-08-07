@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     const isSuper = staff.role === 'super_admin';
 
     if (req.method === 'GET') {
-      let query = supabase.from('counselling_followups').select('*').order('due_at', { ascending: true });
+      let query = supabase.from('counselling_followups').select('*, student:student_counselling(full_name, email)').order('due_at', { ascending: true });
       if (!isSuper) query = query.eq('staff_id', user.id);
       if (req.query.status) query = query.eq('status', req.query.status);
       if (req.query.student_id) query = query.eq('student_id', req.query.student_id);
