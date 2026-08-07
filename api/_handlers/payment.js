@@ -232,7 +232,7 @@ export default async function handler(req, res) {
 
       const { data: dbOrder } = await supabase
         .from('payments')
-        .select('amount, plan_slug, meta, user_id')
+        .select('amount, plan_slug, meta, user_id, status')
         .eq('order_id', order_id)
         .maybeSingle();
 
@@ -240,6 +240,11 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Order not found in database' });
       }
       
+      // Idempotency: skip everything if already captured
+      if (dbOrder.status === 'captured') {
+        return res.status(200).json({ ok: true, message: 'Payment already verified' });
+      }
+
       if (dbOrder.user_id !== user.id) {
         return res.status(403).json({ error: 'Unauthorized payment verification' });
       }
@@ -430,6 +435,92 @@ export default async function handler(req, res) {
         }
       } catch (refErr) {
         console.warn('Referral payout processing warning:', refErr.message);
+      }
+
+      // 5.5 Admin CRM Sync (student_counselling and purchases)
+      try {
+        console.log(`[Admin CRM Sync] Starting sync for payment ${payment_id}, user ${user.id}`);
+        
+        // 5.5.1 Ensure student_counselling record exists
+        const { data: existingCounselling } = await supabase
+          .from('student_counselling')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        let studentId = null;
+
+        if (existingCounselling) {
+          studentId = existingCounselling.id;
+          await supabase
+            .from('student_counselling')
+            .update({
+              payment_status: 'paid',
+              payment_amount: Number(amount),
+              purchased_course: plan_name,
+              updated_at: now.toISOString(),
+            })
+            .eq('id', studentId);
+        } else {
+          const { data: newCounselling, error: ncErr } = await supabase
+            .from('student_counselling')
+            .insert({
+              user_id: user.id,
+              full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Unknown',
+              email: user.email || '',
+              phone: user.user_metadata?.phone || '',
+              payment_status: 'paid',
+              payment_amount: Number(amount),
+              purchased_course: plan_name,
+              counselling_status: 'new',
+              created_at: now.toISOString(),
+              updated_at: now.toISOString(),
+            })
+            .select('id')
+            .single();
+            
+          if (newCounselling) {
+            studentId = newCounselling.id;
+          } else if (ncErr) {
+             console.error('[Admin CRM Sync] Failed to create student_counselling:', ncErr.message);
+          }
+        }
+
+        // 5.5.2 Ensure purchases record exists
+        if (studentId) {
+          // Idempotency check for purchases: verify if already synced recently
+          const { data: existingPurchase } = await supabase
+            .from('purchases')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('item_name', plan_name)
+            .gte('created_at', new Date(now.getTime() - 10 * 60000).toISOString()) // within 10 minutes
+            .maybeSingle();
+
+          if (!existingPurchase) {
+            const { error: pErr } = await supabase
+              .from('purchases')
+              .insert({
+                user_id: user.id,
+                student_id: studentId,
+                item_type: 'course',
+                item_name: plan_name,
+                amount: Number(amount),
+                status: 'paid',
+                created_at: now.toISOString(),
+              });
+              
+            if (pErr) {
+              console.error('[Admin CRM Sync] Failed to create purchase:', pErr.message);
+            } else {
+              console.log(`[Admin CRM Sync] Successfully synced CRM for ${user.email}`);
+            }
+          } else {
+            console.log(`[Admin CRM Sync] Purchase already exists for ${user.email}`);
+          }
+        }
+      } catch (syncErr) {
+        console.error('[Admin CRM Sync] Exception during CRM sync:', syncErr.message);
       }
 
       // 6. Welcome Notification for the Buyer
