@@ -27,6 +27,11 @@ import {
   IndianRupee,
   History,
   RefreshCw,
+  Edit3,
+  Trash2,
+  Save,
+  CheckCircle2,
+  Megaphone,
 } from 'lucide-react';
 import { apiJson } from '../../lib/api';
 
@@ -1703,6 +1708,21 @@ export function AdminWithdrawalsPage() {
   );
 }
 
+interface SentNotificationItem {
+  id: string;
+  ids: string[];
+  title: string;
+  body: string;
+  description: string;
+  type: string;
+  created_by?: string;
+  created_at: string;
+  updated_at?: string;
+  user_id?: string | null;
+  recipient_count: number;
+  is_broadcast: boolean;
+}
+
 export function AdminNotifyPage() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -1711,8 +1731,45 @@ export function AdminNotifyPage() {
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
+  // History state
+  const [items, setItems] = useState<SentNotificationItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [filterAudience, setFilterAudience] = useState<'all' | 'broadcast' | 'targeted'>('all');
+
+  // Edit state
+  const [editingItem, setEditingItem] = useState<{
+    id: string;
+    ids: string[];
+    title: string;
+    body: string;
+    type: string;
+  } | null>(null);
+  const [editBusy, setEditBusy] = useState(false);
+
+  // Delete state
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await apiJson<SentNotificationItem[]>('/api/admin-notify', {}, true);
+      setItems(Array.isArray(data) ? data : []);
+    } catch {
+      // Fallback empty
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!title.trim() || !body.trim()) return;
     setBusy(true);
     setErr('');
     setMsg('');
@@ -1721,49 +1778,467 @@ export function AdminNotifyPage() {
         method: 'POST',
         body: JSON.stringify({ title, body, audience }),
       }, true);
-      setMsg(`Notification delivered to ${res.sent} recipient(s)`);
+      setMsg(`Notification broadcasted to ${res.sent} recipient(s) successfully!`);
       setTitle('');
       setBody('');
+      fetchNotifications();
     } catch (e: any) {
-      setErr(e.message);
+      setErr(e.message || 'Failed to send notification');
     } finally {
       setBusy(false);
     }
   };
 
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem || !editingItem.title.trim() || !editingItem.body.trim()) return;
+    setEditBusy(true);
+    try {
+      await apiJson('/api/admin-notify', {
+        method: 'PUT',
+        body: JSON.stringify({
+          ids: editingItem.ids,
+          title: editingItem.title.trim(),
+          body: editingItem.body.trim(),
+          type: editingItem.type,
+        }),
+      }, true);
+
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === editingItem.id || (item.ids && item.ids.some((id) => editingItem.ids.includes(id)))
+            ? {
+                ...item,
+                title: editingItem.title.trim(),
+                body: editingItem.body.trim(),
+                description: editingItem.body.trim(),
+                type: editingItem.type,
+                updated_at: new Date().toISOString(),
+              }
+            : item
+        )
+      );
+
+      setEditingItem(null);
+      setMsg('Notification updated successfully.');
+    } catch (err: any) {
+      alert(err.message || 'Failed to update notification');
+    } finally {
+      setEditBusy(false);
+    }
+  };
+
+  const handleDelete = async (item: SentNotificationItem) => {
+    const isBroadcast = item.recipient_count > 1 || item.is_broadcast;
+    const confirmMsg = isBroadcast
+      ? `Delete broadcast notification "${item.title}" for all ${item.recipient_count} recipients?`
+      : `Delete notification "${item.title}"?`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    setDeletingId(item.id);
+    try {
+      await apiJson('/api/admin-notify', {
+        method: 'DELETE',
+        body: JSON.stringify({ ids: item.ids && item.ids.length ? item.ids : [item.id] }),
+      }, true);
+
+      setItems((prev) => prev.filter((n) => n.id !== item.id));
+      setMsg('Notification removed permanently.');
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete notification');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      const matchSearch =
+        !search ||
+        item.title.toLowerCase().includes(search.toLowerCase()) ||
+        item.body.toLowerCase().includes(search.toLowerCase());
+
+      const matchAudience =
+        filterAudience === 'all' ||
+        (filterAudience === 'broadcast' && (item.is_broadcast || item.recipient_count > 1)) ||
+        (filterAudience === 'targeted' && !item.is_broadcast && item.recipient_count === 1);
+
+      return matchSearch && matchAudience;
+    });
+  }, [items, search, filterAudience]);
+
+  const formatTime = (iso: string) => {
+    if (!iso) return '';
+    try {
+      const d = new Date(iso);
+      const now = new Date();
+      const isToday = d.toDateString() === now.toDateString();
+      const timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      if (isToday) return `Today at ${timeStr}`;
+      return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${timeStr}`;
+    } catch {
+      return iso;
+    }
+  };
+
   return (
-    <div className="max-w-xl space-y-4">
-      <div>
-        <h2 className="text-xl font-black flex items-center gap-2">
-          <Bell className="w-5 h-5 text-orange-500" /> Broadcast notification
-        </h2>
-        <p className="text-sm text-slate-500 font-medium">Push in-app alerts to students, counsellors, or everyone</p>
-      </div>
-      <Card className="p-5 md:p-6">
-        <form onSubmit={send} className="space-y-3">
-          <label className="block text-sm font-semibold">
-            Audience
-            <select value={audience} onChange={(e) => setAudience(e.target.value as any)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 font-medium">
-              <option value="students">Students with portal accounts</option>
-              <option value="staff">Active sub-admins / counsellors</option>
-              <option value="all">Everyone (students + staff)</option>
-            </select>
-          </label>
-          <label className="block text-sm font-semibold">
-            Title
-            <input required value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5" placeholder="e.g. Choice filling starts tomorrow" />
-          </label>
-          <label className="block text-sm font-semibold">
-            Message
-            <textarea required value={body} onChange={(e) => setBody(e.target.value)} rows={4} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5" placeholder="Clear, actionable message…" />
-          </label>
-          {msg && <Toast text={msg} />}
-          {err && <Toast text={err} tone="err" />}
-          <button disabled={busy} type="submit" className="px-5 py-2.5 rounded-full bg-gradient-to-r from-orange-500 to-rose-500 text-white font-bold text-sm disabled:opacity-60 shadow-lg shadow-orange-500/20">
-            {busy ? 'Sending…' : 'Send notification'}
+    <div className="space-y-6 max-w-7xl">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-orange-500/10 text-orange-500 border border-orange-500/20 mb-1.5">
+            <Megaphone className="w-3.5 h-3.5" /> Super Admin Control
+          </div>
+          <h2 className="text-2xl md:text-3xl font-black tracking-tight flex items-center gap-2.5">
+            <Bell className="w-7 h-7 text-orange-500" /> Notifications & Broadcasts
+          </h2>
+          <p className="text-sm text-slate-500 font-medium mt-0.5">
+            Send in-app alerts, review sent history, and edit or delete notifications for students & counsellors.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={fetchNotifications}
+            disabled={loading}
+            className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-2 transition"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
           </button>
-        </form>
-      </Card>
+        </div>
+      </div>
+
+      {msg && <Toast text={msg} />}
+      {err && <Toast text={err} tone="err" />}
+
+      {/* Main Grid: Send Form (Left) & Sent History (Right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Form: Broadcast Notification */}
+        <div className="lg:col-span-5 space-y-4">
+          <Card className="p-5 md:p-6 space-y-4 border-orange-500/20 bg-gradient-to-b from-orange-500/[0.02] to-transparent shadow-xl shadow-orange-500/5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-black flex items-center gap-2">
+                <Send className="w-4 h-4 text-orange-500" /> Push New Notification
+              </h3>
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                In-App
+              </span>
+            </div>
+
+            <form onSubmit={send} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Target Audience
+                </label>
+                <select
+                  value={audience}
+                  onChange={(e) => setAudience(e.target.value as any)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
+                >
+                  <option value="students">🎓 All Students (Portal Accounts)</option>
+                  <option value="staff">👔 Active Counsellors & Sub-Admins</option>
+                  <option value="all">🌍 Everyone (Students + Counsellors)</option>
+                </select>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Title / Subject
+                  </label>
+                  <span className="text-[11px] font-medium text-slate-400">{title.length}/100</span>
+                </div>
+                <input
+                  required
+                  maxLength={100}
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
+                  placeholder="e.g. Choice filling starts tomorrow"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Message Body
+                  </label>
+                  <span className="text-[11px] font-medium text-slate-400">{body.length} chars</span>
+                </div>
+                <textarea
+                  required
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  rows={4}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition leading-relaxed"
+                  placeholder="Type clear, actionable announcement for recipients…"
+                />
+              </div>
+
+              {/* Live Preview Card */}
+              {(title || body) && (
+                <div className="p-3.5 rounded-xl border border-dashed border-orange-300 bg-orange-50/50 space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-[11px] font-black text-orange-600 uppercase tracking-wider">
+                    <Sparkles className="w-3.5 h-3.5" /> Preview
+                  </div>
+                  <p className="text-xs font-bold text-slate-800">{title || 'Your Title'}</p>
+                  <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed whitespace-pre-wrap">
+                    {body || 'Your message will appear here…'}
+                  </p>
+                </div>
+              )}
+
+              <button
+                disabled={busy || !title.trim() || !body.trim()}
+                type="submit"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-500 via-rose-500 to-amber-500 hover:opacity-95 text-white font-black text-sm disabled:opacity-50 shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 transition"
+              >
+                {busy ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Broadcasting…
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" /> Send Notification
+                  </>
+                )}
+              </button>
+            </form>
+          </Card>
+        </div>
+
+        {/* Right Section: Sent Notifications List & Manage Controls */}
+        <div className="lg:col-span-7 space-y-4">
+          <Card className="p-5 md:p-6 space-y-4 shadow-xl shadow-slate-900/5">
+            {/* Header & Search */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-base font-black flex items-center gap-2">
+                  <History className="w-4 h-4 text-orange-500" /> Sent Notifications ({items.length})
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">
+                  Edit messages or delete notifications anytime
+                </p>
+              </div>
+
+              {/* Audience Filter */}
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setFilterAudience('all')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                    filterAudience === 'all'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  All ({items.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterAudience('broadcast')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                    filterAudience === 'broadcast'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  Broadcasts
+                </button>
+              </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search sent notifications by keyword…"
+                className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 bg-slate-50/50 text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
+              />
+            </div>
+
+            {/* List */}
+            {loading ? (
+              <div className="py-16 text-center text-slate-400 flex flex-col items-center gap-2">
+                <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
+                <p className="text-xs font-bold">Loading sent notifications…</p>
+              </div>
+            ) : filteredItems.length === 0 ? (
+              <div className="py-16 text-center text-slate-400 border border-dashed border-slate-200 rounded-2xl">
+                <Bell className="w-8 h-8 mx-auto text-slate-300 mb-2" />
+                <p className="text-sm font-bold text-slate-600">No sent notifications found</p>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {search ? 'Try adjusting your search query' : 'Broadcast your first alert using the form on the left.'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+                {filteredItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-4 rounded-2xl border border-slate-200 hover:border-slate-300 bg-white hover:shadow-md transition-all space-y-2.5 relative group"
+                  >
+                    {/* Top Meta Bar */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span
+                          className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${
+                            item.recipient_count > 1 || item.is_broadcast
+                              ? 'bg-purple-100 text-purple-700'
+                              : 'bg-blue-100 text-blue-700'
+                          }`}
+                        >
+                          {item.recipient_count > 1
+                            ? `📢 ${item.recipient_count} Recipients`
+                            : item.is_broadcast
+                            ? '📢 Broadcast'
+                            : '👤 Single Alert'}
+                        </span>
+                        <span className="text-[11px] font-medium text-slate-400 flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> {formatTime(item.created_at)}
+                        </span>
+                        {item.updated_at && item.updated_at !== item.created_at && (
+                          <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+                            Edited
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Action Buttons: Edit & Delete */}
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() =>
+                            setEditingItem({
+                              id: item.id,
+                              ids: item.ids && item.ids.length ? item.ids : [item.id],
+                              title: item.title,
+                              body: item.body || item.description,
+                              type: item.type || 'info',
+                            })
+                          }
+                          title="Edit Notification"
+                          className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-orange-600 hover:bg-orange-50 hover:border-orange-200 transition text-xs flex items-center gap-1 font-bold"
+                        >
+                          <Edit3 className="w-3.5 h-3.5 text-orange-500" />
+                          <span className="hidden sm:inline text-[11px]">Edit</span>
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item)}
+                          disabled={deletingId === item.id}
+                          title="Delete Notification"
+                          className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition text-xs flex items-center gap-1 font-bold disabled:opacity-50"
+                        >
+                          {deletingId === item.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-500" />
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                          )}
+                          <span className="hidden sm:inline text-[11px]">Delete</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div>
+                      <h4 className="text-sm font-black text-slate-900 leading-snug">{item.title}</h4>
+                      <p className="text-xs text-slate-600 mt-1 leading-relaxed whitespace-pre-wrap line-clamp-4 font-normal">
+                        {item.body || item.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
+      </div>
+
+      {/* Edit Notification Modal */}
+      {editingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full p-6 space-y-4 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center">
+                  <Edit3 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">Edit Notification</h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Updates will sync across all {editingItem.ids.length} recipient(s)
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingItem(null)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Notification Title
+                </label>
+                <input
+                  required
+                  value={editingItem.title}
+                  onChange={(e) =>
+                    setEditingItem((prev) => (prev ? { ...prev, title: e.target.value } : null))
+                  }
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Message Body
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={editingItem.body}
+                  onChange={(e) =>
+                    setEditingItem((prev) => (prev ? { ...prev, body: e.target.value } : null))
+                  }
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition leading-relaxed"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingItem(null)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editBusy || !editingItem.title.trim() || !editingItem.body.trim()}
+                  className="px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-orange-500/20 disabled:opacity-50 transition"
+                >
+                  {editBusy ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving…
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-3.5 h-3.5" /> Save Changes
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
