@@ -107,12 +107,15 @@ export default async function handler(req, res) {
           // Find existing user in profiles
           const { data: existing } = await supabase
             .from('profiles')
-            .select('id')
+            .select('id, role')
             .ilike('email', email.trim())
             .single();
             
           if (!existing) {
             throw new Error('Email exists in auth but no profile found. Cannot promote to sub_admin.');
+          }
+          if (existing.role === 'super_admin') {
+            return res.status(403).json({ error: 'Cannot change the role of a Super Admin.' });
           }
           uid = existing.id;
 
