@@ -408,17 +408,22 @@ export default async function handler(req, res) {
           updated_at: new Date().toISOString(),
         };
 
-        const existing = await supabase
+        let existingId = null;
+        const { data: existingList } = await supabase
           .from('student_counselling')
           .select('id')
-          .or(`user_id.eq.${user.id},email.eq.${user.email || ''}`)
-          .maybeSingle();
+          .or(`user_id.eq.${user.id},email.eq.${user.email || 'nonexistent@mbbswala.in'}`)
+          .limit(1);
 
-        if (existing?.data?.id) {
+        if (existingList && existingList.length > 0) {
+          existingId = existingList[0].id;
+        }
+
+        if (existingId) {
           await supabase
             .from('student_counselling')
             .update(studentRow)
-            .eq('id', existing.data.id);
+            .eq('id', existingId);
         } else {
           await supabase
             .from('student_counselling')

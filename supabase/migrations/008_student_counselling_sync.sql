@@ -155,52 +155,64 @@ CREATE INDEX IF NOT EXISTS idx_purchases_user ON purchases(user_id);
 -- ── 9. Automatic Sync Trigger from profiles -> student_counselling ──────────
 CREATE OR REPLACE FUNCTION sync_profile_to_student_counselling()
 RETURNS TRIGGER AS $$
+DECLARE
+  v_student_id BIGINT;
 BEGIN
-  -- 1. Sync to student_counselling table
-  INSERT INTO student_counselling (
-    user_id,
-    full_name,
-    email,
-    phone,
-    neet_rank,
-    score,
-    state,
-    category,
-    exam,
-    purchased_course,
-    counselling_status,
-    created_at,
-    updated_at
-  ) VALUES (
-    NEW.id,
-    COALESCE(NULLIF(NEW.full_name, ''), NULLIF(NEW.name, ''), split_part(COALESCE(NEW.email, 'student'), '@', 1)),
-    COALESCE(NEW.email, ''),
-    COALESCE(NEW.phone, ''),
-    NEW.neet_rank,
-    COALESCE(NEW.neet_score, NEW.score),
-    COALESCE(NULLIF(NEW.domicile_state, ''), NULLIF(NEW.domicile, ''), NULLIF(NEW.state, ''), ''),
-    COALESCE(NEW.category, 'General'),
-    COALESCE(NEW.exam, 'NEET UG'),
-    COALESCE(NEW.preferred_course, 'MBBS'),
-    'new',
-    now(),
-    now()
-  )
-  ON CONFLICT (id) DO NOTHING;
+  -- 1. Check if student already exists in student_counselling
+  SELECT id INTO v_student_id
+  FROM student_counselling
+  WHERE user_id = NEW.id
+     OR (email = NEW.email AND NEW.email IS NOT NULL AND NEW.email != '')
+  ORDER BY id ASC
+  LIMIT 1;
 
-  -- Update student_counselling if row exists by user_id or email
-  UPDATE student_counselling SET
-    full_name = COALESCE(NULLIF(NEW.full_name, ''), NULLIF(NEW.name, ''), full_name),
-    email = COALESCE(NULLIF(NEW.email, ''), email),
-    phone = COALESCE(NULLIF(NEW.phone, ''), phone),
-    neet_rank = COALESCE(NEW.neet_rank, neet_rank),
-    score = COALESCE(NEW.neet_score, NEW.score, score),
-    state = COALESCE(NULLIF(NEW.domicile_state, ''), NULLIF(NEW.domicile, ''), NULLIF(NEW.state, ''), state),
-    category = COALESCE(NEW.category, category),
-    exam = COALESCE(NEW.exam, exam),
-    purchased_course = COALESCE(NEW.preferred_course, purchased_course),
-    updated_at = now()
-  WHERE user_id = NEW.id OR (email = NEW.email AND NEW.email IS NOT NULL AND NEW.email != '');
+  IF v_student_id IS NOT NULL THEN
+    -- Update existing student_counselling record
+    UPDATE student_counselling SET
+      user_id = COALESCE(user_id, NEW.id),
+      full_name = COALESCE(NULLIF(NEW.full_name, ''), NULLIF(NEW.name, ''), full_name),
+      email = COALESCE(NULLIF(NEW.email, ''), email),
+      phone = COALESCE(NULLIF(NEW.phone, ''), phone),
+      neet_rank = COALESCE(NEW.neet_rank, neet_rank),
+      score = COALESCE(NEW.neet_score, NEW.score, score),
+      state = COALESCE(NULLIF(NEW.domicile_state, ''), NULLIF(NEW.domicile, ''), NULLIF(NEW.state, ''), state),
+      category = COALESCE(NEW.category, category),
+      exam = COALESCE(NEW.exam, exam),
+      purchased_course = COALESCE(NEW.preferred_course, purchased_course),
+      updated_at = now()
+    WHERE id = v_student_id;
+  ELSE
+    -- Insert new student_counselling record
+    INSERT INTO student_counselling (
+      user_id,
+      full_name,
+      email,
+      phone,
+      neet_rank,
+      score,
+      state,
+      category,
+      exam,
+      purchased_course,
+      counselling_status,
+      created_at,
+      updated_at
+    ) VALUES (
+      NEW.id,
+      COALESCE(NULLIF(NEW.full_name, ''), NULLIF(NEW.name, ''), split_part(COALESCE(NEW.email, 'student'), '@', 1)),
+      COALESCE(NEW.email, ''),
+      COALESCE(NEW.phone, ''),
+      NEW.neet_rank,
+      COALESCE(NEW.neet_score, NEW.score),
+      COALESCE(NULLIF(NEW.domicile_state, ''), NULLIF(NEW.domicile, ''), NULLIF(NEW.state, ''), ''),
+      COALESCE(NEW.category, 'General'),
+      COALESCE(NEW.exam, 'NEET UG'),
+      COALESCE(NEW.preferred_course, 'MBBS'),
+      'new',
+      now(),
+      now()
+    );
+  END IF;
 
   -- 2. Sync to students table
   INSERT INTO students (

@@ -17,7 +17,16 @@ export default async function handler(req, res) {
     let studentsQ = supabase.from('student_counselling').select('*').order('updated_at', { ascending: false });
     if (!isSuper) studentsQ = studentsQ.eq('assigned_to', user.id);
     const { data: students } = await studentsQ;
-    const list = students || [];
+
+    // Deduplicate students list
+    const studentMap = new Map();
+    for (const st of students || []) {
+      const key = st.user_id ? `user:${st.user_id}` : st.email ? `email:${st.email.toLowerCase().trim()}` : `id:${st.id}`;
+      if (!studentMap.has(key)) {
+        studentMap.set(key, st);
+      }
+    }
+    const list = Array.from(studentMap.values());
 
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);

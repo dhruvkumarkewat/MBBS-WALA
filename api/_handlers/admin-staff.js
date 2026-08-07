@@ -28,9 +28,17 @@ export default async function handler(req, res) {
         (data || []).map(async (s) => {
           const { data: students } = await supabase
             .from('student_counselling')
-            .select('id, counselling_status')
+            .select('id, user_id, email, phone, counselling_status')
             .eq('assigned_to', s.user_id);
-          const list = students || [];
+          
+          const staffStudentMap = new Map();
+          for (const st of students || []) {
+            const key = st.user_id ? `user:${st.user_id}` : st.email ? `email:${st.email.toLowerCase().trim()}` : `id:${st.id}`;
+            if (!staffStudentMap.has(key)) {
+              staffStudentMap.set(key, st);
+            }
+          }
+          const list = Array.from(staffStudentMap.values());
           const pending = list.filter((x) =>
             ['new', 'assigned', 'in_progress', 'follow_up'].includes(x.counselling_status)
           ).length;
