@@ -753,7 +753,8 @@ export function AdminStudentDetailPage() {
   const [note, setNote] = useState('');
   const [msg, setMsg] = useState('');
   const [followNote, setFollowNote] = useState('');
-  const [followDue, setFollowDue] = useState('');
+  const [followDate, setFollowDate] = useState('');
+  const [followTime, setFollowTime] = useState('10:00');
   const [docTitle, setDocTitle] = useState('');
   const [docUrl, setDocUrl] = useState('');
   const [status, setStatus] = useState('');
@@ -784,7 +785,10 @@ export function AdminStudentDetailPage() {
   const st = pack.student;
 
   const addNote = async () => {
-    if (!note.trim()) return;
+    if (!note.trim()) {
+      setErr('Please enter a note before saving.');
+      return;
+    }
     setBusy(true);
     try {
       await apiJson('/api/admin-notes', { method: 'POST', body: JSON.stringify({ student_id: st.id, note }) }, true);
@@ -799,7 +803,10 @@ export function AdminStudentDetailPage() {
   };
 
   const sendMsg = async () => {
-    if (!msg.trim()) return;
+    if (!msg.trim()) {
+      setErr('Please enter a message before sending.');
+      return;
+    }
     setBusy(true);
     try {
       await apiJson('/api/admin-messages', { method: 'POST', body: JSON.stringify({ student_id: st.id, message: msg }) }, true);
@@ -814,16 +821,21 @@ export function AdminStudentDetailPage() {
   };
 
   const schedule = async () => {
-    if (!followDue) return;
+    if (!followDate) {
+      setErr('Please select a date for the follow-up.');
+      return;
+    }
+    const due_at = `${followDate}T${followTime || '10:00'}:00`;
     setBusy(true);
     try {
       await apiJson(
         '/api/admin-followups',
-        { method: 'POST', body: JSON.stringify({ student_id: st.id, due_at: followDue, note: followNote }) },
+        { method: 'POST', body: JSON.stringify({ student_id: st.id, due_at, note: followNote }) },
         true
       );
       setFollowNote('');
-      setFollowDue('');
+      setFollowDate('');
+      setFollowTime('10:00');
       setToast('Follow-up scheduled');
       await load();
     } catch (e: any) {
@@ -834,7 +846,10 @@ export function AdminStudentDetailPage() {
   };
 
   const uploadDoc = async () => {
-    if (!docTitle.trim()) return;
+    if (!docTitle.trim()) {
+      setErr('Please provide a title for the document.');
+      return;
+    }
     setBusy(true);
     try {
       await apiJson(
@@ -998,8 +1013,8 @@ export function AdminStudentDetailPage() {
           </h3>
           <div className="space-y-2 mb-3 max-h-40 overflow-y-auto">
             {(pack.messages || []).map((m: any) => (
-              <div key={m.id} className={`rounded-xl p-3 text-sm ${m.sender_role === 'student' ? 'bg-sky-50' : 'bg-orange-50'}`}>
-                <p className="text-[10px] font-bold uppercase text-slate-400 mb-0.5">{m.sender_role}</p>
+              <div key={m.id} className={`rounded-xl p-3 text-sm ${m.sender === 'student' ? 'bg-sky-50' : 'bg-orange-50'}`}>
+                <p className="text-[10px] font-bold uppercase text-slate-400 mb-0.5">{m.sender === 'student' ? 'Student' : 'Counsellor'}</p>
                 <p className="font-medium">{m.message}</p>
               </div>
             ))}
@@ -1015,7 +1030,21 @@ export function AdminStudentDetailPage() {
 
         <Card className="p-5">
           <h3 className="font-bold mb-3">Schedule follow-up</h3>
-          <input type="datetime-local" value={followDue} onChange={(e) => setFollowDue(e.target.value)} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm mb-2" />
+          <div className="flex gap-2 mb-2">
+            <input
+              type="date"
+              value={followDate}
+              onChange={(e) => setFollowDate(e.target.value)}
+              className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            />
+            <input
+              type="time"
+              value={followTime}
+              onChange={(e) => setFollowTime(e.target.value)}
+              defaultValue="10:00"
+              className="w-28 rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            />
+          </div>
           <input value={followNote} onChange={(e) => setFollowNote(e.target.value)} placeholder="Follow-up note" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm mb-2" />
           <button type="button" disabled={busy} onClick={schedule} className="px-4 py-2 rounded-full bg-slate-900 text-white text-sm font-bold">
             Schedule
@@ -1029,7 +1058,7 @@ export function AdminStudentDetailPage() {
           <div className="space-y-2 mb-3">
             {(pack.documents || []).map((d: any) => (
               <div key={d.id} className="rounded-xl bg-slate-50 p-3 text-sm flex justify-between gap-2">
-                <span className="font-semibold">{d.title}</span>
+                <span className="font-semibold">{d.file_name || d.title}</span>
                 {d.file_url ? (
                   <a href={d.file_url} target="_blank" rel="noreferrer" className="text-orange-600 font-bold text-xs">
                     Open
