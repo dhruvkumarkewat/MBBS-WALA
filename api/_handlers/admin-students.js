@@ -456,6 +456,30 @@ export default async function handler(req, res) {
             await logActivity(user.id, 'Changed Student Status', 'student', String(existing.id), {
               status: body.counselling_status,
             });
+
+            if (body.counselling_status === 'follow_up' && existing.counselling_status !== 'follow_up') {
+              const { data: existingFollowup } = await supabase
+                .from('counselling_followups')
+                .select('id')
+                .eq('student_id', existing.id)
+                .eq('status', 'pending')
+                .maybeSingle();
+
+              if (!existingFollowup) {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                tomorrow.setHours(10, 0, 0, 0);
+                await supabase.from('counselling_followups').insert({
+                  student_id: Number(existing.id),
+                  staff_id: user.id,
+                  due_at: tomorrow.toISOString(),
+                  status: 'pending',
+                  note: 'Auto-scheduled from status change',
+                  created_at: new Date().toISOString(),
+                });
+                await logActivity(user.id, 'Scheduled Follow-up', 'student', String(existing.id), { due_at: tomorrow.toISOString(), auto: true });
+              }
+            }
           }
         }
         if (body.contacted) {
