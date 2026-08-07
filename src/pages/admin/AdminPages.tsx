@@ -868,6 +868,20 @@ export function AdminStudentDetailPage() {
     }
   };
 
+  const deleteDoc = async (docId: number) => {
+    if (!confirm('Delete this document record?')) return;
+    setBusy(true);
+    try {
+      await apiJson(`/api/admin-documents?id=${docId}`, { method: 'DELETE' }, true);
+      setToast('Document deleted');
+      await load();
+    } catch (e: any) {
+      setErr(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const saveStatus = async () => {
     setBusy(true);
     try {
@@ -1057,13 +1071,26 @@ export function AdminStudentDetailPage() {
           </h3>
           <div className="space-y-2 mb-3">
             {(pack.documents || []).map((d: any) => (
-              <div key={d.id} className="rounded-xl bg-slate-50 p-3 text-sm flex justify-between gap-2">
-                <span className="font-semibold">{d.file_name || d.title}</span>
-                {d.file_url ? (
-                  <a href={d.file_url} target="_blank" rel="noreferrer" className="text-orange-600 font-bold text-xs">
-                    Open
-                  </a>
-                ) : null}
+              <div key={d.id} className="rounded-xl bg-slate-50 p-3 text-sm flex items-center justify-between gap-2">
+                <span className="font-semibold flex-1">{d.file_name || d.title}</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  {d.file_url ? (
+                    <a href={d.file_url} target="_blank" rel="noreferrer" className="text-orange-600 font-bold text-xs hover:underline">
+                      Open
+                    </a>
+                  ) : (
+                    <span className="text-slate-300 text-xs">No file</span>
+                  )}
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => deleteDoc(d.id)}
+                    className="text-red-400 hover:text-red-600 text-xs font-bold transition-colors"
+                    title="Delete document"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
             ))}
             {!(pack.documents || []).length && <p className="text-sm text-slate-400">No documents</p>}
