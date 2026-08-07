@@ -457,7 +457,7 @@ export default async function handler(req, res) {
               status: body.counselling_status,
             });
 
-            if (body.counselling_status === 'follow_up' && existing.counselling_status !== 'follow_up') {
+            if (body.counselling_status === 'follow_up') {
               const { data: existingFollowup } = await supabase
                 .from('counselling_followups')
                 .select('id')
