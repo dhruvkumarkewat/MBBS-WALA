@@ -424,7 +424,7 @@ export function AdminStaffPage() {
   const load = useCallback(() => {
     setLoading(true);
     apiJson<any[]>('/api/admin-staff', {}, true)
-      .then(setStaff)
+      .then(data => setStaff(Array.isArray(data) ? data : []))
       .catch((e) => setErr(e.message))
       .finally(() => setLoading(false));
   }, []);
@@ -1386,7 +1386,7 @@ export function AdminFollowupsPage() {
   const load = () => {
     setLoading(true);
     apiJson<any[]>('/api/admin-followups?status=pending', {}, true)
-      .then(setRows)
+      .then(data => setRows(Array.isArray(data) ? data : []))
       .finally(() => setLoading(false));
   };
   useEffect(() => {
@@ -1718,7 +1718,7 @@ export function AdminWithdrawalsPage() {
   const load = () => {
     setLoading(true);
     apiJson<any[]>('/api/admin-withdrawals', {}, true)
-      .then(setRows)
+      .then(data => setRows(Array.isArray(data) ? data : []))
       .finally(() => setLoading(false));
   };
   useEffect(() => {
