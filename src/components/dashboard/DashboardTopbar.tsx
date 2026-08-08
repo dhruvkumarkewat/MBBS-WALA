@@ -45,7 +45,13 @@ export default function DashboardTopbar({ title }: { title?: string }) {
         setDisplayName(user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Student');
       });
     apiJson<Array<{ id: number; title: string; read: boolean }>>('/api/notifications', {}, true)
-      .then(setNotifs)
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setNotifs(data);
+        } else {
+          setNotifs([]);
+        }
+      })
       .catch(() => setNotifs([]));
   }, [user]);
 
