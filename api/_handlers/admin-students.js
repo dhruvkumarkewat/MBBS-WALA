@@ -183,10 +183,6 @@ export default async function handler(req, res) {
       if (isSuper && !assigned_to && profRes?.data) {
         for (const p of profRes.data) {
           const emailLower = (p.email || '').toLowerCase().trim();
-          // Skip if pure staff/counsellor account
-          if (staffUserIds.has(p.id) || (emailLower && staffEmails.has(emailLower))) {
-            continue;
-          }
 
           const key = getKey({ user_id: p.id, email: p.email, phone: p.phone, id: p.id });
           if (!studentMap.has(key)) {
@@ -227,11 +223,6 @@ export default async function handler(req, res) {
       // 3. Include students from students table if super admin
       if (isSuper && !assigned_to && stRes?.data) {
         for (const s of stRes.data) {
-          const emailLower = (s.email || '').toLowerCase().trim();
-          if (staffUserIds.has(s.user_id) || (emailLower && staffEmails.has(emailLower))) {
-            continue;
-          }
-
           const key = getKey({ user_id: s.user_id || s.id, email: s.email, phone: s.phone, id: s.id });
           if (!studentMap.has(key)) {
             studentMap.set(key, {
