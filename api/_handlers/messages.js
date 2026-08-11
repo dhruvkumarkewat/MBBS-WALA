@@ -10,11 +10,20 @@ export default async function handler(req, res) {
     if (!user) return; // requireUser sends 401
 
     // Fetch the student_counselling record for this user
-    const { data: counselling } = await supabase
+    let { data: counselling } = await supabase
       .from('student_counselling')
       .select('id, assigned_to')
       .eq('user_id', user.id)
       .maybeSingle();
+
+    if (!counselling) {
+      const { data: newCounselling } = await supabase
+        .from('student_counselling')
+        .insert({ user_id: user.id, counselling_status: 'new' })
+        .select('id, assigned_to')
+        .single();
+      counselling = newCounselling;
+    }
 
     if (!counselling) {
       return res.status(404).json({ error: 'No counselling profile found' });

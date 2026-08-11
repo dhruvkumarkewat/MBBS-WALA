@@ -11,11 +11,23 @@ export default async function handler(req, res) {
 
     if (req.method === 'GET') {
       // 1. Get student's counselling record
-      const { data: counselling } = await supabase
+      const { data: counsellingData } = await supabase
         .from('student_counselling')
         .select('assigned_to')
         .eq('user_id', user.id)
         .maybeSingle();
+
+      let counselling = counsellingData;
+
+      if (!counselling) {
+        // Auto-create a stub profile so chat works
+        const { data: newCounselling } = await supabase
+          .from('student_counselling')
+          .insert({ user_id: user.id, counselling_status: 'new' })
+          .select('assigned_to')
+          .single();
+        counselling = newCounselling;
+      }
 
       let counselorId = counselling?.assigned_to;
 
@@ -23,13 +35,13 @@ export default async function handler(req, res) {
       if (!counselorId) {
         const { data: admin } = await supabase
           .from('staff')
-          .select('id')
+          .select('user_id')
           .eq('role', 'super_admin')
           .limit(1)
           .maybeSingle();
         
         if (admin) {
-          counselorId = admin.id;
+          counselorId = admin.user_id;
         }
       }
 
