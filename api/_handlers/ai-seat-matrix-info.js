@@ -2,10 +2,10 @@ import { callAI } from './ai-service.js';
 import supabase from './db-client.js';
 
 const SYSTEM_PROMPT = `You are MBBSWALA NEET Expert Admission Advisor. The user is looking at the Seat Matrix for a specific medical college.
-Analyze the provided seat matrix data for this college.
-Return ONLY valid JSON exactly matching this structure (be concise but highly informative, do not hallucinate fees or unrelated info):
+Analyze the provided seat matrix data for this college. If no seat matrix data is provided, use your extensive internal knowledge about Indian medical colleges to provide accurate seat matrix details, correcting any typos the user might have made in their search term.
+Return ONLY valid JSON exactly matching this structure (be concise but highly informative):
 {
-  "college_name": "Full name of the college",
+  "college_name": "Full, correct name of the college (fix any typos the user made)",
   "ai_verdict": "A 1-2 sentence AI verdict/summary of this college's seat matrix (e.g. 'This college has a high number of All India seats, making it a great option for out-of-state students.')",
   "seat_breakdown_summary": "A 1 sentence summary of the major quotas available.",
   "key_insights": [
@@ -15,8 +15,7 @@ Return ONLY valid JSON exactly matching this structure (be concise but highly in
   "recommendation": "Who should target this college based on the seat matrix?"
 }
 Rules:
-1. ONLY return JSON. Do not include markdown code blocks.
-2. Rely ONLY on the seat data provided. Do not hallucinate data.`;
+1. ONLY return JSON. Do not include markdown code blocks.`;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

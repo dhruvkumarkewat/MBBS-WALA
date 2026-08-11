@@ -33,16 +33,16 @@ export function AISeatMatrixAnalysis({ searchQuery, s = { dark: true } }: AISeat
         if (!res.ok) throw new Error('Failed to fetch AI analysis');
         
         const json = await res.json();
-        if (json.college_name && json._raw_data_count > 0) {
+        if (json.college_name) {
           setData(json);
         } else {
-          // If no data found in DB, show a friendly message instead of hiding
+          // If the AI somehow returns empty data
           setData({
             college_name: searchQuery.trim(),
-            ai_verdict: "We couldn't find exact seat matrix data for this search term in our database.",
-            seat_breakdown_summary: "Try using the exact college name or checking your spelling.",
-            key_insights: ["No historical data available for this query."],
-            recommendation: "Ensure you are using the correct college name as listed in the NMC/MCC directories."
+            ai_verdict: "We couldn't analyze the seat matrix for this search term.",
+            seat_breakdown_summary: "Try using the exact college name.",
+            key_insights: ["No data available for this query."],
+            recommendation: "Ensure you are using a valid medical college name."
           });
         }
       } catch (err: any) {
