@@ -782,6 +782,24 @@ export function AdminStudentDetailPage() {
     load().catch((e) => setErr(e.message));
   }, [load]);
 
+  useEffect(() => {
+    if (!pack?.student?.id) return;
+    
+    // Poll for new messages every 10 seconds
+    const interval = setInterval(async () => {
+      try {
+        const msgs = await apiJson<any>(`/api/admin-messages?student_id=${pack.student.id}`, {}, true);
+        if (!msgs.error) {
+          setPack((prev: any) => prev ? { ...prev, messages: msgs } : prev);
+        }
+      } catch {
+        // ignore polling errors
+      }
+    }, 10000);
+    
+    return () => clearInterval(interval);
+  }, [pack?.student?.id]);
+
   if (err) return <ErrorBox msg={err} />;
   if (!pack) return <Loader />;
 
