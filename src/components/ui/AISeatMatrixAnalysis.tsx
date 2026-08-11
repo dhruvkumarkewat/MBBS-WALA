@@ -11,8 +11,8 @@ export function AISeatMatrixAnalysis({ searchQuery, s = { dark: true } }: AISeat
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   
-  // Only trigger if searchQuery looks like a specific college name (at least 6 chars)
-  const shouldAnalyze = searchQuery && searchQuery.trim().length > 5;
+  // Only trigger if searchQuery looks like a specific college name (at least 3 chars)
+  const shouldAnalyze = searchQuery && searchQuery.trim().length > 2;
 
   useEffect(() => {
     if (!shouldAnalyze) {
