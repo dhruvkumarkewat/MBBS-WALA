@@ -30,13 +30,14 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
   const safeColleges = Array.isArray(colleges) ? colleges : (colleges ? [colleges] : []);
   if (safeColleges.length === 0) return null;
   const displayColleges = [...safeColleges].sort((a, b) => {
+    const rankA = parseInt(String(a.closing_rank || '0').replace(/\D/g, '')) || Infinity;
+    const rankB = parseInt(String(b.closing_rank || '0').replace(/\D/g, '')) || Infinity;
+    if (rankA !== rankB) return rankA - rankB;
+    
+    // Sort by probability descending if rank is equal or missing
     const probA = parseInt(String(a.probability || '0').replace(/\D/g, '')) || 0;
     const probB = parseInt(String(b.probability || '0').replace(/\D/g, '')) || 0;
-    if (probB !== probA) return probB - probA;
-    // Sort by rank ascending (best colleges first) if probability is equal
-    const rankA = parseInt(String(a.closing_rank || '0').replace(/\D/g, '')) || 0;
-    const rankB = parseInt(String(b.closing_rank || '0').replace(/\D/g, '')) || 0;
-    return rankA - rankB;
+    return probB - probA;
   }).slice(0, isPremium ? 1000 : maxFreeCount);
 
   // First group by course, then by quota
