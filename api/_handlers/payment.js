@@ -453,9 +453,9 @@ export default async function handler(req, res) {
           // Notify Referrer
           await supabase.from('notifications').insert({
             user_id: referralRecord.referrer_id,
-            title: '🎉 Referral Reward Received (₹1500)',
-            body: `Your referee just upgraded to ${plan_name}! ₹1500 has been credited directly to your wallet.`,
-            description: `Your referee just upgraded to ${plan_name}! ₹1500 has been credited directly to your wallet.`,
+            title: '🎉 Referral Reward Received (₹500)',
+            body: `Your referee just upgraded to ${plan_name}! ₹500 has been credited directly to your wallet.`,
+            description: `Your referee just upgraded to ${plan_name}! ₹500 has been credited directly to your wallet.`,
             type: 'reward',
             read: false,
             created_at: now.toISOString(),
