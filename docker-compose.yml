@@ -1,0 +1,44 @@
+version: '3.9'
+
+services:
+  # ── Express API Server ──────────────────────────────────────────────────────
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - '4000:4000'
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - redis
+    volumes:
+      - ./backend/src:/app/src              # Hot reload in dev
+      - ./backend/downloads:/app/downloads  # Scraper downloads
+    restart: unless-stopped
+    networks:
+      - mbbswala
+
+  # ── Redis (Queue & Cache) ───────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    networks:
+      - mbbswala
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  redis-data:
+
+networks:
+  mbbswala:
+    driver: bridge

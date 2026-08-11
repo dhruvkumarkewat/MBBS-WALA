@@ -1,0 +1,2338 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   MBBSWala DESIGN SYSTEM
+   Inspired by Stripe · Linear · Apple · OpenAI · Framer · Vercel · Cursor
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  /* Brand */
+  --ds-brand: #f97316;
+  --ds-brand-hover: #ea580c;
+  --ds-brand-soft: rgba(249, 115, 22, 0.12);
+  --ds-brand-glow: rgba(249, 115, 22, 0.35);
+
+  /* Surfaces */
+  --ds-bg: #fafbfc;
+  --ds-bg-elevated: #ffffff;
+  --ds-bg-muted: #f4f6f8;
+  --ds-bg-subtle: #eef1f4;
+  --ds-bg-inverse: #0b0d12;
+
+  /* Text */
+  --ds-text: #0b0d12;
+  --ds-text-secondary: #3c4450;
+  --ds-text-muted: #6b7280;
+  --ds-text-faint: #9ca3af;
+  --ds-text-inverse: #f8fafc;
+  --ds-text-brand: #c2410c;
+
+  /* Borders */
+  --ds-border: rgba(15, 23, 42, 0.08);
+  --ds-border-strong: rgba(15, 23, 42, 0.14);
+  --ds-border-focus: rgba(249, 115, 22, 0.55);
+
+  /* Glass */
+  --ds-glass: rgba(255, 255, 255, 0.72);
+  --ds-glass-border: rgba(255, 255, 255, 0.55);
+  --ds-glass-blur: 18px;
+
+  /* Gradients */
+  --ds-gradient-brand: linear-gradient(135deg, #fb923c 0%, #f97316 45%, #ea580c 100%);
+  --ds-gradient-dark: linear-gradient(145deg, #151821 0%, #0b0d12 55%, #1a1020 100%);
+  --ds-gradient-mesh:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(249, 115, 22, 0.16), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(99, 102, 241, 0.08), transparent 50%),
+    radial-gradient(ellipse 50% 30% at 50% 100%, rgba(14, 165, 233, 0.06), transparent 50%);
+  --ds-gradient-shine: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.55) 50%, transparent 70%);
+
+  /* Shadows */
+  --ds-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --ds-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --ds-shadow-md: 0 8px 24px rgba(15, 23, 42, 0.07), 0 2px 6px rgba(15, 23, 42, 0.04);
+  --ds-shadow-lg: 0 20px 48px rgba(15, 23, 42, 0.1), 0 4px 12px rgba(15, 23, 42, 0.05);
+  --ds-shadow-xl: 0 32px 80px rgba(15, 23, 42, 0.14), 0 8px 24px rgba(15, 23, 42, 0.06);
+  --ds-shadow-glow: 0 0 0 1px rgba(249, 115, 22, 0.12), 0 12px 40px rgba(249, 115, 22, 0.18);
+  --ds-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+
+  /* Status */
+  --ds-success: #10b981;
+  --ds-success-bg: rgba(16, 185, 129, 0.1);
+  --ds-success-border: rgba(16, 185, 129, 0.25);
+  --ds-warning: #f59e0b;
+  --ds-warning-bg: rgba(245, 158, 11, 0.1);
+  --ds-warning-border: rgba(245, 158, 11, 0.25);
+  --ds-danger: #ef4444;
+  --ds-danger-bg: rgba(239, 68, 68, 0.1);
+  --ds-danger-border: rgba(239, 68, 68, 0.25);
+  --ds-info: #3b82f6;
+  --ds-info-bg: rgba(59, 130, 246, 0.1);
+  --ds-info-border: rgba(59, 130, 246, 0.25);
+
+  /* Charts */
+  --ds-chart-1: #f97316;
+  --ds-chart-2: #6366f1;
+  --ds-chart-3: #10b981;
+  --ds-chart-4: #0ea5e9;
+  --ds-chart-5: #a855f7;
+  --ds-chart-grid: rgba(15, 23, 42, 0.06);
+
+  /* Radius */
+  --ds-radius-xs: 6px;
+  --ds-radius-sm: 10px;
+  --ds-radius-md: 14px;
+  --ds-radius-lg: 18px;
+  --ds-radius-xl: 24px;
+  --ds-radius-2xl: 32px;
+  --ds-radius-full: 9999px;
+
+  /* Spacing scale */
+  --ds-space-1: 0.25rem;
+  --ds-space-2: 0.5rem;
+  --ds-space-3: 0.75rem;
+  --ds-space-4: 1rem;
+  --ds-space-5: 1.25rem;
+  --ds-space-6: 1.5rem;
+  --ds-space-8: 2rem;
+  --ds-space-10: 2.5rem;
+  --ds-space-12: 3rem;
+  --ds-space-16: 4rem;
+
+  /* Motion */
+  --ds-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ds-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ds-duration-fast: 150ms;
+  --ds-duration: 250ms;
+  --ds-duration-slow: 400ms;
+
+  /* Typography */
+  --ds-font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --ds-font-display: 'Cormorant Garamond', Georgia, serif;
+  --ds-font-mono: 'SF Mono', ui-monospace, 'Cascadia Code', Menlo, monospace;
+
+  --ds-text-xs: 0.75rem;
+  --ds-text-sm: 0.875rem;
+  --ds-text-base: 1rem;
+  --ds-text-lg: 1.125rem;
+  --ds-text-xl: 1.25rem;
+  --ds-text-2xl: 1.5rem;
+  --ds-text-3xl: 1.875rem;
+  --ds-text-4xl: 2.25rem;
+  --ds-text-5xl: 3rem;
+
+  --ds-leading-tight: 1.15;
+  --ds-leading-snug: 1.35;
+  --ds-leading-normal: 1.55;
+  --ds-tracking-tight: -0.025em;
+  --ds-tracking-wide: 0.08em;
+
+  /* Legacy bridges (existing components)
+     IMPORTANT: --color-primary-dark must stay a DARK solid for
+     bg-primary-dark buttons. Never map it to --ds-text (becomes light in dark mode). */
+  --color-primary: var(--ds-brand);
+  --color-primary-dark: #0e1117;
+  --color-primary-light: var(--ds-brand-hover);
+  --color-secondary: var(--ds-brand);
+  --color-secondary-soft: var(--ds-brand-soft);
+  --color-text-grey: var(--ds-text-muted);
+  --color-ink: var(--ds-text);
+  --color-page: var(--ds-bg);
+  --color-card: var(--ds-bg-elevated);
+  --color-border: var(--ds-border);
+  --color-grey-bg: var(--ds-bg-muted);
+  --color-grey-bg-light: var(--ds-bg-subtle);
+  --color-orange-bg: var(--ds-brand-soft);
+  --color-blue-bg: var(--ds-info-bg);
+  --color-green-bg: var(--ds-success-bg);
+  --color-yellow-bg: var(--ds-warning-bg);
+  --color-red-bg: var(--ds-danger-bg);
+  --color-violet-bg: rgba(168, 85, 247, 0.1);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --ds-brand: #fb923c;
+  --ds-brand-hover: #fdba74;
+  --ds-brand-soft: rgba(251, 146, 60, 0.14);
+  --ds-brand-glow: rgba(251, 146, 60, 0.28);
+
+  --ds-bg: #07080c;
+  --ds-bg-elevated: #11131a;
+  --ds-bg-muted: #161922;
+  --ds-bg-subtle: #1c2030;
+  --ds-bg-inverse: #f8fafc;
+
+  --ds-text: #f1f5f9;
+  --ds-text-secondary: #cbd5e1;
+  --ds-text-muted: #94a3b8;
+  --ds-text-faint: #64748b;
+  --ds-text-inverse: #0b0d12;
+  --ds-text-brand: #fdba74;
+
+  --ds-border: rgba(248, 250, 252, 0.08);
+  --ds-border-strong: rgba(248, 250, 252, 0.14);
+  --ds-border-focus: rgba(251, 146, 60, 0.55);
+
+  --ds-glass: rgba(17, 19, 26, 0.72);
+  --ds-glass-border: rgba(255, 255, 255, 0.08);
+
+  --ds-gradient-mesh:
+    radial-gradient(ellipse 80% 50% at 15% -10%, rgba(249, 115, 22, 0.18), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 90% 0%, rgba(99, 102, 241, 0.12), transparent 50%),
+    radial-gradient(ellipse 40% 30% at 50% 100%, rgba(14, 165, 233, 0.08), transparent 50%);
+
+  --ds-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --ds-shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.35);
+  --ds-shadow-md: 0 10px 30px rgba(0, 0, 0, 0.4);
+  --ds-shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.5);
+  --ds-shadow-xl: 0 40px 90px rgba(0, 0, 0, 0.55);
+  --ds-shadow-glow: 0 0 0 1px rgba(251, 146, 60, 0.2), 0 16px 48px rgba(249, 115, 22, 0.2);
+  --ds-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  --ds-success-bg: rgba(16, 185, 129, 0.14);
+  --ds-warning-bg: rgba(245, 158, 11, 0.14);
+  --ds-danger-bg: rgba(239, 68, 68, 0.14);
+  --ds-info-bg: rgba(59, 130, 246, 0.14);
+
+  --ds-chart-grid: rgba(248, 250, 252, 0.06);
+
+  /* Keep brand dark solid for buttons/CTAs (bg-primary-dark + text-white) */
+  --color-primary-dark: #0e1117;
+  --color-ink: #f1f5f9;
+  --color-page: #07080c;
+  --color-card: #11131a;
+}
+
+/* ── Base application of tokens ─────────────────────────── */
+html {
+  background: var(--ds-bg);
+}
+
+body {
+  font-family: var(--ds-font-sans);
+  color: var(--ds-text);
+  background: var(--ds-bg);
+  transition: background-color var(--ds-duration) var(--ds-ease),
+    color var(--ds-duration) var(--ds-ease);
+}
+
+/* ── Typography utilities ───────────────────────────────── */
+.ds-display {
+  font-family: var(--ds-font-display);
+  font-weight: 600;
+  letter-spacing: var(--ds-tracking-tight);
+  line-height: var(--ds-leading-tight);
+  color: var(--ds-text);
+}
+
+.ds-title {
+  font-family: var(--ds-font-sans);
+  font-weight: 700;
+  letter-spacing: var(--ds-tracking-tight);
+  line-height: var(--ds-leading-tight);
+  color: var(--ds-text);
+}
+
+.ds-body {
+  font-size: var(--ds-text-base);
+  line-height: var(--ds-leading-normal);
+  color: var(--ds-text-secondary);
+  font-weight: 500;
+}
+
+.ds-muted {
+  color: var(--ds-text-muted);
+  font-weight: 500;
+}
+
+.ds-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ds-brand);
+}
+
+.ds-eyebrow::before {
+  content: '';
+  width: 1.1rem;
+  height: 1.5px;
+  border-radius: 2px;
+  background: var(--ds-brand);
+  opacity: 0.75;
+}
+
+.ds-mono {
+  font-family: var(--ds-font-mono);
+  font-size: 0.85em;
+  letter-spacing: -0.02em;
+}
+
+/* ── Surfaces ───────────────────────────────────────────── */
+.ds-page {
+  background: var(--ds-bg);
+  color: var(--ds-text);
+  min-height: 100%;
+}
+
+.ds-mesh {
+  background-image: var(--ds-gradient-mesh);
+  background-color: var(--ds-bg);
+}
+
+.ds-glass {
+  background: var(--ds-glass);
+  backdrop-filter: blur(var(--ds-glass-blur)) saturate(1.35);
+  -webkit-backdrop-filter: blur(var(--ds-glass-blur)) saturate(1.35);
+  border: 1px solid var(--ds-glass-border);
+  box-shadow: var(--ds-shadow-md), var(--ds-shadow-inset);
+}
+
+.ds-surface {
+  background: var(--ds-bg-elevated);
+  border: 1px solid var(--ds-border);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+/* ── Cards ──────────────────────────────────────────────── */
+.ds-card {
+  position: relative;
+  background: var(--ds-bg-elevated);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-shadow-sm), var(--ds-shadow-inset);
+  transition:
+    transform var(--ds-duration) var(--ds-ease),
+    box-shadow var(--ds-duration) var(--ds-ease),
+    border-color var(--ds-duration) var(--ds-ease);
+  overflow: hidden;
+}
+
+.ds-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--ds-shadow-lg);
+  border-color: var(--ds-border-strong);
+}
+
+.ds-card-static:hover {
+  transform: none;
+  box-shadow: var(--ds-shadow-sm), var(--ds-shadow-inset);
+}
+
+.ds-card-premium {
+  background:
+    linear-gradient(var(--ds-bg-elevated), var(--ds-bg-elevated)) padding-box,
+    linear-gradient(135deg, rgba(249, 115, 22, 0.45), rgba(255, 255, 255, 0.08), rgba(99, 102, 241, 0.25)) border-box;
+  border: 1px solid transparent;
+}
+
+.ds-card-glow::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: radial-gradient(600px circle at var(--mx, 50%) var(--my, 0%), var(--ds-brand-soft), transparent 40%);
+  opacity: 0;
+  transition: opacity var(--ds-duration) var(--ds-ease);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ds-card-glow:hover::after {
+  opacity: 1;
+}
+
+/* ── Buttons ────────────────────────────────────────────── */
+.ds-btn {
+  --btn-bg: var(--ds-bg-elevated);
+  --btn-fg: var(--ds-text);
+  --btn-border: var(--ds-border-strong);
+  --btn-shadow: var(--ds-shadow-xs);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--ds-radius-full);
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  font-family: var(--ds-font-sans);
+  font-weight: 650;
+  font-size: 0.925rem;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  padding: 0.7rem 1.35rem;
+  cursor: pointer;
+  box-shadow: var(--btn-shadow), var(--ds-shadow-inset);
+  transition:
+    transform var(--ds-duration) var(--ds-ease),
+    box-shadow var(--ds-duration) var(--ds-ease),
+    background var(--ds-duration-fast) ease,
+    border-color var(--ds-duration-fast) ease,
+    filter var(--ds-duration-fast) ease;
+  white-space: nowrap;
+  text-decoration: none;
+  user-select: none;
+}
+
+.ds-btn:hover {
+  transform: translateY(-1.5px);
+  box-shadow: var(--ds-shadow-md);
+}
+
+.ds-btn:active {
+  transform: translateY(0) scale(0.985);
+}
+
+.ds-btn:disabled,
+.ds-btn[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none;
+}
+
+.ds-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ds-brand-soft), var(--ds-shadow-sm);
+}
+
+.ds-btn-sm { padding: 0.45rem 0.9rem; font-size: 0.8rem; }
+.ds-btn-lg { padding: 0.9rem 1.7rem; font-size: 1rem; }
+.ds-btn-icon { padding: 0.65rem; width: 2.5rem; height: 2.5rem; }
+
+.ds-btn-primary {
+  --btn-bg: var(--ds-gradient-dark);
+  --btn-fg: #fff;
+  --btn-border: transparent;
+  --btn-shadow: 0 12px 28px rgba(11, 13, 18, 0.28);
+  background-image: var(--ds-gradient-dark);
+}
+
+.ds-btn-brand {
+  --btn-bg: var(--ds-gradient-brand);
+  --btn-fg: #fff;
+  --btn-border: transparent;
+  --btn-shadow: 0 12px 30px var(--ds-brand-glow);
+  background-image: var(--ds-gradient-brand);
+}
+
+.ds-btn-ghost {
+  --btn-bg: transparent;
+  --btn-border: transparent;
+  --btn-shadow: none;
+  box-shadow: none;
+}
+.ds-btn-ghost:hover {
+  background: var(--ds-bg-muted);
+  box-shadow: none;
+}
+
+.ds-btn-outline {
+  --btn-bg: transparent;
+  --btn-border: var(--ds-border-strong);
+  --btn-shadow: none;
+}
+
+.ds-btn-soft {
+  --btn-bg: var(--ds-brand-soft);
+  --btn-fg: var(--ds-text-brand);
+  --btn-border: transparent;
+  --btn-shadow: none;
+}
+
+/* ── Inputs / Forms ─────────────────────────────────────── */
+.ds-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.ds-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ds-text-muted);
+}
+
+.ds-input,
+.ds-select,
+.ds-textarea {
+  width: 100%;
+  appearance: none;
+  border: 1px solid var(--ds-border-strong);
+  background: var(--ds-bg-elevated);
+  color: var(--ds-text);
+  border-radius: var(--ds-radius-md);
+  padding: 0.75rem 0.95rem;
+  font-family: var(--ds-font-sans);
+  font-size: 0.95rem;
+  font-weight: 550;
+  line-height: 1.35;
+  box-shadow: var(--ds-shadow-xs), var(--ds-shadow-inset);
+  transition:
+    border-color var(--ds-duration-fast) ease,
+    box-shadow var(--ds-duration-fast) ease,
+    background var(--ds-duration-fast) ease;
+}
+
+.ds-textarea { resize: vertical; min-height: 110px; }
+
+.ds-input::placeholder,
+.ds-textarea::placeholder {
+  color: var(--ds-text-faint);
+  font-weight: 500;
+}
+
+.ds-input:hover,
+.ds-select:hover,
+.ds-textarea:hover {
+  border-color: var(--ds-text-faint);
+}
+
+.ds-input:focus,
+.ds-select:focus,
+.ds-textarea:focus {
+  outline: none;
+  border-color: var(--ds-border-focus);
+  box-shadow: 0 0 0 4px var(--ds-brand-soft), var(--ds-shadow-sm);
+}
+
+.ds-input-error,
+.ds-input[aria-invalid='true'] {
+  border-color: var(--ds-danger);
+  box-shadow: 0 0 0 4px var(--ds-danger-bg);
+}
+
+.ds-help { font-size: 0.8rem; color: var(--ds-text-muted); font-weight: 500; }
+.ds-error-text { font-size: 0.8rem; color: var(--ds-danger); font-weight: 600; }
+
+.ds-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.ds-input-wrap .ds-input { padding-left: 2.6rem; }
+.ds-input-wrap .ds-input-icon {
+  position: absolute;
+  left: 0.9rem;
+  color: var(--ds-text-muted);
+  pointer-events: none;
+}
+
+/* ── Badges ─────────────────────────────────────────────── */
+.ds-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: var(--ds-radius-full);
+  padding: 0.28rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.ds-badge-neutral {
+  background: var(--ds-bg-muted);
+  color: var(--ds-text-secondary);
+  border-color: var(--ds-border);
+}
+.ds-badge-brand {
+  background: var(--ds-brand-soft);
+  color: var(--ds-text-brand);
+}
+.ds-badge-success {
+  background: var(--ds-success-bg);
+  color: var(--ds-success);
+  border-color: var(--ds-success-border);
+}
+.ds-badge-warning {
+  background: var(--ds-warning-bg);
+  color: var(--ds-warning);
+  border-color: var(--ds-warning-border);
+}
+.ds-badge-danger {
+  background: var(--ds-danger-bg);
+  color: var(--ds-danger);
+  border-color: var(--ds-danger-border);
+}
+.ds-badge-info {
+  background: var(--ds-info-bg);
+  color: var(--ds-info);
+  border-color: var(--ds-info-border);
+}
+
+.ds-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 18%, transparent);
+}
+
+/* ── Alerts ─────────────────────────────────────────────── */
+.ds-alert {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  padding: 0.95rem 1.1rem;
+  border-radius: var(--ds-radius-md);
+  border: 1px solid var(--ds-border);
+  background: var(--ds-bg-elevated);
+  box-shadow: var(--ds-shadow-xs);
+  font-weight: 550;
+  font-size: 0.925rem;
+  color: var(--ds-text-secondary);
+}
+.ds-alert-title {
+  display: block;
+  font-weight: 750;
+  color: var(--ds-text);
+  margin-bottom: 0.15rem;
+}
+.ds-alert-success { background: var(--ds-success-bg); border-color: var(--ds-success-border); color: var(--ds-text); }
+.ds-alert-warning { background: var(--ds-warning-bg); border-color: var(--ds-warning-border); }
+.ds-alert-danger { background: var(--ds-danger-bg); border-color: var(--ds-danger-border); }
+.ds-alert-info { background: var(--ds-info-bg); border-color: var(--ds-info-border); }
+
+/* ── Tables ─────────────────────────────────────────────── */
+.ds-table-wrap {
+  overflow: auto;
+  border-radius: var(--ds-radius-lg);
+  border: 1px solid var(--ds-border);
+  background: var(--ds-bg-elevated);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.ds-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 640px;
+  font-size: 0.9rem;
+}
+
+.ds-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  text-align: left;
+  padding: 0.85rem 1rem;
+  font-size: 0.7rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ds-text-muted);
+  background: color-mix(in srgb, var(--ds-bg-muted) 88%, var(--ds-bg-elevated));
+  border-bottom: 1px solid var(--ds-border);
+  backdrop-filter: blur(8px);
+}
+
+.ds-table tbody td {
+  padding: 0.95rem 1rem;
+  border-bottom: 1px solid var(--ds-border);
+  color: var(--ds-text-secondary);
+  font-weight: 550;
+  vertical-align: middle;
+}
+
+.ds-table tbody tr {
+  transition: background var(--ds-duration-fast) ease;
+}
+
+.ds-table tbody tr:hover {
+  background: color-mix(in srgb, var(--ds-brand-soft) 55%, transparent);
+}
+
+.ds-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* ── Skeleton ───────────────────────────────────────────── */
+@keyframes ds-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.ds-skeleton {
+  display: block;
+  border-radius: var(--ds-radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--ds-bg-muted) 0%,
+    color-mix(in srgb, var(--ds-bg-subtle) 70%, #fff) 50%,
+    var(--ds-bg-muted) 100%
+  );
+  background-size: 200% 100%;
+  animation: ds-shimmer 1.4s ease-in-out infinite;
+}
+
+[data-theme='dark'] .ds-skeleton {
+  background: linear-gradient(
+    90deg,
+    #161922 0%,
+    #242836 50%,
+    #161922 100%
+  );
+  background-size: 200% 100%;
+}
+
+/* ── Empty / Error / Success states ─────────────────────── */
+.ds-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1.5rem;
+  border-radius: var(--ds-radius-lg);
+  border: 1px dashed var(--ds-border-strong);
+  background: color-mix(in srgb, var(--ds-bg-muted) 65%, transparent);
+}
+
+.ds-state-icon {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: var(--ds-radius-md);
+  display: grid;
+  place-items: center;
+  background: var(--ds-bg-elevated);
+  border: 1px solid var(--ds-border);
+  box-shadow: var(--ds-shadow-sm);
+  color: var(--ds-text-muted);
+}
+
+.ds-state-title {
+  font-weight: 750;
+  font-size: 1.05rem;
+  color: var(--ds-text);
+  letter-spacing: -0.02em;
+}
+
+.ds-state-desc {
+  max-width: 28rem;
+  color: var(--ds-text-muted);
+  font-weight: 500;
+  font-size: 0.925rem;
+  line-height: 1.5;
+}
+
+/* ── Charts (simple CSS bars) ───────────────────────────── */
+.ds-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.55rem;
+  height: 140px;
+  padding: 0.5rem 0.25rem 0;
+}
+
+.ds-chart-bar {
+  flex: 1;
+  border-radius: 8px 8px 4px 4px;
+  background: linear-gradient(180deg, var(--ds-chart-1), color-mix(in srgb, var(--ds-chart-1) 35%, transparent));
+  min-height: 8px;
+  position: relative;
+  transition: height var(--ds-duration-slow) var(--ds-ease), filter var(--ds-duration-fast) ease;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--ds-chart-1) 25%, transparent);
+}
+
+.ds-chart-bar:hover {
+  filter: brightness(1.08);
+}
+
+.ds-chart-bar:nth-child(2) { background: linear-gradient(180deg, var(--ds-chart-2), color-mix(in srgb, var(--ds-chart-2) 35%, transparent)); box-shadow: 0 8px 18px color-mix(in srgb, var(--ds-chart-2) 25%, transparent); }
+.ds-chart-bar:nth-child(3) { background: linear-gradient(180deg, var(--ds-chart-3), color-mix(in srgb, var(--ds-chart-3) 35%, transparent)); box-shadow: 0 8px 18px color-mix(in srgb, var(--ds-chart-3) 25%, transparent); }
+.ds-chart-bar:nth-child(4) { background: linear-gradient(180deg, var(--ds-chart-4), color-mix(in srgb, var(--ds-chart-4) 35%, transparent)); box-shadow: 0 8px 18px color-mix(in srgb, var(--ds-chart-4) 25%, transparent); }
+.ds-chart-bar:nth-child(5) { background: linear-gradient(180deg, var(--ds-chart-5), color-mix(in srgb, var(--ds-chart-5) 35%, transparent)); box-shadow: 0 8px 18px color-mix(in srgb, var(--ds-chart-5) 25%, transparent); }
+.ds-chart-bar:nth-child(6) { background: linear-gradient(180deg, var(--ds-chart-1), color-mix(in srgb, var(--ds-chart-2) 40%, transparent)); }
+.ds-chart-bar:nth-child(7) { background: linear-gradient(180deg, var(--ds-chart-3), color-mix(in srgb, var(--ds-chart-4) 40%, transparent)); }
+
+.ds-sparkline {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 36px;
+}
+.ds-sparkline span {
+  flex: 1;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--ds-brand) 75%, #fff);
+  opacity: 0.85;
+}
+
+/* ── Theme toggle ───────────────────────────────────────── */
+.ds-theme-toggle {
+  position: relative;
+  width: 3.25rem;
+  height: 1.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--ds-border-strong);
+  background: var(--ds-bg-muted);
+  cursor: pointer;
+  padding: 0;
+  box-shadow: var(--ds-shadow-inset);
+  transition: background var(--ds-duration) var(--ds-ease);
+}
+
+.ds-theme-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: var(--ds-bg-elevated);
+  box-shadow: var(--ds-shadow-sm);
+  display: grid;
+  place-items: center;
+  color: var(--ds-text-muted);
+  transition: transform var(--ds-duration) var(--ds-ease-spring);
+}
+
+[data-theme='dark'] .ds-theme-toggle-thumb {
+  transform: translateX(1.35rem);
+  color: var(--ds-brand);
+}
+
+/* ── Micro-interactions ─────────────────────────────────── */
+.ds-lift {
+  transition: transform var(--ds-duration) var(--ds-ease), box-shadow var(--ds-duration) var(--ds-ease);
+}
+.ds-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--ds-shadow-lg);
+}
+
+.ds-press:active {
+  transform: scale(0.98);
+}
+
+.ds-shine {
+  position: relative;
+  overflow: hidden;
+}
+.ds-shine::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--ds-gradient-shine);
+  transform: translateX(-120%);
+  transition: transform 0.7s var(--ds-ease);
+  pointer-events: none;
+}
+.ds-shine:hover::after {
+  transform: translateX(120%);
+}
+
+@keyframes ds-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.ds-fade-up {
+  animation: ds-fade-up 0.55s var(--ds-ease) both;
+}
+
+@keyframes ds-pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.ds-pulse {
+  animation: ds-pulse-soft 1.6s ease-in-out infinite;
+}
+
+/* ── Layout helpers ─────────────────────────────────────── */
+.ds-container {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+@media (min-width: 640px) {
+  .ds-container { padding-inline: 1.5rem; }
+}
+@media (min-width: 1024px) {
+  .ds-container { padding-inline: 2rem; }
+}
+
+.ds-grid-2 { display: grid; gap: 1rem; grid-template-columns: 1fr; }
+.ds-grid-3 { display: grid; gap: 1rem; grid-template-columns: 1fr; }
+.ds-grid-4 { display: grid; gap: 1rem; grid-template-columns: 1fr 1fr; }
+@media (min-width: 640px) {
+  .ds-grid-2 { grid-template-columns: 1fr 1fr; }
+  .ds-grid-3 { grid-template-columns: 1fr 1fr; }
+  .ds-grid-4 { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 1024px) {
+  .ds-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .ds-grid-4 { grid-template-columns: repeat(4, 1fr); }
+}
+
+.ds-divider {
+  height: 1px;
+  width: 100%;
+  background: var(--ds-border);
+  border: 0;
+}
+
+/* ── Scrollbar polish ───────────────────────────────────── */
+.ds-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.ds-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--ds-text-muted) 45%, transparent);
+  border-radius: 999px;
+}
+.ds-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--ds-brand);
+}
+
+/* Bridge existing card/button look into token world when themed */
+[data-theme] .zn-card {
+  background: var(--ds-bg-elevated);
+  border-color: var(--ds-border);
+  color: var(--ds-text);
+}
+[data-theme='dark'] .zn-cta {
+  background: var(--ds-bg-elevated);
+  color: var(--ds-text) !important;
+  border-color: var(--ds-border-strong);
+}
+[data-theme='dark'] body,
+[data-theme='dark'] .lenis-page,
+[data-theme='dark'] main {
+  background: var(--ds-bg) !important;
+  color: var(--ds-text);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Landing shell — light/dark readability (no invisible text)
+   ═══════════════════════════════════════════════════════════ */
+.landing-shell,
+.landing-shell.ds-page {
+  background: var(--ds-bg) !important;
+  color: var(--ds-text) !important;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.landing-shell main.ds-page {
+  background: transparent !important;
+  color: inherit;
+}
+
+/* FABs adapt to theme */
+.landing-fab {
+  background: var(--ds-bg-elevated);
+  border: 1px solid var(--ds-border-strong);
+  color: var(--ds-text);
+  box-shadow: var(--ds-shadow-md);
+}
+.landing-fab:hover {
+  background: var(--ds-bg-muted);
+}
+
+/* Round theme toggle (navbar / FAB) */
+.ds-theme-toggle.landing-round {
+  width: 2.75rem !important;
+  height: 2.75rem !important;
+  border-radius: 999px !important;
+  display: grid;
+  place-items: center;
+  background: var(--ds-bg-elevated);
+  border: 1px solid var(--ds-border-strong);
+  box-shadow: var(--ds-shadow-sm);
+}
+.ds-theme-toggle.landing-round .ds-theme-toggle-thumb {
+  position: static !important;
+  transform: none !important;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--ds-text);
+}
+[data-theme='dark'] .ds-theme-toggle.landing-round {
+  background: #1a1e28;
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+[data-theme='dark'] .ds-theme-toggle.landing-round .ds-theme-toggle-thumb {
+  color: #fb923c;
+}
+[data-theme='light'] .ds-theme-toggle:not(.landing-round) {
+  background: #eef2f7;
+  border-color: rgba(15, 23, 42, 0.12);
+}
+[data-theme='dark'] .ds-theme-toggle:not(.landing-round) {
+  background: #1a1e28;
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+/* Light mode: force readable text on common hardcoded dark utilities used on marketing pages */
+[data-theme='light'] .landing-shell .text-white:not(.btn-orange):not([class*='bg-\[\#25D366]']):not([class*='bg-gradient']) {
+  /* Don't blanket-override hero which intentionally stays dark cinematic */
+}
+
+/* Light page chrome outside cinematic hero */
+[data-theme='light'] body {
+  background: var(--ds-bg) !important;
+  color: var(--ds-text) !important;
+}
+
+[data-theme='light'] .landing-shell footer,
+[data-theme='light'] .landing-shell footer.bg-\[\#0E1117\] {
+  /* footer stays dark brand bar for contrast — keep white text */
+}
+
+/* Dark mode body */
+[data-theme='dark'] body {
+  background: var(--ds-bg) !important;
+  color: var(--ds-text) !important;
+}
+
+/* Generic marketing sections that used pure white cards / black text */
+[data-theme='dark'] .landing-shell .bg-white {
+  background-color: var(--ds-bg-elevated) !important;
+  color: var(--ds-text) !important;
+}
+[data-theme='dark'] .landing-shell .bg-white\/90,
+[data-theme='dark'] .landing-shell .bg-white\/95,
+[data-theme='dark'] .landing-shell .bg-white\/80 {
+  background-color: color-mix(in srgb, var(--ds-bg-elevated) 92%, transparent) !important;
+}
+[data-theme='dark'] .landing-shell .text-black,
+[data-theme='dark'] .landing-shell .text-slate-900,
+[data-theme='dark'] .landing-shell .text-slate-800,
+[data-theme='dark'] .landing-shell .text-gray-900,
+[data-theme='dark'] .landing-shell .text-\[\#0c1222\],
+[data-theme='dark'] .landing-shell .text-\[\#111827\],
+[data-theme='dark'] .landing-shell .text-primary-dark {
+  color: var(--ds-text) !important;
+}
+[data-theme='dark'] .landing-shell .text-slate-700,
+[data-theme='dark'] .landing-shell .text-slate-600,
+[data-theme='dark'] .landing-shell .text-gray-700,
+[data-theme='dark'] .landing-shell .text-gray-600,
+[data-theme='dark'] .landing-shell .text-text-grey,
+[data-theme='dark'] .landing-shell .text-muted {
+  color: var(--ds-text-muted) !important;
+}
+[data-theme='dark'] .landing-shell .border-black\/10,
+[data-theme='dark'] .landing-shell .border-black\/8,
+[data-theme='dark'] .landing-shell .border-slate-200,
+[data-theme='dark'] .landing-shell .border-gray-200 {
+  border-color: var(--ds-border) !important;
+}
+[data-theme='dark'] .landing-shell .bg-slate-50,
+[data-theme='dark'] .landing-shell .bg-gray-50,
+[data-theme='dark'] .landing-shell .bg-slate-100,
+[data-theme='dark'] .landing-shell .bg-grey-bg-light,
+[data-theme='dark'] .landing-shell .bg-\[\#f8fafc\],
+[data-theme='dark'] .landing-shell .bg-\[\#F8FAFC\] {
+  background-color: var(--ds-bg-muted) !important;
+}
+
+/* Force dark text inside light gradient boxes even in dark mode */
+[data-theme='dark'] .landing-shell .from-orange-50.to-amber-50,
+[data-theme='dark'] .landing-shell .from-orange-50.to-amber-50 p,
+[data-theme='dark'] .landing-shell .from-orange-50.to-amber-50 span,
+[data-theme='dark'] .landing-shell .from-orange-50.to-amber-50 h1,
+[data-theme='dark'] .landing-shell .from-orange-50.to-amber-50 h2,
+[data-theme='dark'] .landing-shell .from-orange-50.to-amber-50 h3 {
+  color: #0b0d12 !important;
+}
+[data-theme='dark'] .landing-shell input,
+[data-theme='dark'] .landing-shell select,
+[data-theme='dark'] .landing-shell textarea {
+  background: var(--ds-bg-muted) !important;
+  color: var(--ds-text) !important;
+  border-color: var(--ds-border-strong) !important;
+}
+[data-theme='dark'] .landing-shell input::placeholder,
+[data-theme='dark'] .landing-shell textarea::placeholder {
+  color: var(--ds-text-faint) !important;
+}
+[data-theme='dark'] .landing-shell table thead {
+  background: var(--ds-bg-subtle) !important;
+  color: var(--ds-text) !important;
+}
+[data-theme='dark'] .landing-shell table tbody tr {
+  border-color: var(--ds-border) !important;
+  color: var(--ds-text) !important;
+}
+
+/* Light mode: sections that hardcode near-black page bg should become light */
+[data-theme='light'] .landing-shell > main > section.bg-\[\#0E1117\],
+[data-theme='light'] .landing-shell > main > section.bg-\[\#0B0D12\],
+[data-theme='light'] .landing-shell .bg-\[\#0B0D12\]:not(#hero):not(footer *) {
+  /* keep cinematic blocks; hero stays dark */
+}
+
+/* Ensure light mode secondary pages (tools tables) stay readable */
+[data-theme='light'] .landing-shell .text-white\/70,
+[data-theme='light'] .landing-shell .text-white\/55,
+[data-theme='light'] .landing-shell .text-white\/65 {
+  /* only when parent is not a dark band */
+}
+
+/* Glass panels */
+[data-theme='light'] .landing-shell .glass-panel {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(15, 23, 42, 0.08);
+  color: var(--ds-text);
+}
+[data-theme='dark'] .landing-shell .glass-panel {
+  background: rgba(17, 19, 26, 0.85);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--ds-text);
+}
+
+/* Choice finder / cards on light */
+[data-theme='light'] .landing-shell .zn-card {
+  background: #fff;
+  color: #0b0d12;
+  border-color: rgba(15, 23, 42, 0.1);
+}
+
+/* Prefer design-system text utilities */
+.landing-shell .ds-text-safe {
+  color: var(--ds-text) !important;
+}
+.landing-shell .ds-muted-safe {
+  color: var(--ds-text-muted) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Homepage light theme — force readable contrast on dark sections
+   ═══════════════════════════════════════════════════════════ */
+.landing-home-dark {
+  background: #0b0d12;
+  color: #e8eaed;
+}
+.landing-home-light {
+  background: #fafbfc;
+  color: #0b0d12;
+}
+
+/* Remap common dark section backgrounds → light surfaces */
+.landing-home-light section.bg-\[\#0B0D12\],
+.landing-home-light section.bg-\[\#0E1117\],
+.landing-home-light section.bg-\[\#12151C\],
+.landing-home-light .bg-\[\#0B0D12\],
+.landing-home-light .bg-\[\#0E1117\],
+.landing-home-light .bg-\[\#12151C\],
+.landing-home-light .premium-section.bg-\[\#0B0D12\],
+.landing-home-light .premium-section.bg-\[\#12151C\],
+.landing-home-light .premium-section.bg-\[\#0E1117\] {
+  background-color: #f4f6f8 !important;
+  background-image: none !important;
+  color: #0b0d12 !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Cards / panels that were charcoal */
+.landing-home-light .bg-\[\#171B24\],
+.landing-home-light .bg-\[\#1A1F2B\],
+.landing-home-light .bg-\[\#151A22\],
+.landing-home-light .bg-\[\#1C2230\],
+.landing-home-light .bg-\[\#1C2430\] {
+  background-color: #ffffff !important;
+  color: #0b0d12 !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06) !important;
+}
+
+/* Text that was white on dark sections */
+.landing-home-light .text-white {
+  color: #0b0d12 !important;
+}
+.landing-home-light .text-white\/90,
+.landing-home-light .text-white\/80 {
+  color: #1e293b !important;
+}
+.landing-home-light .text-white\/70,
+.landing-home-light .text-white\/65,
+.landing-home-light .text-white\/60,
+.landing-home-light .text-white\/55,
+.landing-home-light .text-white\/50,
+.landing-home-light .text-white\/45,
+.landing-home-light .text-white\/40,
+.landing-home-light .text-white\/35 {
+  color: #64748b !important;
+}
+
+/* Borders */
+.landing-home-light .border-white\/10,
+.landing-home-light .border-white\/8,
+.landing-home-light .border-white\/12,
+.landing-home-light .border-white\/15,
+.landing-home-light .border-white\/20,
+.landing-home-light .border-white\/25,
+.landing-home-light .border-white\/6 {
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+/* Keep hero cinematic dark even in light mode */
+.landing-home-light #hero,
+.landing-home-light #hero .text-white,
+.landing-home-light #hero .text-white\/70,
+.landing-home-light #hero .text-white\/80,
+.landing-home-light #hero .text-white\/90 {
+  color: #ffffff !important;
+}
+.landing-home-light #hero {
+  background-color: #0e1117 !important;
+  color: #ffffff !important;
+}
+.landing-home-light #hero .border-white\/15 {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Orange CTAs stay orange with white label */
+.landing-home-light .btn-orange,
+.landing-home-light a.btn-orange,
+.landing-home-light button.btn-orange,
+.landing-home-light .bg-\[\#F97316\],
+.landing-home-light .bg-\[\#f97316\] {
+  color: #ffffff !important;
+}
+
+/* Feature tab inactive states on light */
+.landing-home-light button.bg-\[\#171B24\] {
+  background-color: #ffffff !important;
+  color: #0b0d12 !important;
+}
+.landing-home-light button.bg-\[\#0E1117\] {
+  background-color: #0e1117 !important;
+  color: #ffffff !important;
+}
+
+/* Accordion / FAQ open cards */
+.landing-home-light .hover\:bg-white\/5:hover,
+.landing-home-light .hover\:bg-white\/10:hover {
+  background-color: rgba(15, 23, 42, 0.04) !important;
+}
+
+/* Story / horizontal cards */
+.landing-home-light .text-\[\#9CA3AF\] {
+  color: #6b7280 !important;
+}
+
+/* Final CTA / dark bands that should stay dark for drama */
+.landing-home-light section.section-dark,
+.landing-home-light .section-dark {
+  background: linear-gradient(160deg, #0b3d4a 0%, #0f766e 55%, #115e59 100%) !important;
+  color: #fff !important;
+}
+.landing-home-light .section-dark .text-white,
+.landing-home-light .section-dark .text-white\/75 {
+  color: #fff !important;
+}
+
+/* Package gradient cards keep light text */
+.landing-home-light a.group.bg-gradient-to-br,
+.landing-home-light .bg-gradient-to-br.from-\[\#0E1117\] {
+  color: #fff !important;
+}
+.landing-home-light a.group .text-white,
+.landing-home-light a[class*='bg-gradient'] .text-white {
+  color: #fff !important;
+}
+
+/* Choice finder embedded on light strip */
+.landing-home-light .glass-panel,
+.landing-home-light [class*='ChoiceFinder'],
+.landing-home-light .zn-card {
+  color: #0b0d12;
+}
+
+/* Dark mode home stays as designed */
+.landing-home-dark {
+  color: #e8eaed;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Mobile readability + auth form + admin drawer fixes
+   ═══════════════════════════════════════════════════════════ */
+
+/* Auth form — always readable in light OR dark theme */
+.auth-card {
+  background: #ffffff !important;
+  color: #0e1117 !important;
+  border-color: rgba(14, 17, 23, 0.08) !important;
+}
+.auth-card .text-primary-dark,
+.auth-card h1,
+.auth-card h2,
+.auth-card label,
+.auth-card .font-display {
+  color: #0e1117 !important;
+}
+.auth-card .text-muted {
+  color: #6b7280 !important;
+}
+.auth-card .login-input {
+  color: #0e1117 !important;
+  -webkit-text-fill-color: #0e1117 !important;
+  caret-color: #0e1117;
+  background: transparent !important;
+}
+.auth-card .login-input::placeholder {
+  color: #9ca3af !important;
+  -webkit-text-fill-color: #9ca3af !important;
+  opacity: 1;
+}
+.auth-card .login-field-shell {
+  background: #ffffff !important;
+  border-color: rgba(14, 17, 23, 0.1) !important;
+}
+.auth-card .auth-submit-btn {
+  background: #0e1117 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+.auth-card .auth-submit-btn * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+.auth-card .auth-mode-track {
+  background: #f3f4f6 !important;
+}
+.auth-card .auth-mode-thumb {
+  background: #ffffff !important;
+}
+.auth-card .auth-mode-btn {
+  color: #6b7280 !important;
+}
+.auth-card .auth-mode-btn.is-active {
+  color: #0e1117 !important;
+}
+
+/* Auth portal selector tabs */
+.auth-portal-track {
+  background: rgba(226, 232, 240, 0.95);
+  border: 1px solid rgba(203, 213, 225, 0.9);
+}
+[data-theme='dark'] .auth-portal-track {
+  background: rgba(21, 25, 35, 0.9);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.auth-portal-tab-inactive {
+  color: #1e293b !important;
+  -webkit-text-fill-color: #1e293b !important;
+}
+[data-theme='dark'] .auth-portal-tab-inactive {
+  color: #e2e8f0 !important;
+  -webkit-text-fill-color: #e2e8f0 !important;
+}
+
+.auth-portal-tab-active-student {
+  background: #0e1117 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.auth-portal-tab-active-admin {
+  background: linear-gradient(to right, #f97316, #f59e0b) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Never let theme force white-on-white on solid dark CTAs */
+.landing-shell button.bg-primary-dark,
+.landing-shell a.bg-primary-dark,
+.landing-shell .bg-primary-dark {
+  background-color: #0e1117 !important;
+  color: #ffffff !important;
+}
+.landing-shell button.bg-primary-dark *,
+.landing-shell a.bg-primary-dark *,
+.landing-shell .bg-primary-dark * {
+  color: #ffffff !important;
+}
+
+/* Admin mobile drawer — force legible white labels always */
+.admin-shell aside {
+  color: #ffffff;
+}
+.admin-shell aside a,
+.admin-shell aside button,
+.admin-shell aside p,
+.admin-shell aside span {
+  -webkit-font-smoothing: antialiased;
+}
+.admin-shell aside .text-white\/75,
+.admin-shell aside .text-white\/65,
+.admin-shell aside .text-white\/55 {
+  color: rgba(255, 255, 255, 0.78) !important;
+}
+.admin-shell aside nav a span,
+.admin-shell aside nav a {
+  color: inherit;
+}
+.admin-shell aside nav a.bg-gradient-to-r,
+.admin-shell aside nav a[class*='from-orange'] {
+  color: #ffffff !important;
+}
+.admin-shell aside nav a[class*='from-orange'] span {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* When drawer open on mobile, dim main and prevent layout jump */
+@media (max-width: 1023px) {
+  .admin-shell aside {
+    max-width: min(292px, 88vw);
+  }
+  .admin-shell .admin-main {
+    min-width: 0;
+    width: 100%;
+  }
+  .admin-shell .admin-content {
+    padding-bottom: max(2.5rem, env(safe-area-inset-bottom));
+  }
+  .admin-shell .admin-content,
+  .admin-shell .admin-content p,
+  .admin-shell .admin-content h1,
+  .admin-shell .admin-content h2,
+  .admin-shell .admin-content h3,
+  .admin-shell .admin-content span,
+  .admin-shell .admin-content td,
+  .admin-shell .admin-content th,
+  .admin-shell .admin-content label {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+}
+
+/* Choice finder dark panel — keep white text even if parent light-theme remaps */
+.landing-home-light .choice-finder-panel,
+.landing-home-dark .choice-finder-panel,
+.choice-finder-panel {
+  background-color: #171b24 !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+.landing-home-light .choice-finder-panel .text-white,
+.choice-finder-panel .text-white,
+.choice-finder-panel p,
+.choice-finder-panel span,
+.choice-finder-panel label,
+.choice-finder-panel button:not(.btn-orange):not(.bg-white) {
+  color: #ffffff !important;
+}
+/* Active course pill: bg-white — must use DARK text so it's readable on white bg */
+[data-theme='dark'] .landing-shell .choice-finder-panel button.bg-white,
+.choice-finder-panel button.bg-white {
+  color: #171b24 !important;
+  -webkit-text-fill-color: #171b24 !important;
+  background-color: #ffffff !important;
+}
+.landing-home-light .choice-finder-panel .text-white\/55,
+.landing-home-light .choice-finder-panel .text-white\/40,
+.landing-home-light .choice-finder-panel .text-white\/60,
+.choice-finder-panel .text-white\/55,
+.choice-finder-panel .text-white\/40,
+.choice-finder-panel .text-white\/60 {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+.choice-finder-panel select,
+.choice-finder-panel input[type='number'] {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  background: #0f1218 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+.choice-finder-panel option {
+  color: #0e1117;
+  background: #fff;
+}
+.choice-finder-panel .btn-orange,
+.choice-finder-panel a.btn-orange {
+  color: #ffffff !important;
+}
+
+/* Global mobile: stop clipped labels */
+@media (max-width: 640px) {
+  h1, h2, h3, p, label, button, a, li, td, th {
+    overflow-wrap: anywhere;
+  }
+  .truncate-mobile-safe {
+    overflow: visible !important;
+    text-overflow: unset !important;
+    white-space: normal !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIGHT THEME — GLOBAL TEXT VISIBILITY FIX (site-wide)
+   Root cause: section-title / text-white / zn-card stay light-colored
+   after dark section backgrounds are remapped to light surfaces.
+   ═══════════════════════════════════════════════════════════ */
+
+/* Base page text always readable in light */
+html[data-theme='light'] body,
+[data-theme='light'] body {
+  background: #fafbfc !important;
+  color: #0b0d12 !important;
+}
+
+/* Section titles were hard-coded near-white → invisible on light bg */
+[data-theme='light'] .section-title {
+  color: #0b0d12 !important;
+}
+[data-theme='light'] .section-title .zn-highlight,
+[data-theme='light'] .section-title span {
+  color: inherit;
+}
+
+/* Premium / cream / mesh sections become light surfaces with dark ink */
+[data-theme='light'] .premium-section,
+[data-theme='light'] .section-cream,
+[data-theme='light'] .mesh-bg {
+  background: #f4f6f8 !important;
+  background-image: none !important;
+  color: #0b0d12 !important;
+}
+
+/* night-band stays dark (cinematic dark sections) even in light mode */
+[data-theme='light'] .night-band {
+  background: #0e1117 !important;
+  color: #ffffff !important;
+}
+
+
+/* Cards: white surface + dark text (never charcoal + light gray) */
+[data-theme='light'] .zn-card {
+  background: #ffffff !important;
+  color: #0b0d12 !important;
+  border: 1px solid rgba(15, 23, 42, 0.1) !important;
+  box-shadow: 0 10px 36px rgba(15, 23, 42, 0.06) !important;
+}
+[data-theme='light'] .zn-card p,
+[data-theme='light'] .zn-card span:not(.font-display),
+[data-theme='light'] .zn-card li,
+[data-theme='light'] .zn-card h1,
+[data-theme='light'] .zn-card h2,
+[data-theme='light'] .zn-card h3,
+[data-theme='light'] .zn-card h4,
+[data-theme='light'] .zn-card label {
+  color: inherit;
+}
+
+/* Hardcoded white text → dark ink on LIGHT surfaces only.
+   IMPORTANT: :not() only works on the element itself, not on parents.
+   So we must scope with ancestor selectors for dark containers. */
+
+/* Light theme: white text → dark — but NOT inside dark containers */
+[data-theme='light'] .landing-shell .text-white:not(.btn-orange):not([class*='bg-gradient']) {
+  color: #0b0d12 !important;
+}
+[data-theme='light'] .landing-shell .text-white\/90:not(.btn-orange),
+[data-theme='light'] .landing-shell .text-white\/80:not(.btn-orange) {
+  color: #1e293b !important;
+}
+[data-theme='light'] .landing-shell .text-white\/75,
+[data-theme='light'] .landing-shell .text-white\/70,
+[data-theme='light'] .landing-shell .text-white\/65,
+[data-theme='light'] .landing-shell .text-white\/60,
+[data-theme='light'] .landing-shell .text-white\/55,
+[data-theme='light'] .landing-shell .text-white\/50,
+[data-theme='light'] .landing-shell .text-white\/45,
+[data-theme='light'] .landing-shell .text-white\/40,
+[data-theme='light'] .landing-shell .text-white\/35,
+[data-theme='light'] .landing-shell .text-white\/30 {
+  color: #64748b !important;
+}
+
+/* ── UNDO the override INSIDE dark containers so text stays white ── */
+[data-theme='light'] .landing-shell .bg-slate-900 .text-white,
+[data-theme='light'] .landing-shell .bg-slate-900 .text-white\/90,
+[data-theme='light'] .landing-shell .bg-slate-900 .text-white\/80,
+[data-theme='light'] .landing-shell .bg-slate-900 .text-white\/70,
+[data-theme='light'] .landing-shell .bg-slate-900 .text-white\/60,
+[data-theme='light'] .landing-shell .bg-slate-900 .text-white\/55,
+[data-theme='light'] .landing-shell .bg-slate-900 .text-white\/50,
+[data-theme='light'] .landing-shell .bg-slate-900,
+[data-theme='light'] .landing-shell .bg-slate-900 span,
+[data-theme='light'] .landing-shell .bg-slate-900 svg,
+[data-theme='light'] .landing-shell .bg-slate-800 .text-white,
+[data-theme='light'] .landing-shell .bg-slate-800,
+[data-theme='light'] .landing-shell .bg-slate-800 span {
+  color: #ffffff !important;
+}
+/* Inactive exam tab buttons inside choice-finder stay white-ish on dark bg */
+[data-theme='light'] .choice-finder-panel .text-white\/55,
+[data-theme='light'] .choice-finder-panel .text-white\/70,
+[data-theme='light'] .choice-finder-panel .text-white {
+  color: #ffffff !important;
+}
+/* Active course pill: bg-white text-[#171B24] — keep the dark text */
+[data-theme='light'] .choice-finder-panel button.bg-white {
+  background-color: #ffffff !important;
+  color: #171b24 !important;
+}
+/* Inactive course pill: bg-white/8 text-white/60 */
+[data-theme='light'] .choice-finder-panel button.\!bg-white\/8,
+[data-theme='light'] .choice-finder-panel button:not(.bg-white):not(.bg-\[\#F97316\]):not(.bg-\[\#f97316\]) {
+  color: rgba(255,255,255,0.65) !important;
+}
+
+/* Restore WHITE text on dark islands in light mode — critical readability */
+[data-theme='light'] .landing-shell #hero,
+[data-theme='light'] .landing-shell #hero *,
+[data-theme='light'] .landing-shell footer,
+[data-theme='light'] .landing-shell footer *,
+[data-theme='light'] .landing-shell .section-dark,
+[data-theme='light'] .landing-shell .section-dark *,
+[data-theme='light'] .landing-shell .btn-orange,
+[data-theme='light'] .landing-shell .btn-orange *,
+[data-theme='light'] .landing-shell .btn-dark,
+[data-theme='light'] .landing-shell .btn-dark *,
+[data-theme='light'] .landing-shell .zn-cta-primary,
+[data-theme='light'] .landing-shell .zn-cta-primary *,
+[data-theme='light'] .landing-shell .zn-cta-coral,
+[data-theme='light'] .landing-shell .zn-cta-coral *,
+[data-theme='light'] .landing-shell [class*='bg-gradient-to'][class*='from-orange'],
+[data-theme='light'] .landing-shell [class*='bg-gradient-to'][class*='from-\[\#F97'],
+[data-theme='light'] .landing-shell [class*='bg-\[\#25D366]'],
+[data-theme='light'] .landing-shell [class*='bg-\[\#25D366]'] *,
+/* Dark night-band sections stay dark with white text */
+[data-theme='light'] .landing-shell .night-band:not(.night-band-skip),
+[data-theme='light'] .landing-shell .night-band:not(.night-band-skip) * {
+  color: #ffffff !important;
+}
+[data-theme='light'] .landing-shell #hero .text-\[\#FDBA74\],
+[data-theme='light'] .landing-shell #hero .text-orange-300,
+[data-theme='light'] .landing-shell #hero .italic {
+  color: #fdba74 !important;
+}
+[data-theme='light'] .landing-shell footer .text-white\/55,
+[data-theme='light'] .landing-shell footer .text-white\/70,
+[data-theme='light'] .landing-shell .section-dark .text-white\/75,
+[data-theme='light'] .landing-shell .section-dark .text-white\/55 {
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+/* Keep dark cinematic hero background in light mode */
+[data-theme='light'] .landing-shell #hero {
+  background-color: #0b0d12 !important;
+  color: #ffffff !important;
+}
+[data-theme='light'] .landing-shell footer {
+  background-color: #0e1117 !important;
+  color: #ffffff !important;
+}
+
+/* Muted helpers */
+[data-theme='light'] .landing-shell .text-muted,
+[data-theme='light'] .landing-shell .text-text-grey {
+  color: #64748b !important;
+}
+[data-theme='light'] .landing-shell .text-primary-dark,
+[data-theme='light'] .landing-shell .text-ink {
+  color: #0b0d12 !important;
+}
+
+/* Charcoal panels → white cards (but NOT the choice finder which stays intentionally dark) */
+[data-theme='light'] .landing-shell .bg-\[\#171B24\]:not(.choice-finder-panel),
+[data-theme='light'] .landing-shell .bg-\[\#1A1F2B\]:not(.choice-finder-panel),
+[data-theme='light'] .landing-shell .bg-\[\#151A22\]:not(.choice-finder-panel),
+[data-theme='light'] .landing-shell .bg-\[\#1C2230\]:not(.choice-finder-panel),
+[data-theme='light'] .landing-shell .bg-\[\#1C2430\]:not(.choice-finder-panel),
+[data-theme='light'] .landing-shell .bg-\[\#0F1218\]:not(.choice-finder-panel),
+[data-theme='light'] .landing-shell .bg-\[\#12151C\]:not(.choice-finder-panel) {
+  background-color: #ffffff !important;
+  color: #0b0d12 !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+/* Page-level near-black sections → soft light (NOT hero / footer / section-dark) */
+[data-theme='light'] .landing-shell section.bg-\[\#0B0D12\]:not(#hero):not(.section-dark),
+[data-theme='light'] .landing-shell section.bg-\[\#0E1117\]:not(#hero):not(.section-dark),
+[data-theme='light'] .landing-shell section.bg-\[\#12151C\]:not(#hero):not(.section-dark) {
+  background-color: #f4f6f8 !important;
+  background-image: none !important;
+  color: #0b0d12 !important;
+}
+
+/* Borders that were white-alpha */
+[data-theme='light'] .landing-shell .border-white\/5,
+[data-theme='light'] .landing-shell .border-white\/6,
+[data-theme='light'] .landing-shell .border-white\/8,
+[data-theme='light'] .landing-shell .border-white\/10,
+[data-theme='light'] .landing-shell .border-white\/12,
+[data-theme='light'] .landing-shell .border-white\/15,
+[data-theme='light'] .landing-shell .border-white\/20,
+[data-theme='light'] .landing-shell .border-white\/25 {
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+/* Ghost CTA was white-on-white on light sections */
+[data-theme='light'] a.zn-cta-ghost,
+[data-theme='light'] button.zn-cta-ghost,
+[data-theme='light'] .zn-cta-ghost {
+  background: #0e1117 !important;
+  color: #ffffff !important;
+  border: 1px solid transparent !important;
+}
+[data-theme='light'] a.zn-cta-ghost:hover,
+[data-theme='light'] button.zn-cta-ghost:hover,
+[data-theme='light'] .zn-cta-ghost:hover {
+  background: #f97316 !important;
+  color: #ffffff !important;
+}
+
+/* Default outline CTA stays dark text on white */
+[data-theme='light'] a.zn-cta:not(.zn-cta-primary):not(.zn-cta-coral):not(.zn-cta-ghost),
+[data-theme='light'] button.zn-cta:not(.zn-cta-primary):not(.zn-cta-coral):not(.zn-cta-ghost) {
+  background: #ffffff !important;
+  color: #0e1117 !important;
+  border-color: #e5e7eb !important;
+}
+
+/* Eyebrows stay brand orange */
+[data-theme='light'] .eyebrow,
+[data-theme='light'] .eyebrow-night {
+  color: #c2410c !important;
+}
+[data-theme='light'] .eyebrow::before,
+[data-theme='light'] .eyebrow-night::before {
+  background: #f97316 !important;
+}
+
+/* ── Keep intentional DARK islands readable (white text) ── */
+
+/* Hero stays cinematic */
+[data-theme='light'] #hero,
+[data-theme='light'] #hero * {
+  /* don't blanket * — too aggressive; target text utilities */
+}
+[data-theme='light'] #hero {
+  background-color: #0e1117 !important;
+  color: #ffffff !important;
+}
+[data-theme='light'] #hero .text-white,
+[data-theme='light'] #hero .section-title,
+[data-theme='light'] #hero h1,
+[data-theme='light'] #hero h2,
+[data-theme='light'] #hero p,
+[data-theme='light'] #hero span:not(.btn-orange *) {
+  color: #ffffff !important;
+}
+[data-theme='light'] #hero .text-white\/70,
+[data-theme='light'] #hero .text-white\/55,
+[data-theme='light'] #hero .text-white\/80,
+[data-theme='light'] #hero .text-white\/90 {
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+[data-theme='light'] #hero .border-white\/10,
+[data-theme='light'] #hero .border-white\/15,
+[data-theme='light'] #hero .border-white\/20 {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Footer brand bar stays dark */
+[data-theme='light'] .landing-shell footer,
+[data-theme='light'] .landing-shell footer * {
+  /* scoped below */
+}
+[data-theme='light'] .landing-shell > footer,
+[data-theme='light'] footer.bg-\[\#0E1117\],
+[data-theme='light'] footer.bg-primary-dark {
+  background: #0e1117 !important;
+  color: #ffffff !important;
+}
+[data-theme='light'] .landing-shell > footer .text-white,
+[data-theme='light'] .landing-shell > footer a,
+[data-theme='light'] .landing-shell > footer p,
+[data-theme='light'] .landing-shell > footer h4,
+[data-theme='light'] .landing-shell > footer span {
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+[data-theme='light'] .landing-shell > footer .text-white\/55,
+[data-theme='light'] .landing-shell > footer .text-white\/70,
+[data-theme='light'] .landing-shell > footer .text-teal-200\/80 {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Choice finder panel stays dark with white text */
+[data-theme='light'] .landing-shell .choice-finder-panel.bg-\[\#171B24\],
+[data-theme='light'] .choice-finder-panel {
+  background-color: #171b24 !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+[data-theme='light'] .landing-shell .choice-finder-panel.bg-\[\#171B24\] .text-white,
+[data-theme='light'] .landing-shell .choice-finder-panel.bg-\[\#171B24\] p,
+[data-theme='light'] .landing-shell .choice-finder-panel.bg-\[\#171B24\] span,
+[data-theme='light'] .landing-shell .choice-finder-panel.bg-\[\#171B24\] label,
+[data-theme='light'] .landing-shell .choice-finder-panel.bg-\[\#171B24\] h1,
+[data-theme='light'] .landing-shell .choice-finder-panel.bg-\[\#171B24\] h2,
+[data-theme='light'] .landing-shell .choice-finder-panel.bg-\[\#171B24\] h3,
+[data-theme='light'] .landing-shell .choice-finder-panel.bg-\[\#171B24\] button:not(.btn-orange):not(.zn-cta-primary):not(.zn-cta-coral),
+[data-theme='light'] .choice-finder-panel,
+[data-theme='light'] .choice-finder-panel .text-white,
+[data-theme='light'] .choice-finder-panel p,
+[data-theme='light'] .choice-finder-panel span,
+[data-theme='light'] .choice-finder-panel label,
+[data-theme='light'] .choice-finder-panel h1,
+[data-theme='light'] .choice-finder-panel h2,
+[data-theme='light'] .choice-finder-panel h3,
+[data-theme='light'] .choice-finder-panel button:not(.btn-orange):not(.zn-cta-primary):not(.zn-cta-coral) {
+  color: #ffffff !important;
+}
+[data-theme='light'] .choice-finder-panel .text-white\/55,
+[data-theme='light'] .choice-finder-panel .text-white\/40,
+[data-theme='light'] .choice-finder-panel .text-white\/60,
+[data-theme='light'] .choice-finder-panel .text-white\/45,
+[data-theme='light'] .choice-finder-panel .text-white\/30 {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+[data-theme='light'] .choice-finder-panel select,
+[data-theme='light'] .choice-finder-panel input {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  background: #0f1218 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+[data-theme='light'] .choice-finder-panel .btn-orange,
+[data-theme='light'] .choice-finder-panel a.btn-orange,
+[data-theme='light'] .choice-finder-panel .btn-orange * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Final CTA / section-dark stay dramatic dark */
+[data-theme='light'] .section-dark,
+[data-theme='light'] section.section-dark {
+  background: linear-gradient(165deg, #0e1117 0%, #141a22 55%, #0e1117 100%) !important;
+  color: #ffffff !important;
+}
+[data-theme='light'] .section-dark .section-title,
+[data-theme='light'] .section-dark .text-white,
+[data-theme='light'] .section-dark h1,
+[data-theme='light'] .section-dark h2,
+[data-theme='light'] .section-dark h3,
+[data-theme='light'] .section-dark p,
+[data-theme='light'] .section-dark span {
+  color: #ffffff !important;
+}
+[data-theme='light'] .section-dark .text-white\/75,
+[data-theme='light'] .section-dark .text-white\/55,
+[data-theme='light'] .section-dark .text-white\/70 {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Orange / dark solid buttons always white label */
+[data-theme='light'] .btn-orange,
+[data-theme='light'] .btn-orange *,
+[data-theme='light'] .btn-dark,
+[data-theme='light'] .btn-dark *,
+[data-theme='light'] .zn-cta-primary,
+[data-theme='light'] .zn-cta-primary *,
+[data-theme='light'] .zn-cta-coral,
+[data-theme='light'] .zn-cta-coral *,
+[data-theme='light'] .bg-\[\#F97316\],
+[data-theme='light'] .bg-\[\#f97316\],
+[data-theme='light'] .bg-primary-dark.text-white,
+[data-theme='light'] button.bg-primary-dark,
+[data-theme='light'] a.bg-primary-dark {
+  color: #ffffff !important;
+}
+
+/* Active black pills */
+[data-theme='light'] .bg-black.text-white,
+[data-theme='light'] button.bg-black,
+[data-theme='light'] .bg-primary-dark {
+  color: #ffffff !important;
+}
+
+/* Tables */
+[data-theme='light'] thead.bg-black,
+[data-theme='light'] thead.bg-black th,
+[data-theme='light'] .table-head {
+  background: #0e1117 !important;
+  color: #ffffff !important;
+}
+[data-theme='light'] tbody td {
+  color: #0b0d12;
+}
+
+/* Inputs on light pages */
+[data-theme='light'] .landing-shell input:not([type='checkbox']):not([type='radio']),
+[data-theme='light'] .landing-shell select,
+[data-theme='light'] .landing-shell textarea {
+  color: #0b0d12 !important;
+  -webkit-text-fill-color: #0b0d12 !important;
+  background: #ffffff !important;
+  border-color: #e5e7eb !important;
+}
+[data-theme='light'] .landing-shell input::placeholder,
+[data-theme='light'] .landing-shell textarea::placeholder {
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
+  opacity: 1;
+}
+
+/* Exception: inputs inside dark choice finder already handled */
+
+/* Self-contained dark tool pages (rank calc / compare) keep dark theme look */
+[data-theme='light'] .min-h-screen.bg-\[\#0B0D12\],
+[data-theme='light'] .min-h-screen.bg-\[\#0B0D12\] .text-white {
+  color: #ffffff !important;
+}
+[data-theme='light'] .min-h-screen.bg-\[\#0B0D12\] {
+  background-color: #0b0d12 !important;
+  color: #ffffff !important;
+}
+[data-theme='light'] .min-h-screen.bg-\[\#0B0D12\] .text-white\/55,
+[data-theme='light'] .min-h-screen.bg-\[\#0B0D12\] .text-white\/50,
+[data-theme='light'] .min-h-screen.bg-\[\#0B0D12\] .text-white\/40 {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+[data-theme='light'] .min-h-screen.bg-\[\#0B0D12\] input,
+[data-theme='light'] .min-h-screen.bg-\[\#0B0D12\] select,
+[data-theme='light'] .min-h-screen.bg-\[\#0B0D12\] textarea {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  background: #0f1218 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Package gradient cards keep light text */
+[data-theme='light'] a.group[class*='bg-gradient'] .text-white,
+[data-theme='light'] [class*='from-\[\#0E1117\']'] .text-white {
+  color: #ffffff !important;
+}
+
+/* Feature active tabs that use dark bg */
+[data-theme='light'] button.bg-\[\#0E1117\],
+[data-theme='light'] button.bg-primary-dark {
+  background-color: #0e1117 !important;
+  color: #ffffff !important;
+}
+
+/* Navbar on light */
+[data-theme='light'] nav,
+[data-theme='light'] .nav-surface {
+  color: #0b0d12;
+}
+[data-theme='light'] nav a,
+[data-theme='light'] nav button {
+  color: inherit;
+}
+
+/* Stat labels */
+[data-theme='light'] .stat-label {
+  color: #64748b !important;
+}
+[data-theme='light'] .stat-value {
+  color: #0b0d12 !important;
+}
+
+/* Ensure landing-home-light inherits same fixes */
+.landing-home-light .section-title {
+  color: #0b0d12 !important;
+}
+.landing-home-light .premium-section,
+.landing-home-light .section-cream {
+  background: #f4f6f8 !important;
+  color: #0b0d12 !important;
+}
+
+/* Pain point pills — ensure dark text on pastel */
+[data-theme='light'] .animate-marquee span {
+  color: inherit;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GLOBAL THEME CONTRAST + AUTH + PERFORMANCE (2026 polish)
+   ═══════════════════════════════════════════════════════════ */
+
+/* Utility: muted always maps to design token */
+.text-muted {
+  color: var(--ds-text-muted) !important;
+}
+
+/* Route lazy-load fallback — theme aware, no giant logo */
+.page-route-fallback {
+  background: var(--ds-bg) !important;
+  color: var(--ds-text) !important;
+  min-height: 50vh;
+}
+.route-spinner {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 2.5px solid color-mix(in srgb, var(--ds-text) 12%, transparent);
+  border-top-color: var(--ds-brand);
+  border-right-color: color-mix(in srgb, var(--ds-brand) 45%, transparent);
+  animation: routeSpin 0.8s linear infinite;
+  will-change: transform;
+}
+@keyframes routeSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Auth page (Login / Signup) — always readable light OR dark ── */
+.auth-page {
+  background: var(--ds-bg) !important;
+  color: var(--ds-text) !important;
+}
+.auth-page-ambient {
+  background:
+    radial-gradient(ellipse 70% 45% at 50% -5%, color-mix(in srgb, var(--ds-brand) 14%, transparent), transparent 60%),
+    radial-gradient(ellipse 40% 30% at 100% 100%, color-mix(in srgb, var(--ds-brand) 6%, transparent), transparent 55%);
+}
+.auth-pill {
+  border: 1px solid color-mix(in srgb, var(--ds-brand) 28%, transparent);
+  background: var(--ds-brand-soft);
+  color: var(--ds-text-brand);
+}
+.auth-heading {
+  color: var(--ds-text) !important;
+}
+.auth-heading-accent {
+  color: var(--ds-text) !important;
+  font-style: italic;
+}
+.auth-sub {
+  color: var(--ds-text-muted) !important;
+}
+.auth-perk {
+  color: var(--ds-text) !important;
+}
+.auth-perk-icon {
+  background: var(--ds-brand-soft);
+  color: var(--ds-brand);
+  border: 1px solid color-mix(in srgb, var(--ds-brand) 22%, transparent);
+}
+.auth-back {
+  color: var(--ds-text-muted) !important;
+}
+.auth-back:hover {
+  color: var(--ds-brand) !important;
+}
+
+/* Auth card stays a high-contrast elevated surface */
+.auth-card {
+  background: var(--ds-bg-elevated) !important;
+  color: var(--ds-text) !important;
+  border: 1px solid var(--ds-border-strong) !important;
+  box-shadow: var(--ds-shadow-lg) !important;
+}
+.auth-card-shine {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ds-brand) 10%, transparent), transparent);
+}
+.auth-card-title {
+  color: var(--ds-text) !important;
+  -webkit-text-fill-color: var(--ds-text) !important;
+}
+.auth-card-sub {
+  color: var(--ds-text-muted) !important;
+  -webkit-text-fill-color: var(--ds-text-muted) !important;
+}
+.auth-field-label {
+  color: var(--ds-text-muted) !important;
+}
+.auth-field-icon {
+  color: var(--ds-text-faint) !important;
+}
+.auth-field-icon.is-focused {
+  color: var(--ds-brand) !important;
+}
+.auth-mode-track {
+  background: var(--ds-bg-muted) !important;
+  box-shadow: inset 0 0 0 1px var(--ds-border);
+}
+.auth-mode-thumb {
+  background: var(--ds-bg-elevated) !important;
+  box-shadow: var(--ds-shadow-sm);
+}
+.auth-mode-btn {
+  color: var(--ds-text-muted) !important;
+  -webkit-text-fill-color: var(--ds-text-muted) !important;
+}
+.auth-mode-btn.is-active {
+  color: var(--ds-text) !important;
+  -webkit-text-fill-color: var(--ds-text) !important;
+}
+.login-field-shell {
+  background: var(--ds-bg-elevated) !important;
+  border-color: var(--ds-border-strong) !important;
+}
+.login-field-shell.is-focused {
+  border-color: color-mix(in srgb, var(--ds-brand) 65%, transparent) !important;
+}
+.login-input {
+  width: 100%;
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0.85rem 2.75rem 0.85rem 2.55rem;
+  font-weight: 600;
+  font-size: 16px; /* iOS no-zoom */
+  color: var(--ds-text) !important;
+  -webkit-text-fill-color: var(--ds-text) !important;
+  caret-color: var(--ds-brand);
+  outline: none;
+  min-height: 48px;
+}
+.login-input::placeholder {
+  color: var(--ds-text-faint) !important;
+  -webkit-text-fill-color: var(--ds-text-faint) !important;
+  font-weight: 500;
+  opacity: 1;
+}
+/* Override dark landing-shell input force that can blank auth fields */
+.landing-shell .auth-card input.login-input,
+.landing-shell .auth-card .login-input {
+  background: transparent !important;
+  color: var(--ds-text) !important;
+  -webkit-text-fill-color: var(--ds-text) !important;
+  border-color: transparent !important;
+}
+/* Explicit Dark Mode Overrides for Login Form */
+[data-theme='dark'] .auth-card-glow {
+  display: none !important;
+}
+[data-theme='dark'] .login-field-shell {
+  background-color: #11131a !important; /* dark card color */
+  border-color: rgba(248, 250, 252, 0.14) !important;
+}
+[data-theme='dark'] .auth-mode-track {
+  background-color: #161922 !important;
+}
+[data-theme='dark'] .auth-mode-thumb {
+  background-color: #11131a !important;
+}
+[data-theme='dark'] .login-field-shell .auth-field-icon {
+  color: #94a3b8 !important; /* light gray icon */
+}
+[data-theme='dark'] .login-field-shell.is-focused .auth-field-icon {
+  color: #fb923c !important; /* brand orange */
+}
+[data-theme='dark'] .landing-shell .auth-card input.login-input,
+[data-theme='dark'] .landing-shell .auth-card .login-input,
+[data-theme='dark'] .login-input {
+  background: transparent !important;
+  color: #f1f5f9 !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
+  border-color: transparent !important;
+}
+[data-theme='dark'] .login-input::placeholder {
+  color: #64748b !important;
+  -webkit-text-fill-color: #64748b !important;
+}
+[data-theme='dark'] .auth-remember {
+  color: #cbd5e1 !important;
+}
+[data-theme='dark'] .auth-mode-btn {
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
+}
+[data-theme='dark'] .auth-mode-btn.is-active {
+  color: #f1f5f9 !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
+}
+.auth-submit-btn {
+  background: linear-gradient(135deg, #0e1117 0%, #1a1a1a 100%) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  box-shadow: 0 16px 40px rgba(14, 17, 23, 0.28);
+  border: none !important;
+}
+.auth-submit-btn *,
+.auth-submit-btn span,
+.auth-submit-btn svg {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  stroke: #ffffff;
+}
+.auth-btn-spinner {
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  border-top-color: #ffffff;
+  animation: routeSpin 0.7s linear infinite;
+}
+.auth-google {
+  border: 1px solid var(--ds-border-strong) !important;
+  background: var(--ds-bg-elevated) !important;
+  color: var(--ds-text) !important;
+  box-shadow: var(--ds-shadow-xs);
+}
+.auth-google:hover {
+  background: var(--ds-bg-muted) !important;
+}
+.auth-link {
+  color: var(--ds-brand) !important;
+  -webkit-text-fill-color: var(--ds-brand) !important;
+}
+.auth-link:hover {
+  filter: brightness(1.08);
+  text-decoration: underline;
+}
+.auth-remember {
+  color: var(--ds-text-secondary) !important;
+}
+.auth-demo {
+  color: var(--ds-text-muted) !important;
+}
+.auth-demo strong {
+  color: var(--ds-text) !important;
+  font-weight: 700;
+}
+.auth-divider {
+  background: linear-gradient(90deg, transparent, var(--ds-border-strong), transparent);
+}
+.auth-alert-error {
+  border: 1px solid var(--ds-danger-border);
+  background: var(--ds-danger-bg);
+  color: var(--ds-danger) !important;
+}
+.auth-alert-ok {
+  border: 1px solid var(--ds-success-border);
+  background: var(--ds-success-bg);
+  color: var(--ds-success) !important;
+}
+.auth-privacy {
+  border: 1px solid color-mix(in srgb, var(--ds-brand) 22%, transparent);
+  background: linear-gradient(135deg, var(--ds-brand-soft), var(--ds-bg-elevated));
+}
+.auth-privacy-icon {
+  background: var(--ds-bg-elevated);
+  color: var(--ds-brand);
+  border: 1px solid color-mix(in srgb, var(--ds-brand) 20%, transparent);
+  box-shadow: var(--ds-shadow-xs);
+}
+
+/* Do NOT let dark landing force auth-card to charcoal white-text mess */
+[data-theme='dark'] .landing-shell .auth-card.bg-white,
+[data-theme='dark'] .landing-shell .auth-card {
+  background: var(--ds-bg-elevated) !important;
+  color: var(--ds-text) !important;
+}
+
+/* ── Fix light-mode over-aggressive white→black remaps ── */
+/* Only remap white text when NOT on solid dark/brand surfaces */
+.landing-home-light .btn-orange,
+.landing-home-light .btn-orange *,
+.landing-home-light .zn-cta-primary,
+.landing-home-light .zn-cta-primary *,
+.landing-home-light .zn-cta-coral,
+.landing-home-light .zn-cta-coral *,
+.landing-home-light .auth-submit-btn,
+.landing-home-light .auth-submit-btn *,
+.landing-home-light a.bg-\[\#F97316\],
+.landing-home-light button.bg-\[\#F97316\],
+.landing-home-light .bg-\[\#F97316\] .text-white,
+.landing-home-light .bg-primary-dark,
+.landing-home-light .bg-primary-dark * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Dark mode: never leave ink text on dark elevated surfaces */
+[data-theme='dark'] .landing-shell .text-\[\#0e1117\],
+[data-theme='dark'] .landing-shell .text-\[\#0E1117\],
+[data-theme='dark'] .landing-shell .text-\[\#111827\],
+[data-theme='dark'] .landing-shell .text-\[\#0b0d12\],
+[data-theme='dark'] .landing-shell .text-\[\#0B0D12\] {
+  color: var(--ds-text) !important;
+}
+[data-theme='dark'] .landing-shell .text-\[\#6b7280\],
+[data-theme='dark'] .landing-shell .text-\[\#64748b\],
+[data-theme='dark'] .landing-shell .text-\[\#9ca3af\],
+[data-theme='dark'] .landing-shell .text-\[\#9CA3AF\] {
+  color: var(--ds-text-muted) !important;
+}
+
+/* Light mode: never leave pure white text on light page sections (outside hero/dark bands) */
+[data-theme='light'] .landing-shell main .text-white\/40,
+[data-theme='light'] .landing-shell main .text-white\/50 {
+  color: #64748b;
+}
+
+/* Ensure section titles always contrast with section bg */
+[data-theme='dark'] .landing-shell .section-title {
+  color: #f3f4f6 !important;
+}
+[data-theme='light'] .landing-shell .section-title {
+  color: #0b0d12 !important;
+}
+[data-theme='light'] .landing-shell #hero .section-title,
+[data-theme='light'] .landing-shell .section-dark .section-title,
+[data-theme='light'] .landing-shell footer .section-title {
+  color: #ffffff !important;
+}
+
+/* Tables / tool pages readability */
+[data-theme='dark'] .landing-shell .table-head {
+  background: #151821 !important;
+  color: #f8fafc !important;
+}
+[data-theme='dark'] .landing-shell .table-row-alt {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Responsive polish */
+@media (max-width: 640px) {
+  .auth-page {
+    min-height: calc(100dvh - 4.5rem);
+  }
+  .auth-card {
+    border-radius: 1.35rem !important;
+  }
+  .login-input {
+    min-height: 46px;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+  /* Avoid hover jank on touch */
+  .zn-card:hover {
+    transform: none;
+  }
+}
+
+/* Performance: content-visibility off for interactive sections already set */
+img {
+  content-visibility: auto;
+}
+
+/* Reduce expensive blur on low-end */
+@media (max-width: 768px) {
+  .glass-panel,
+  .nav-surface {
+    backdrop-filter: blur(10px) !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-spinner,
+  .auth-btn-spinner {
+    animation: none !important;
+    border-top-color: var(--ds-brand);
+  }
+}
+
+/* Password eye button on auth */
+.auth-card button[aria-label='Hide password'],
+.auth-card button[aria-label='Show password'] {
+  color: var(--ds-text-muted) !important;
+}
+.auth-card button[aria-label='Hide password']:hover,
+.auth-card button[aria-label='Show password']:hover {
+  color: var(--ds-text) !important;
+  background: var(--ds-bg-muted) !important;
+}
+
+/* Visual stage card on login left */
+.auth-page .relative.z-10.overflow-hidden.rounded-\[1\.75rem\] {
+  border-color: var(--ds-border) !important;
+}

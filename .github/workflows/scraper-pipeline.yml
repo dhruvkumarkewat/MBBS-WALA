@@ -1,0 +1,42 @@
+name: Continuous Medical Counselling Data Pipeline
+
+on:
+  schedule:
+    # Run every 15 minutes 24/7 in the cloud
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI anytime
+
+jobs:
+  scrape-and-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: Install Backend Dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Run Automated Scraper Pipeline
+        working-directory: ./backend
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://afrrwsxuznkyewkndzff.supabase.co' }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'sb_publishable_5D517PLNdF92v3Q1s6Dp_w_WaZtsrPo' }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'sb_publishable_5D517PLNdF92v3Q1s6Dp_w_WaZtsrPo' }}
+          SCRAPER_CONCURRENCY: 3
+        run: npm run scraper:sync
+
+      - name: Verify Scraped Data Status
+        working-directory: ./backend
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://afrrwsxuznkyewkndzff.supabase.co' }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'sb_publishable_5D517PLNdF92v3Q1s6Dp_w_WaZtsrPo' }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'sb_publishable_5D517PLNdF92v3Q1s6Dp_w_WaZtsrPo' }}
+        run: npm run scraper:status

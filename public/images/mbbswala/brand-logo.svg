@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 200" fill="none" role="img" aria-label="MBBS WAALA">
+  <!-- Stethoscope arch -->
+  <path d="M150 78c0-34 28-58 62-58s62 24 62 58" stroke="#2196F3" stroke-width="14" stroke-linecap="round" fill="none"/>
+  <circle cx="150" cy="78" r="14" fill="#2196F3"/>
+  <circle cx="274" cy="78" r="14" fill="#2196F3"/>
+  <!-- Tube down between letters -->
+  <path d="M212 95c8 28 4 55-18 78" stroke="#2196F3" stroke-width="12" stroke-linecap="round" fill="none"/>
+  <circle cx="190" cy="178" r="11" fill="#2196F3"/>
+  <!-- Chat bubbles -->
+  <rect x="228" y="18" width="52" height="40" rx="14" fill="#E91E63"/>
+  <path d="M246 58l10 16 10-16h-20z" fill="#E91E63"/>
+  <path d="M244 32c4-5 12-5 16 0 4 5 1 12-5 17-2 1.5-4 3-6 4-2-1-4-2.5-6-4-6-5-9-12-5-17z" fill="#fff"/>
+  <path d="M248 36c1.2-1.2 3.2-1.2 4.4 0" stroke="#E91E63" stroke-width="1.6" stroke-linecap="round"/>
+  <rect x="258" y="36" width="44" height="34" rx="12" fill="#F06292"/>
+  <!-- Wordmark -->
+  <text x="8" y="148" font-family="Arial Black, Helvetica Neue, Arial, sans-serif" font-size="72" font-weight="900" fill="#2196F3" letter-spacing="-2">MBBS</text>
+  <text x="292" y="148" font-family="Arial Black, Helvetica Neue, Arial, sans-serif" font-size="72" font-weight="900" fill="#E91E63" letter-spacing="-2">WAALA</text>
+</svg>
