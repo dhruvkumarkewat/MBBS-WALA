@@ -10,11 +10,14 @@ export default async function handler(req, res) {
     if (!user) return; // requireUser sends 401
 
     // Fetch the student_counselling record for this user
-    let { data: counselling } = await supabase
+    const { data: counsellingData } = await supabase
       .from('student_counselling')
       .select('id, assigned_to')
       .eq('user_id', user.id)
-      .maybeSingle();
+      .order('id', { ascending: false })
+      .limit(1);
+
+    let counselling = counsellingData?.[0];
 
     if (!counselling) {
       const fullName = user.user_metadata?.full_name || user.email || 'Student';

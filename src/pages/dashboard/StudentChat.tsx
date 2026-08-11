@@ -15,6 +15,7 @@ interface Counselor {
   id: string;
   full_name: string;
   avatar_url?: string;
+  is_online?: boolean;
 }
 
 export default function StudentChat() {
@@ -119,13 +120,13 @@ export default function StudentChat() {
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-orange-500/30">
               {counselor?.full_name?.charAt(0) || 'C'}
             </div>
-            <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full"></div>
+            <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 ${counselor?.is_online !== false ? 'bg-green-500' : 'bg-slate-400'} border-2 border-white dark:border-slate-900 rounded-full`}></div>
           </div>
           <div>
             <h2 className="font-bold text-lg text-slate-900 dark:text-white tracking-tight">{counselor?.full_name}</h2>
             <div className="flex items-center gap-1.5 text-xs font-medium text-orange-500 dark:text-orange-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>
-              Your Assigned Counselor
+              <span className={`w-1.5 h-1.5 rounded-full ${counselor?.is_online !== false ? 'bg-green-500 animate-pulse' : 'bg-slate-400'}`}></span>
+              {counselor?.is_online !== false ? 'Online Now' : 'Offline'}
             </div>
           </div>
         </div>

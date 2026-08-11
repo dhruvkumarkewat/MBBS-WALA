@@ -11,13 +11,14 @@ export default async function handler(req, res) {
 
     if (req.method === 'GET') {
       // 1. Get student's counselling record
-      const { data: counsellingData } = await supabase
+      const { data: counsellingDataList } = await supabase
         .from('student_counselling')
         .select('assigned_to')
         .eq('user_id', user.id)
-        .maybeSingle();
-
-      let counselling = counsellingData;
+        .order('id', { ascending: false })
+        .limit(1);
+      
+      let counselling = counsellingDataList?.[0];
 
       if (!counselling) {
         // Auto-create a stub profile so chat works
