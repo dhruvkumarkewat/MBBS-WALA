@@ -29,11 +29,11 @@ export default function StudentChat() {
 
   const fetchCounselorAndMessages = async () => {
     try {
-      const cRes = await apiJson<any>('/api/assigned-counselor');
+      const cRes = await apiJson<any>('/api/assigned-counselor', {}, true);
       if (cRes.error) throw new Error(cRes.error);
       setCounselor(cRes as Counselor);
 
-      const mRes = await apiJson<any>(`/api/messages?otherUserId=${cRes.id}`);
+      const mRes = await apiJson<any>(`/api/messages?otherUserId=${cRes.id}`, {}, true);
       if (mRes.error) throw new Error(mRes.error);
       setMessages(mRes as Message[]);
     } catch (err: any) {
@@ -49,7 +49,7 @@ export default function StudentChat() {
     // Simple polling for new messages every 10 seconds
     const interval = setInterval(() => {
       if (counselor?.id) {
-        apiJson<any>(`/api/messages?otherUserId=${counselor.id}`).then((res) => {
+        apiJson<any>(`/api/messages?otherUserId=${counselor.id}`, {}, true).then((res) => {
           if (!res.error) setMessages(res as Message[]);
         });
       }
@@ -73,7 +73,7 @@ export default function StudentChat() {
         body: JSON.stringify({
           content: newMessage
         })
-      });
+      }, true);
       if (res.error) throw new Error(res.error);
       setMessages(prev => [...prev, res as Message]);
       setNewMessage('');
