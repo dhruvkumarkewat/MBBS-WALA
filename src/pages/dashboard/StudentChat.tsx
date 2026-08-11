@@ -60,7 +60,7 @@ export default function StudentChat() {
           }
         });
       }
-    }, 10000);
+    }, 2000);
     
     return () => clearInterval(interval);
   }, [counselor?.id]);
