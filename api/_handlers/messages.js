@@ -12,12 +12,11 @@ export default async function handler(req, res) {
     // Fetch the student_counselling record for this user
     const { data: counsellingData } = await supabase
       .from('student_counselling')
-      .select('id, assigned_to')
+      .select('id, assigned_to, full_name')
       .eq('user_id', user.id)
-      .order('id', { ascending: false })
-      .limit(1);
+      .order('id', { ascending: false });
 
-    let counselling = counsellingData?.[0];
+    let counselling = counsellingData?.find(c => c.assigned_to) || counsellingData?.[0];
 
     if (!counselling) {
       const fullName = user.user_metadata?.full_name || user.email || 'Student';

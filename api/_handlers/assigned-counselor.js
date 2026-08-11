@@ -13,12 +13,11 @@ export default async function handler(req, res) {
       // 1. Get student's counselling record
       const { data: counsellingDataList } = await supabase
         .from('student_counselling')
-        .select('assigned_to')
+        .select('id, assigned_to')
         .eq('user_id', user.id)
-        .order('id', { ascending: false })
-        .limit(1);
+        .order('id', { ascending: false });
       
-      let counselling = counsellingDataList?.[0];
+      let counselling = counsellingDataList?.find(c => c.assigned_to) || counsellingDataList?.[0];
 
       if (!counselling) {
         // Auto-create a stub profile so chat works
