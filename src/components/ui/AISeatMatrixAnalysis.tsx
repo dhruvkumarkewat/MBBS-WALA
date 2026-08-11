@@ -68,7 +68,7 @@ export function AISeatMatrixAnalysis({ searchQuery, s = { dark: true } }: AISeat
       <div className="flex items-center gap-2 mb-4 relative z-10">
         <Sparkles className="w-5 h-5 text-orange-500" />
         <h3 className={`font-black text-sm uppercase tracking-wider ${s.dark ? 'text-white' : 'text-slate-900'}`}>
-          Gemini AI Seat Matrix Analysis
+          AI Seat Matrix Analysis
         </h3>
       </div>
 

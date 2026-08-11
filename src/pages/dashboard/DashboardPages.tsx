@@ -1701,7 +1701,9 @@ export function DashSeatMatrixPage() {
       
       <AISeatMatrixAnalysis searchQuery={debouncedSearch} s={s} />
 
-      <div className={`rounded-2xl border overflow-x-auto ${s.card}`}>
+      {!(debouncedSearch && debouncedSearch.trim().length > 2) && (
+        <>
+          <div className={`rounded-2xl border overflow-x-auto ${s.card}`}>
         {loading ? (
           <div className="p-10 text-center">
             <Loader2 className="w-6 h-6 animate-spin mx-auto" />
@@ -1808,6 +1810,8 @@ export function DashSeatMatrixPage() {
             Next
           </button>
         </div>
+      )}
+        </>
       )}
       <CollegeInfoModal 
         collegeName={selectedCollegeInfo} 

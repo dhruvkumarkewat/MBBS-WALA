@@ -51,6 +51,7 @@ import withdrawals from './_handlers/withdrawals.js';
 const routes = {
   'ai-predict': aiPredict,
   'ai-college-info': aiCollegeInfo,
+  'ai-seat-matrix-info': (await import('./_handlers/ai-seat-matrix-info.js')).default,
   'ai-chat': aiChat,
   'admin-activity': adminActivity,
   'admin-auth': adminAuth,
