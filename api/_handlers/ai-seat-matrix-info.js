@@ -6,11 +6,11 @@ Analyze the provided seat matrix data for this college. If no seat matrix data i
 Return ONLY valid JSON exactly matching this structure (be concise but highly informative):
 {
   "college_name": "Full, correct name of the college (fix any typos the user made)",
-  "total_seats": "Number of total seats (e.g. '250') or 'N/A'",
-  "state_quota_seats": "Number of state quota seats or 'N/A'",
-  "aiq_seats": "Number of All India Quota seats or 'N/A'",
-  "nri_seats": "Number of NRI seats or 'N/A'",
-  "management_quota_seats": "Number of Management Quota seats or 'N/A'",
+  "total_seats": "Total number of seats (e.g. '250', MUST provide a number)",
+  "state_quota_seats": "Number of state quota seats. If unknown, approximate based on 85% rule or typical private college seats. Use '~' if approximate. If not applicable, return '0'. Do not return 'N/A'.",
+  "aiq_seats": "Number of All India Quota seats. If unknown, approximate based on 15% rule. If private college and not applicable, return '0'. Do not return 'N/A'.",
+  "nri_seats": "Number of NRI seats. If unknown, approximate based on 15% rule for private colleges. If not applicable, return '0'. Do not return 'N/A'.",
+  "management_quota_seats": "Number of Management Quota seats. Calculate remaining seats. If not applicable, return '0'. Do not return 'N/A'.",
   "ai_verdict": "A 1-2 sentence AI verdict/summary of this college's seat matrix",
   "seat_breakdown_summary": "A 1 sentence summary of the major quotas available.",
   "key_insights": [
