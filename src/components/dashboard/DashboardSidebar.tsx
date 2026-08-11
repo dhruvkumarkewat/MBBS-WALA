@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
+  MessageSquare,
   Sparkles,
   Crosshair,
   Map,
@@ -35,6 +36,7 @@ const sections: { title: string; items: Item[] }[] = [
     title: 'Overview',
     items: [
       { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+      { label: 'Chat with Counselor', path: '/dashboard/chat', icon: MessageSquare, badge: 'New' },
       { label: 'AI Assistant', path: '/dashboard/ai', icon: Sparkles, badge: 'New' },
     ],
   },
