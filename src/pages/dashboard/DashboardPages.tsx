@@ -37,6 +37,7 @@ import { useDashboard } from '../../contexts/DashboardContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { CollegeInfoModal } from '../../components/ui/CollegeInfoModal';
 import { apiJson } from '../../lib/api';
+import { AISeatMatrixAnalysis } from '../../components/ui/AISeatMatrixAnalysis';
 import { usePremium, UpgradePrompt, PremiumGate } from '../../lib/premium';
 import { INDIAN_STATES, COUNSELLING_ROUNDS } from '../../lib/courses';
 import { PredictorResults } from './PredictorResults';
@@ -1697,8 +1698,9 @@ export function DashSeatMatrixPage() {
           </div>
         </div>
       </div>
-
       
+      <AISeatMatrixAnalysis searchQuery={debouncedSearch} s={s} />
+
       <div className={`rounded-2xl border overflow-x-auto ${s.card}`}>
         {loading ? (
           <div className="p-10 text-center">

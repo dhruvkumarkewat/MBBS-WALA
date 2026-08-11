@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { MEDICAL_COURSES } from '../lib/courses';
+import { AISeatMatrixAnalysis } from '../components/ui/AISeatMatrixAnalysis';
 
 interface SeatRow {
   id: number;
@@ -109,6 +110,8 @@ export default function SeatMatrix() {
           ))}
         </div>
       </div>
+      
+      <AISeatMatrixAnalysis searchQuery={q} s={{ dark: false }} />
 
       {loading ? (
         <div className="h-64 bg-grey-bg-light animate-pulse rounded-xl" />
