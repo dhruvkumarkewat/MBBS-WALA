@@ -594,6 +594,27 @@ export default async function handler(req, res) {
         aiResponse.management_quota_opportunities = [];
       }
       
+      // Override hallucinated private options with actual private colleges from the DB
+      if (aiResponse.unlikely_mbbs_guidance && aiResponse.unlikely_mbbs_guidance.active) {
+        const realPrivateColleges = exactData.colleges
+          .filter(c => c.quota_code !== 'AIQ' && c.quota_code !== 'State' && c.quota_code !== 'All India')
+          .slice(0, 3);
+          
+        if (realPrivateColleges.length > 0) {
+          aiResponse.unlikely_mbbs_guidance.private_options = realPrivateColleges.map(c => ({
+            name: c.college_name,
+            state: c.state || 'India',
+            fees: c.fee_amount || '₹15,00,000 / year',
+            probability: c.chance_tier === 'High' ? 'High' : (c.chance_tier === 'Moderate' ? 'Moderate' : 'Low'),
+            rounds: c.round_name || 'Mop-Up',
+            management_quota: c.quota_code === 'Management',
+            nri_seats: false
+          }));
+        } else {
+          aiResponse.unlikely_mbbs_guidance.private_options = [];
+        }
+      }
+      
       // Pass the verified scholarships with official portals to the UI
       aiResponse.exact_scholarships = exactData.scholarships;
 
