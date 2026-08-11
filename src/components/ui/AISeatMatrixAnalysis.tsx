@@ -36,8 +36,14 @@ export function AISeatMatrixAnalysis({ searchQuery, s = { dark: true } }: AISeat
         if (json.college_name && json._raw_data_count > 0) {
           setData(json);
         } else {
-          // If no data found in DB, don't show hallucinations
-          setData(null);
+          // If no data found in DB, show a friendly message instead of hiding
+          setData({
+            college_name: searchQuery.trim(),
+            ai_verdict: "We couldn't find exact seat matrix data for this search term in our database.",
+            seat_breakdown_summary: "Try using the exact college name or checking your spelling.",
+            key_insights: ["No historical data available for this query."],
+            recommendation: "Ensure you are using the correct college name as listed in the NMC/MCC directories."
+          });
         }
       } catch (err: any) {
         setError(err.message);
