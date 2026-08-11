@@ -26,9 +26,7 @@ export default async function (req, res) {
   }
 
   try {
-    let body = '';
-    for await (const chunk of req) body += chunk.toString();
-    const { messages, userContext } = JSON.parse(body);
+    const { messages, userContext } = req.body || {};
 
     if (!messages || !Array.isArray(messages)) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -36,9 +34,8 @@ export default async function (req, res) {
     }
 
     const keys = [
-      'AQ.Ab8RN6Ls_' + 'LDZeLv7SNIlQ7t' + '-k47js_6P5jQRR7puDzAiP6qSxg',
       process.env.GEMINI_API_KEY,
-      process.env.GEMINI_API_KEY_2,
+      ...Array.from({length: 15}, (_, i) => process.env[`GEMINI_API_KEY_${i + 1}`]),
       process.env.GEMINI_API_KEY_FALLBACK
     ].filter(Boolean);
 
