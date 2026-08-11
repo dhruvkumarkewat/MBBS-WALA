@@ -803,7 +803,7 @@ export function FinderPage() {
   const [total, setTotal] = useState(0);
   const [savedIds, setSavedIds] = useState<Set<number>>(new Set());
   const [error, setError] = useState('');
-  const [selectedCollegeInfo, setSelectedCollegeInfo] = useState<string | null>(null);
+  const [selectedCollegeInfo, setSelectedCollegeInfo] = useState<any>(null);
 
   const loadSaved = useCallback(async () => {
     try {
@@ -1604,7 +1604,7 @@ export function DashSeatMatrixPage() {
   const [error, setError] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [selectedCollegeInfo, setSelectedCollegeInfo] = useState<string | null>(null);
+  const [selectedCollegeInfo, setSelectedCollegeInfo] = useState<any>(null);
 
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
