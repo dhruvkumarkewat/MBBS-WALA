@@ -93,6 +93,29 @@ export function AISeatMatrixAnalysis({ searchQuery, s = { dark: true } }: AISeat
             <div className={`p-4 rounded-xl text-sm ${s.dark ? 'bg-white/5 border border-white/10' : 'bg-white border border-slate-200 shadow-sm'}`}>
               <p className="font-bold mb-2 text-orange-500">Seat Breakdown Summary:</p>
               <p className={s.dark ? 'text-slate-300' : 'text-slate-700'}>{data.seat_breakdown_summary}</p>
+              
+              <div className={`grid grid-cols-2 md:grid-cols-5 gap-3 mt-4 pt-4 border-t ${s.dark ? 'border-white/10' : 'border-slate-200'}`}>
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-bold opacity-50">Total</span>
+                  <span className="font-black text-lg text-orange-500">{data.total_seats || 'N/A'}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-bold opacity-50">AIQ</span>
+                  <span className="font-black text-lg">{data.aiq_seats || 'N/A'}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-bold opacity-50">State</span>
+                  <span className="font-black text-lg">{data.state_quota_seats || 'N/A'}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-bold opacity-50">NRI</span>
+                  <span className="font-black text-lg">{data.nri_seats || 'N/A'}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-bold opacity-50">Mgmt</span>
+                  <span className="font-black text-lg">{data.management_quota_seats || 'N/A'}</span>
+                </div>
+              </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -6,7 +6,12 @@ Analyze the provided seat matrix data for this college. If no seat matrix data i
 Return ONLY valid JSON exactly matching this structure (be concise but highly informative):
 {
   "college_name": "Full, correct name of the college (fix any typos the user made)",
-  "ai_verdict": "A 1-2 sentence AI verdict/summary of this college's seat matrix (e.g. 'This college has a high number of All India seats, making it a great option for out-of-state students.')",
+  "total_seats": "Number of total seats (e.g. '250') or 'N/A'",
+  "state_quota_seats": "Number of state quota seats or 'N/A'",
+  "aiq_seats": "Number of All India Quota seats or 'N/A'",
+  "nri_seats": "Number of NRI seats or 'N/A'",
+  "management_quota_seats": "Number of Management Quota seats or 'N/A'",
+  "ai_verdict": "A 1-2 sentence AI verdict/summary of this college's seat matrix",
   "seat_breakdown_summary": "A 1 sentence summary of the major quotas available.",
   "key_insights": [
     "Insight 1 (e.g. It has 15% NRI quota seats)",
