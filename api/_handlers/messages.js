@@ -1,13 +1,13 @@
 import supabase from './db-client.js';
-import { setCors, verifyAuth } from './_auth.js';
+import { setCors, requireUser } from './_auth.js';
 
 export default async function handler(req, res) {
   setCors(res);
   if (req.method === 'OPTIONS') return res.status(204).end();
 
   try {
-    const user = await verifyAuth(req, res);
-    if (!user) return; // verifyAuth sends 401
+    const user = await requireUser(req, res);
+    if (!user) return; // requireUser sends 401
 
     // Fetch the student_counselling record for this user
     const { data: counselling } = await supabase
