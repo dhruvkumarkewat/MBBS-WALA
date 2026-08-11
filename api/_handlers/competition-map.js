@@ -547,33 +547,30 @@ export default async function handler(req, res) {
       very_difficult: userRank ? [...list].filter(r => r.admission_probability < 0.45).sort((a,b) => a.admission_probability - b.admission_probability).slice(0, 5).map(r => ({ state_name: r.state_name, competition_score: Math.round(r.admission_probability * 100) + '%' })) : undefined,
     };
 
-    // AI Map Analysis — only for premium users (saves cost + prevents data leakage)
-    if (isPremium) {
-      try {
-        const { callAI } = await import('./ai-service.js');
-        const aiPrompt = `You are an expert NEET Medical Admissions Counsellor. 
+    // AI Map Analysis — generate for all users to enrich the map overview
+    try {
+      const { callAI } = await import('./ai-service.js');
+      const aiPrompt = `You are an expert NEET Medical Admissions Counsellor. 
 Analyze this map data for a student with AIR ${userRank || 'Not provided'}, Category: ${category}, Quotas: ${quota}.
-The safest states for them are: ${summary.easiest.map(e => e.state_name).join(', ')}.
-The toughest states are: ${summary.hottest.map(e => e.state_name).join(', ')}.
+The safest states for them are: ${(summary.easiest || []).map(e => e.state_name).join(', ')}.
+The toughest states are: ${(summary.hottest || []).map(e => e.state_name).join(', ')}.
 Total states analyzed: ${list.length}.
 
 Write a personalized 2-sentence summary providing strategic advice on which state quotas or management quotas they should target. Do not use markdown, just plain text. Return it in JSON format: {"summary_text": "..."}`;
-        
-        const aiResponseText = await callAI(
-          "You are an expert NEET Admissions Analyst. ONLY RETURN VALID JSON.",
-          aiPrompt,
-          true
-        );
-        
-        if (aiResponseText) {
-          const aiJson = JSON.parse(aiResponseText);
-          if (aiJson.summary_text) {
-            summary.ai_analysis = aiJson.summary_text;
-          }
+      
+      const aiResponse = await callAI({
+        system_prompt: 'You are an expert NEET Admissions Analyst. ONLY RETURN VALID JSON with key "summary_text".',
+        user_prompt: aiPrompt,
+      });
+      
+      if (aiResponse && typeof aiResponse === 'object') {
+        const summaryText = aiResponse.summary_text || aiResponse.text || null;
+        if (summaryText) {
+          summary.ai_analysis = summaryText;
         }
-      } catch (e) {
-        console.error("AI Map Summary Error:", e);
       }
+    } catch (e) {
+      console.error("AI Map Summary Error:", e.message || e);
     }
 
     // For free users: strip all premium fields from every state record and the summary
@@ -587,6 +584,11 @@ Write a personalized 2-sentence summary providing strategic advice on which stat
         // hottest/easiest: only state names + competition score — no detailed data
         hottest: (summary.hottest || []).map(r => ({ state_name: r.state_name, competition_score: r.competition_score })),
         easiest: (summary.easiest || []).map(r => ({ state_name: r.state_name, competition_score: r.competition_score })),
+        // Include AI analysis and rank-based chance lists for all users
+        ai_analysis: summary.ai_analysis || null,
+        highest_chance: summary.highest_chance,
+        moderate_chance: summary.moderate_chance,
+        very_difficult: summary.very_difficult,
         premiumRequired: true,
         accessTier: 'free',
       };
