@@ -29,13 +29,13 @@ export default function StudentChat() {
 
   const fetchCounselorAndMessages = async () => {
     try {
-      const cRes = await apiJson('/api/assigned-counselor');
+      const cRes = await apiJson<any>('/api/assigned-counselor');
       if (cRes.error) throw new Error(cRes.error);
-      setCounselor(cRes);
+      setCounselor(cRes as Counselor);
 
-      const mRes = await apiJson(`/api/messages?otherUserId=${cRes.id}`);
+      const mRes = await apiJson<any>(`/api/messages?otherUserId=${cRes.id}`);
       if (mRes.error) throw new Error(mRes.error);
-      setMessages(mRes);
+      setMessages(mRes as Message[]);
     } catch (err: any) {
       setError(err.message || 'Failed to load chat');
     } finally {
@@ -49,8 +49,8 @@ export default function StudentChat() {
     // Simple polling for new messages every 10 seconds
     const interval = setInterval(() => {
       if (counselor?.id) {
-        apiJson(`/api/messages?otherUserId=${counselor.id}`).then((res) => {
-          if (!res.error) setMessages(res);
+        apiJson<any>(`/api/messages?otherUserId=${counselor.id}`).then((res) => {
+          if (!res.error) setMessages(res as Message[]);
         });
       }
     }, 10000);
@@ -68,14 +68,14 @@ export default function StudentChat() {
 
     setSending(true);
     try {
-      const res = await apiJson('/api/messages', {
+      const res = await apiJson<any>('/api/messages', {
         method: 'POST',
         body: JSON.stringify({
           content: newMessage
         })
       });
       if (res.error) throw new Error(res.error);
-      setMessages(prev => [...prev, res]);
+      setMessages(prev => [...prev, res as Message]);
       setNewMessage('');
     } catch (err: any) {
       alert(err.message);
