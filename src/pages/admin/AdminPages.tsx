@@ -773,6 +773,9 @@ export function AdminStudentDetailPage() {
       const s = await apiJson<any[]>('/api/admin-staff', {}, true);
       setStaff(s.filter((x) => x.is_active));
     }
+    
+    // Clear chat notifications since admin is viewing this student
+    apiJson('/api/notifications', { method: 'PUT', body: JSON.stringify({ mark_chat: true }) }, true).catch(() => {});
   }, [id]);
 
   useEffect(() => {

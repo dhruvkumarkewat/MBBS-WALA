@@ -63,6 +63,17 @@ export default async function handler(req, res) {
         .single();
       if (error) throw error;
 
+      if (st.user_id) {
+        await supabase.from('notifications').insert({
+          user_id: st.user_id,
+          title: `New message from ${staff.full_name || 'Counselor'}`,
+          description: message.trim().substring(0, 100),
+          type: 'chat',
+          read: false,
+          created_at: new Date().toISOString()
+        });
+      }
+
       await supabase
         .from('student_counselling')
         .update({ updated_at: new Date().toISOString() })

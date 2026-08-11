@@ -37,6 +37,9 @@ export default function StudentChat() {
       const mRes = await apiJson<any>(`/api/messages?otherUserId=${cRes.id}`, {}, true);
       if (mRes.error) throw new Error(mRes.error);
       setMessages(mRes as Message[]);
+      
+      // Clear chat notifications since they have viewed the chat
+      apiJson('/api/notifications', { method: 'PUT', body: JSON.stringify({ mark_chat: true }) }, true).catch(() => {});
     } catch (err: any) {
       setError(err.message || 'Failed to load chat');
     } finally {
@@ -51,7 +54,10 @@ export default function StudentChat() {
     const interval = setInterval(() => {
       if (counselor?.id) {
         apiJson<any>(`/api/messages?otherUserId=${counselor.id}`, {}, true).then((res) => {
-          if (!res.error) setMessages(res as Message[]);
+          if (!res.error) {
+            setMessages(res as Message[]);
+            apiJson('/api/notifications', { method: 'PUT', body: JSON.stringify({ mark_chat: true }) }, true).catch(() => {});
+          }
         });
       }
     }, 10000);
@@ -95,6 +101,23 @@ export default function StudentChat() {
   }
 
   if (error) {
+    if (error === 'No counselor available') {
+      return (
+        <div className="flex flex-col items-center justify-center h-[70vh] text-center px-6">
+          <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-6 shadow-inner">
+            <AlertCircle className="w-10 h-10 text-slate-400 dark:text-slate-500" />
+          </div>
+          <h3 className="text-2xl font-black tracking-tight text-slate-800 dark:text-white mb-3">Chat Locked</h3>
+          <p className="text-slate-500 dark:text-slate-400 max-w-sm mb-6 leading-relaxed">
+            Your chat is currently locked. A counselor will be assigned to you soon! Once assigned, you'll receive a notification and this chat will open up.
+          </p>
+          <button onClick={() => { setLoading(true); setError(null); fetchCounselorAndMessages(); }} className="zn-cta px-6 py-2.5 flex items-center gap-2 rounded-xl text-sm font-bold shadow-lg shadow-orange-500/20">
+            <RefreshCw className="w-4 h-4" /> Refresh Status
+          </button>
+        </div>
+      );
+    }
+    
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] text-center">
         <AlertCircle className="w-12 h-12 text-red-500 mb-4" />

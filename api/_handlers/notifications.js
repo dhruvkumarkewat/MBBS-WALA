@@ -21,7 +21,17 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'PUT') {
-      const { id, read, mark_all } = req.body || {};
+      const { id, read, mark_all, mark_chat } = req.body || {};
+      if (mark_chat) {
+        const { error } = await supabase
+          .from('notifications')
+          .update({ read: true })
+          .eq('user_id', user.id)
+          .eq('type', 'chat')
+          .eq('read', false);
+        if (error) throw error;
+        return res.status(200).json({ ok: true });
+      }
       if (mark_all) {
         const { error } = await supabase
           .from('notifications')

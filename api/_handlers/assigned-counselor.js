@@ -33,19 +33,7 @@ export default async function handler(req, res) {
 
       let counselorId = counselling?.assigned_to;
 
-      // 2. If no counselor assigned, fallback to a super_admin
-      if (!counselorId) {
-        const { data: admin } = await supabase
-          .from('staff_profiles')
-          .select('user_id')
-          .eq('role', 'super_admin')
-          .limit(1)
-          .maybeSingle();
-        
-        if (admin) {
-          counselorId = admin.user_id;
-        }
-      }
+      // 2. If no counselor assigned, return 404 to lock the chat
 
       if (!counselorId) {
         return res.status(404).json({ error: 'No counselor available' });

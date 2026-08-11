@@ -63,6 +63,18 @@ export default async function handler(req, res) {
         .single();
 
       if (error) throw error;
+
+      if (counselling.assigned_to) {
+        await supabase.from('notifications').insert({
+          user_id: counselling.assigned_to,
+          title: `New message from ${counselling.full_name || 'Student'}`,
+          description: content.trim().substring(0, 100),
+          type: 'chat',
+          read: false,
+          created_at: new Date().toISOString()
+        });
+      }
+
       return res.status(201).json(data);
     }
 
