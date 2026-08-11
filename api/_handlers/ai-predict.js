@@ -564,6 +564,36 @@ export default async function handler(req, res) {
         reach: exactData.colleges.filter(c => c.chance_tier === 'Reach').map(mapCollege)
       };
       
+      // Override hallucinated management quotas with actual Management/Deemed colleges from the DB
+      const realManagementColleges = exactData.colleges
+          .filter(c => c.quota_code === 'Management' || c.quota_code === 'Deemed-Central')
+          .slice(0, 3);
+          
+      if (realManagementColleges.length > 0) {
+        aiResponse.management_quota_opportunities = realManagementColleges.map(c => {
+            const feeString = c.fee_amount || '₹18,00,000+';
+            // Parse numeric value to estimate total cost
+            let numericFee = parseInt(feeString.replace(/\D/g, '')) || 1800000;
+            if (numericFee < 10000) numericFee = 1800000; // fallback if parsing failed
+            const totalCostNum = numericFee * 4.5;
+            const formattedTotal = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(totalCostNum);
+
+            return {
+              college: c.college_name,
+              expected_rank: c._closing ? `${Math.max(1, c._closing - 50000)} - ${c._closing + 50000}` : 'Unknown',
+              approx_fees: `${feeString} per annum`,
+              hostel_fees: '₹1,50,000 - ₹2,50,000',
+              bond: c.bond || 'None',
+              total_cost: `${formattedTotal} (approx. for 4.5 years)`,
+              chances: c.chance_tier === 'High' ? 'High' : (c.chance_tier === 'Moderate' ? 'Moderate' : 'Low'),
+              donation_expected: false
+            };
+        });
+      } else {
+        // Clear hallucinated management quota if the DB returned none for this state/quota
+        aiResponse.management_quota_opportunities = [];
+      }
+      
       // Pass the verified scholarships with official portals to the UI
       aiResponse.exact_scholarships = exactData.scholarships;
 
