@@ -70,7 +70,8 @@ const PROVIDER_CONFIGS = {
           const data = await res.json();
           const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
           if (!text) throw new Error('Empty Gemini response');
-          return JSON.parse(text);
+          const cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+          return JSON.parse(cleanText);
         },
       };
     },
@@ -100,7 +101,8 @@ const PROVIDER_CONFIGS = {
           const data = await res.json();
           const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
           if (!text) throw new Error('Empty Gemini response');
-          return JSON.parse(text);
+          const cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+          return JSON.parse(cleanText);
         },
       };
     },
@@ -167,7 +169,8 @@ for (let i = 1; i <= 15; i++) {
           const data = await res.json();
           const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
           if (!text) throw new Error('Empty Gemini response');
-          return JSON.parse(text);
+          const cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+          return JSON.parse(cleanText);
         },
       };
     },
