@@ -1,3 +1,4 @@
+export const maxDuration = 60;
 import aiPredict from './_handlers/ai-predict.js';
 import aiCollegeInfo from './_handlers/ai-college-info.js';
 import aiChat from './_handlers/ai-chat.js';
