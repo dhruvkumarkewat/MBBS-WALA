@@ -62,6 +62,8 @@ const routes = {
   'admin-notify': adminNotify,
   'admin-overview': adminOverview,
   'admin-purchases': adminPurchases,
+  'assigned-counselor': (await import('./_handlers/assigned-counselor.js')).default,
+  'messages': (await import('./_handlers/messages.js')).default,
   'admin-sessions': adminSessions,
   'admin-staff': adminStaff,
   'admin-students': adminStudents,

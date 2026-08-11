@@ -97,6 +97,7 @@ const SubscriptionPage = lazyNamed(dash, 'SubscriptionPage');
 const ProfilePage = lazyNamed(dash, 'ProfilePage');
 const SettingsPage = lazyNamed(dash, 'SettingsPage');
 const SupportPage = lazyNamed(dash, 'SupportPage');
+const StudentChatPage = lazyNamed(dash, 'StudentChatPage');
 
 const ReferEarnPage = lazyNamed(rewards, 'ReferEarnPage');
 const WalletPage = lazyNamed(rewards, 'WalletPage');
@@ -244,6 +245,7 @@ export default function App() {
           <Route path="profile" element={<L><ProfilePage /></L>} />
           <Route path="settings" element={<L><SettingsPage /></L>} />
           <Route path="support" element={<L><SupportPage /></L>} />
+          <Route path="chat" element={<L><StudentChatPage /></L>} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
 

@@ -45,6 +45,7 @@ import Cutoffs from '../../pages/Cutoffs';
 
 export { ProfilePage } from './ProfilePage';
 export { SubscriptionPage } from './SubscriptionPage';
+export { default as StudentChatPage } from './StudentChat';
 
 function useShell() {
   const { dark } = useDashboard();

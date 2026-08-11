@@ -1,5 +1,6 @@
 import {
   LayoutDashboard,
+  MessageSquare,
   Sparkles,
   Crosshair,
   Map,
@@ -38,6 +39,7 @@ export interface NavItem {
 
 export const mainNav: NavItem[] = [
   { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, section: 'Overview' },
+  { label: 'Chat with Counselor', path: '/dashboard/chat', icon: MessageSquare, badge: 'New', section: 'Overview' },
   { label: 'AI Assistant', path: '/dashboard/ai', icon: Sparkles, badge: 'New', section: 'Overview' },
   { label: 'College Predictor', path: '/dashboard/predictor', icon: Crosshair, section: 'Tools' },
   { label: 'Closing Rank Map', path: '/dashboard/competition-map', icon: Map, badge: 'New', section: 'Tools' },
