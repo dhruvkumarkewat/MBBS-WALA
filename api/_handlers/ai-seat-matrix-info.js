@@ -1,5 +1,5 @@
 import { callAI } from './ai-service.js';
-import { supabase } from './db-client.js';
+import supabase from './db-client.js';
 
 const SYSTEM_PROMPT = `You are MBBSWALA NEET Expert Admission Advisor. The user is looking at the Seat Matrix for a specific medical college.
 Analyze the provided seat matrix data for this college.
