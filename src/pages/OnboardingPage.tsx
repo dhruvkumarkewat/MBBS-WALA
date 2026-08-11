@@ -112,7 +112,7 @@ export default function OnboardingPage() {
     college_preference: profile?.college_preference || 'Government Preferred',
     tuition_budget: profile?.tuition_budget || 'Govt Fees (Under ₹1.5L/yr)',
     preferred_states: profile?.preferred_states || ['Madhya Pradesh', 'Maharashtra', 'Delhi (NCT)'],
-    referral_code: profile?.referral_code || new URLSearchParams(window.location.search).get('ref') || '',
+    referral_code: user?.user_metadata?.referred_by_code || new URLSearchParams(window.location.search).get('ref') || '',
   });
 
   useEffect(() => {
