@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { MapPin, Building2 } from 'lucide-react';
+import { MapPin, Building2, Lock } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import SelectField from '../components/ui/SelectField';
 import SearchInput from '../components/ui/SearchInput';
@@ -17,6 +18,7 @@ interface College {
   course?: string;
   nirf?: number;
   cutoff?: Record<string, any>;
+  is_locked?: boolean;
 }
 
 export default function Colleges() {
