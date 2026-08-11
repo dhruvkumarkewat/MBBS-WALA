@@ -27,6 +27,12 @@ export default function Colleges() {
   const [type, setType] = useState('All');
   const [course, setCourse] = useState('All');
   const [error, setError] = useState('');
+  const [visibleCount, setVisibleCount] = useState(24);
+
+  // Reset visible count when filters change
+  useEffect(() => {
+    setVisibleCount(24);
+  }, [q, state, type, course]);
 
   useEffect(() => {
     setLoading(true);
@@ -137,6 +143,7 @@ export default function Colleges() {
               setState('All');
               setType('All');
               setCourse('All');
+              setVisibleCount(24);
             }}
             className="btn-dark px-6 py-2.5"
           >
@@ -144,53 +151,86 @@ export default function Colleges() {
           </button>
         </div>
       ) : (
-        <motion.div
-          className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"
-          variants={staggerContainer}
-          initial="initial"
-          animate="animate"
-          key={`${state}-${type}-${course}-${q}`}
-        >
-          {filtered.map((c) => (
-            <motion.div
-              key={c.id}
-              variants={staggerItem}
-              whileHover={{ y: -4 }}
-              className="zn-card p-5 flex flex-col gap-2"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <h2 className="font-extrabold leading-snug text-black">{c.name}</h2>
-                <span
-                  className={`shrink-0 text-xs font-bold px-2 py-1 rounded-lg border border-black/10 ${
-                    c.college_type === 'Government' ? 'bg-[#bbf7d0]' : 'bg-[#fed7aa]'
-                  }`}
-                >
-                  {c.college_type}
-                </span>
-              </div>
-              <p className="text-sm font-medium text-[#5b6472] flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 shrink-0" />
-                {[c.city, c.state].filter(Boolean).join(', ') || '—'}
-                {c.nirf && c.nirf < 999999 ? ` · NIRF #${c.nirf}` : ''}
-              </p>
-              
-              {/* Opening and Closing ranks logic for UI */}
-              {c.cutoff && (c.cutoff.closing_rank || c.cutoff.GEN_closing) ? (
-                <div className="flex gap-2">
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600`}>
-                    Opening: {c.cutoff.opening_rank || c.cutoff.GEN_opening || c.cutoff.opening || '—'}
-                  </span>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600`}>
-                    Closing: {c.cutoff.closing_rank || c.cutoff.GEN_closing || c.cutoff.closing || '—'}
+        <>
+          <motion.div
+            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"
+            variants={staggerContainer}
+            initial="initial"
+            animate="animate"
+            key={`${state}-${type}-${course}-${q}`}
+          >
+            {filtered.slice(0, visibleCount).map((c) => (
+              <motion.div
+                key={c.id}
+                variants={staggerItem}
+                whileHover={{ y: -4 }}
+                className="zn-card p-5 flex flex-col gap-2"
+              >
+                {c.is_locked ? (
+                  <div className="absolute inset-0 z-10 bg-white/40 backdrop-blur-[6px] rounded-[18px] flex flex-col items-center justify-center p-4 text-center">
+                    <div className="w-12 h-12 bg-rose-500 rounded-full flex items-center justify-center mb-2 shadow-lg shadow-rose-500/30">
+                      <Lock className="w-6 h-6 text-white" />
+                    </div>
+                    <p className="text-black font-extrabold mb-1">{c.name}</p>
+                    <Link to="/dashboard/subscription" className="px-4 py-2 bg-gradient-to-r from-primary to-orange-500 text-white font-bold rounded-lg text-xs hover:scale-105 transition-transform shadow-md mt-2">
+                      Upgrade to Unlock
+                    </Link>
+                  </div>
+                ) : null}
+
+                <div className="flex items-start justify-between gap-2">
+                  <h2 className={`font-extrabold leading-snug text-black ${c.is_locked ? 'blur-[4px] opacity-40' : ''}`}>{c.name}</h2>
+                  <span
+                    className={`shrink-0 text-xs font-bold px-2 py-1 rounded-lg border border-black/10 ${
+                      c.college_type === 'Government' ? 'bg-[#bbf7d0]' : 'bg-[#fed7aa]'
+                    } ${c.is_locked ? 'blur-sm opacity-40' : ''}`}
+                  >
+                    {c.college_type}
                   </span>
                 </div>
-              ) : null}
-              <p className="text-xs font-bold uppercase tracking-wide text-primary flex items-center gap-1 mt-auto pt-2">
-                <Building2 className="w-3.5 h-3.5" /> {c.course || 'MBBS'} · India
-              </p>
-            </motion.div>
-          ))}
-        </motion.div>
+                <p className={`text-sm font-medium text-[#5b6472] flex items-center gap-1.5 ${c.is_locked ? 'blur-[4px] opacity-40' : ''}`}>
+                  <MapPin className="w-3.5 h-3.5 shrink-0" />
+                  {[c.city, c.state].filter(Boolean).join(', ') || '—'}
+                  {c.nirf && c.nirf < 999999 ? ` · NIRF #${c.nirf}` : ''}
+                </p>
+                
+                {/* Opening and Closing ranks logic for UI */}
+                {!c.is_locked && c.cutoff && (c.cutoff.closing_rank || c.cutoff.GEN_closing) ? (
+                  <div className="flex gap-2">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600`}>
+                      Opening: {c.cutoff.opening_rank || c.cutoff.GEN_opening || c.cutoff.opening || '—'}
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600`}>
+                      Closing: {c.cutoff.closing_rank || c.cutoff.GEN_closing || c.cutoff.closing || '—'}
+                    </span>
+                  </div>
+                ) : null}
+                {c.is_locked && (
+                  <div className="flex gap-2 blur-[4px] opacity-40">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600">Opening: 154</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600">Closing: 5432</span>
+                  </div>
+                )}
+
+                <p className={`text-xs font-bold uppercase tracking-wide text-primary flex items-center gap-1 mt-auto pt-2 ${c.is_locked ? 'blur-[4px] opacity-40' : ''}`}>
+                  <Building2 className="w-3.5 h-3.5" /> {c.course || 'MBBS'} · India
+                </p>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {visibleCount < filtered.length && (
+            <div className="mt-8 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setVisibleCount((prev) => prev + 24)}
+                className="btn-dark px-8 py-3"
+              >
+                Load more colleges
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
