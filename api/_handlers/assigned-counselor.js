@@ -21,9 +21,10 @@ export default async function handler(req, res) {
 
       if (!counselling) {
         // Auto-create a stub profile so chat works
+        const fullName = user.user_metadata?.full_name || user.email || 'Student';
         const { data: newCounselling } = await supabase
           .from('student_counselling')
-          .insert({ user_id: user.id, counselling_status: 'new' })
+          .insert({ user_id: user.id, full_name: fullName, counselling_status: 'new' })
           .select('assigned_to')
           .single();
         counselling = newCounselling;
