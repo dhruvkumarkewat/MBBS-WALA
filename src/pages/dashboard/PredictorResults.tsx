@@ -76,7 +76,7 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                   <div key={i} className={`rounded-xl border ${bgClass} ${borderClass} p-4`}>
                     <div className="flex justify-between items-start gap-4 mb-2">
                       <button 
-                        onClick={() => onCollegeClick(c.name)} 
+                        onClick={() => onCollegeClick(c)} 
                         className="font-bold text-sm hover:underline decoration-orange-500 underline-offset-4 text-left transition-all hover:text-orange-400"
                       >
                         {c.name}
@@ -330,7 +330,7 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
 };
 
 export function PredictorResults({ aiResponse, s, isPremium, domicileState }: PredictorResultsProps) {
-  const [selectedCollegeInfo, setSelectedCollegeInfo] = useState<string | null>(null);
+  const [selectedCollegeInfo, setSelectedCollegeInfo] = useState<any | null>(null);
 
   if (!aiResponse) return null;
 
@@ -548,8 +548,8 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
                     <tr key={i} className={`border-b ${s.dark ? 'border-white/5' : 'border-slate-100'}`}>
                       <td className="py-2 font-semibold pr-4">
                         <button 
-                          onClick={() => setSelectedCollegeInfo(mq.college)} 
-                          className="hover:underline decoration-orange-500 underline-offset-4 text-left transition-all hover:text-orange-400"
+                          onClick={() => setSelectedCollegeInfo(mq)} 
+                          className="font-bold text-[11px] sm:text-xs text-left hover:underline decoration-amber-500 underline-offset-2 transition-all"
                         >
                           {mq.college}
                         </button>

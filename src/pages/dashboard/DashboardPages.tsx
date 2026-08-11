@@ -935,7 +935,7 @@ export function FinderPage() {
                 <div key={c.id} className={`rounded-2xl border p-4 flex flex-col gap-2 ${s.card}`}>
                   <div className="flex items-start justify-between gap-2">
                     <button 
-                      onClick={() => setSelectedCollegeInfo(c.name)}
+                      onClick={() => setSelectedCollegeInfo(c)}
                       className="font-bold text-sm leading-snug hover:underline decoration-orange-500 underline-offset-4 text-left transition-all hover:text-orange-400"
                     >
                       {c.name}
@@ -1730,7 +1730,7 @@ export function DashSeatMatrixPage() {
                 >
                   <td className="p-3 font-semibold">
                     <button 
-                      onClick={() => setSelectedCollegeInfo(String(r.college_name))}
+                      onClick={() => setSelectedCollegeInfo({ name: String(r.college_name), state: String(r.state || '') })}
                       className="hover:underline decoration-orange-500 underline-offset-4 text-left transition-all hover:text-orange-400"
                     >
                       {String(r.college_name)}

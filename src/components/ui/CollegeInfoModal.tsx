@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { X, MapPin, Building, Globe, Bed, GraduationCap, Banknote, ShieldCheck } from 'lucide-react';
 
 interface CollegeInfoModalProps {
-  collegeName: string | null;
+  collegeName: any;
   isOpen: boolean;
   onClose: () => void;
   s?: any;
@@ -13,15 +13,20 @@ export function CollegeInfoModal({ collegeName, isOpen, onClose, s = { dark: tru
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const displayTitle = typeof collegeName === 'object' && collegeName ? (collegeName.name || collegeName.college) : collegeName;
+  const searchString = typeof collegeName === 'object' && collegeName 
+    ? `${collegeName.name || collegeName.college}, ${collegeName.city || ''}, ${collegeName.state || ''}`.replace(/,\s*,/g, ',').replace(/,\s*$/, '')
+    : collegeName;
+
   useEffect(() => {
-    if (isOpen && collegeName) {
+    if (isOpen && searchString) {
       fetchCollegeInfo();
     } else {
       setData(null);
       setError(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, collegeName]);
+  }, [isOpen, searchString]);
 
   const fetchCollegeInfo = async () => {
     try {
@@ -31,7 +36,7 @@ export function CollegeInfoModal({ collegeName, isOpen, onClose, s = { dark: tru
       const res = await fetch('/api/ai-college-info', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ college_name: collegeName })
+        body: JSON.stringify({ college_name: searchString })
       });
       
       if (!res.ok) throw new Error('Failed to fetch college information');
@@ -55,7 +60,7 @@ export function CollegeInfoModal({ collegeName, isOpen, onClose, s = { dark: tru
         {/* Header */}
         <div className={`flex items-center justify-between p-4 sm:p-6 border-b ${s.dark ? 'border-white/10 bg-slate-800/80' : 'border-slate-100 bg-slate-50'}`}>
           <h2 className={`text-lg sm:text-xl font-black pr-8 truncate ${s.dark ? 'text-white' : 'text-slate-900'}`}>
-            {collegeName}
+            {displayTitle}
           </h2>
           <button 
             onClick={onClose}
