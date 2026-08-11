@@ -40,7 +40,8 @@ Rules:
 6. Calculate a realistic admission probability percentage.
 7. CLEARLY designate the course (MBBS vs BDS). If the user asks for MBBS/BDS, provide both but mark the 'course' field accurately.
 8. Provide multi-year trend data (2025, 2024, 2023) to show closing rank history. Use realistic historical estimates.
-9. CRITICAL RULE FOR NEET RANKS: In NEET, a LOWER number rank is BETTER. AIR 330 is an outstanding, top-tier rank that guarantees admission to premier government medical colleges (e.g., AIIMS New Delhi, MAMC). A rank like 330 is vastly superior to 25,000. Do NOT treat low numbers as poor ranks!`;
+9. CRITICAL RULE FOR NEET RANKS: In NEET, a LOWER number rank is BETTER. AIR 330 is an outstanding, top-tier rank that guarantees admission to premier government medical colleges (e.g., AIIMS New Delhi, MAMC). A rank like 330 is vastly superior to 25,000. Do NOT treat low numbers as poor ranks!
+10. KEEP OUTPUT CONCISE TO AVOID TRUNCATION: Limit the "safe", "moderate", and "reach" arrays to a MAXIMUM of 5 colleges each.`;
 
 // ── Provider Calling ────────────────────────────────────────────────────────
 
@@ -55,14 +56,14 @@ const PROVIDER_CONFIGS = {
         options: {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          signal: AbortSignal.timeout(15000),
+          signal: AbortSignal.timeout(45000),
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: payload.system_prompt || SYSTEM_PROMPT }] },
             contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload.user_prompt || payload) }] }],
             generationConfig: {
               responseMimeType: 'application/json',
               temperature: 0.1,
-              maxOutputTokens: 4000,
+              maxOutputTokens: 8192,
             },
           }),
         },
@@ -86,14 +87,14 @@ const PROVIDER_CONFIGS = {
         options: {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          signal: AbortSignal.timeout(15000),
+          signal: AbortSignal.timeout(45000),
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: payload.system_prompt || SYSTEM_PROMPT }] },
             contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload.user_prompt || payload) }] }],
             generationConfig: {
               responseMimeType: 'application/json',
               temperature: 0.1,
-              maxOutputTokens: 4000,
+              maxOutputTokens: 8192,
             },
           }),
         },
@@ -154,14 +155,14 @@ for (let i = 1; i <= 15; i++) {
         options: {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          signal: AbortSignal.timeout(15000),
+          signal: AbortSignal.timeout(45000),
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: payload.system_prompt || SYSTEM_PROMPT }] },
             contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload.user_prompt || payload) }] }],
             generationConfig: {
               responseMimeType: 'application/json',
               temperature: 0.1,
-              maxOutputTokens: 4000,
+              maxOutputTokens: 8192,
             },
           }),
         },

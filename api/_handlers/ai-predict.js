@@ -9,6 +9,7 @@ import { callAI, verifyGrounding, buildFallbackResponse } from './ai-service.js'
 import { getRoundMultiplier } from './_courses.js';
 
 // ── Authority Resolution (deterministic, spec Section 3) ────────────────────
+export const maxDuration = 60;
 
 function resolveAuthority(examTrack, quota, domicileState) {
   if (examTrack === 'AYUSH') return 'AACCC-AYUSH';
