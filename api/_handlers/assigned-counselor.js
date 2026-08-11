@@ -34,7 +34,7 @@ export default async function handler(req, res) {
       // 2. If no counselor assigned, fallback to a super_admin
       if (!counselorId) {
         const { data: admin } = await supabase
-          .from('staff')
+          .from('staff_profiles')
           .select('user_id')
           .eq('role', 'super_admin')
           .limit(1)
