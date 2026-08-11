@@ -63,9 +63,6 @@ const PROVIDER_CONFIGS = {
               responseMimeType: 'application/json',
               temperature: 0.1,
               maxOutputTokens: 4000,
-              thinkingConfig: {
-                thinkingBudget: 0,
-              },
             },
           }),
         },
@@ -96,9 +93,6 @@ const PROVIDER_CONFIGS = {
               responseMimeType: 'application/json',
               temperature: 0.1,
               maxOutputTokens: 4000,
-              thinkingConfig: {
-                thinkingBudget: 0,
-              },
             },
           }),
         },
