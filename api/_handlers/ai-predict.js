@@ -73,7 +73,9 @@ export async function retrieveContext(query) {
     cutoffQuery = cutoffQuery.in('course_name', ['BAMS', 'BUMS', 'BHMS', 'BSMS', 'BNYS']);
   }
 
-  if (quotas.includes('State') && domicileState && !quotas.includes('AIQ')) {
+  // Only forcefully restrict the database query to the domicile state if State Quota is the ONLY quota selected.
+  // If Management or NRI is selected alongside it, we must allow cross-state queries.
+  if (quotas.includes('State') && domicileState && quotas.length === 1) {
     cutoffQuery = cutoffQuery.ilike('state', `%${domicileState}%`);
   }
 
@@ -114,14 +116,25 @@ const DEEMED_KEYWORDS = [
   const collegeCutoffs = (allColleges || []).map((col) => {
     if (!col.name || col.name === '-' || col.name.length < 3) return null;
     
-    const baseClosing = getCategoryClosing(col.cutoff, category);
-    if (!baseClosing) return null;
-    const closing = Math.round(baseClosing * roundMultiplier);
-
     const colType = (col.type || '').toLowerCase();
     const colName = (col.name || '').toLowerCase();
     const isDeemed = colType.includes('deemed') || ['patil', 'manipal', 'jss', 'srm', 'saveetha', 'bharati'].some((k) => colName.includes(k));
     const isGovt = !isDeemed && (colType.includes('government') || colType.includes('govt') || colType.includes('central') || colName.includes('aiims') || colName.includes('jipmer') || colName.includes('medical college,') || colName.includes('government'));
+
+    let baseClosing = getCategoryClosing(col.cutoff, category);
+    
+    // For Private/Deemed/Management colleges without explicit cutoffs in the database, 
+    // estimate a very high closing rank (1,500,000) because admission is largely guaranteed 
+    // if the candidate is simply NEET qualified and willing to pay the fees.
+    if (!baseClosing) {
+      if (!isGovt) {
+        baseClosing = 1500000;
+      } else {
+        return null;
+      }
+    }
+    
+    const closing = Math.round(baseClosing * roundMultiplier);
     const stateMatch = Boolean(domicileState && (col.state || '').toLowerCase().includes(domicileState.toLowerCase()));
 
     let quotaCode = 'AIQ';

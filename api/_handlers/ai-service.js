@@ -41,7 +41,8 @@ Rules:
 7. CLEARLY designate the course (MBBS vs BDS). If the user asks for MBBS/BDS, provide both but mark the 'course' field accurately.
 8. Provide multi-year trend data (2025, 2024, 2023) to show closing rank history. Use realistic historical estimates.
 9. CRITICAL RULE FOR NEET RANKS: In NEET, a LOWER number rank is BETTER. AIR 330 is an outstanding, top-tier rank that guarantees admission to premier government medical colleges (e.g., AIIMS New Delhi, MAMC). A rank like 330 is vastly superior to 25,000. Do NOT treat low numbers as poor ranks!
-10. KEEP OUTPUT CONCISE TO AVOID TIMEOUTS: Limit the "safe" array to EXACTLY 12 colleges (or as many as possible). Keep the "moderate" and "reach" arrays completely EMPTY [].`;
+10. KEEP OUTPUT CONCISE TO AVOID TIMEOUTS: Limit the "safe" array to EXACTLY 12 colleges (or as many as possible). Keep the "moderate" and "reach" arrays completely EMPTY [].
+11. TOP RANK SAFEGUARD: If the user's rank is mathematically excellent (e.g., AIR < 50,000) but you have no matching colleges in the context for their specific quota or state, NEVER say their rank is too low. Instead, state that they have excellent chances to secure admission, but specific data for those filters is currently unavailable.`;
 
 // ── Provider Calling ────────────────────────────────────────────────────────
 
