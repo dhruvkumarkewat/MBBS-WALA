@@ -5,7 +5,7 @@ const supabaseUrl =
   process.env.SUPABASE_URL ||
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
   process.env.VITE_SUPABASE_URL ||
-  'https://hbzzamezfhzsdupdhcin.supabase.co';
+  '';
 
 // For database operations: prefer service role key (bypasses RLS), fall back to anon key
 const supabaseServiceKey =
@@ -18,7 +18,7 @@ const supabaseAnonKey =
   process.env.SUPABASE_ANON_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   process.env.VITE_SUPABASE_ANON_KEY ||
-  'sb_publishable_5D517PLNdF92v3Q1s6Dp_w_WaZtsrPo';
+  '';
 
 const supabaseKey = supabaseServiceKey || supabaseAnonKey;
 
