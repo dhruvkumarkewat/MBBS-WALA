@@ -545,7 +545,11 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
       ) : (() => {
         const qa = aiResponse.quota_availability;
         const stateName = qa?.target_state || 'your selected state';
-        const mgmtAvailable = qa?.management_quota_available;
+        
+        // Find the management quota note from the engine
+        const mgmtNote = qa?.selected_quota_notes?.find((n: any) => n.quota?.toLowerCase() === 'management');
+        const mgmtAvailable = mgmtNote?.available ?? qa?.management_quota_available;
+        const stateRules = qa?.target_state_rules;
         
         return (
           <div className={`rounded-2xl border p-5 ${s.card} border-l-4 ${mgmtAvailable === false ? 'border-l-amber-500/60' : 'border-l-slate-500/60'}`}>
@@ -558,12 +562,53 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
                 }
               </h3>
             </div>
-            <p className={`text-sm ${s.muted} leading-relaxed`}>
-              {mgmtAvailable === false 
-                ? `Management Quota does not operate as a separate admission category in ${stateName}. In this state, private college seats are filled through the state counselling process (State Quota). Please try selecting "State Quota (85%)" or "AIQ (15% All India Quota)" instead to see available colleges.`
-                : `No Management Quota colleges were found for ${stateName} with your selected filters. Try selecting a different target state, or use AIQ or State Quota to see government college options.`
-              }
-            </p>
+            
+            {mgmtAvailable === false ? (
+              <div className="space-y-3">
+                <p className={`text-sm ${s.muted} leading-relaxed`}>
+                  {mgmtNote?.note || `Management Quota does not operate as a separate admission category in ${stateName}. Private college seats are filled through the state counselling process.`}
+                </p>
+                {stateRules && (
+                  <div className={`rounded-xl p-3 text-xs space-y-2 ${s.dark ? 'bg-white/5' : 'bg-slate-50'}`}>
+                    <p className="font-bold text-primary">📋 {stateName} Admission Routes</p>
+                    {stateRules.government?.aiq?.available && (
+                      <div className="flex items-start gap-2">
+                        <span className="text-emerald-400 mt-0.5">✅</span>
+                        <div>
+                          <span className="font-semibold">AIQ (15% All India Quota)</span>
+                          <span className={`ml-1 ${s.muted}`}>— No domicile restriction · {stateRules.government.aiq.counselling}</span>
+                        </div>
+                      </div>
+                    )}
+                    {stateRules.government?.state_quota?.available && (
+                      <div className="flex items-start gap-2">
+                        <span className="text-emerald-400 mt-0.5">✅</span>
+                        <div>
+                          <span className="font-semibold">Government State Quota (85%)</span>
+                          <span className={`ml-1 ${s.muted}`}>— {stateRules.government.state_quota.domicile_required ? `${stateName} domicile required` : 'Open'} · {stateRules.government.state_quota.counselling}</span>
+                        </div>
+                      </div>
+                    )}
+                    {stateRules.private?.nri?.available && (
+                      <div className="flex items-start gap-2">
+                        <span className="text-blue-400 mt-0.5">ℹ️</span>
+                        <div>
+                          <span className="font-semibold">NRI Quota</span>
+                          <span className={`ml-1 ${s.muted}`}>— NRI/PIO/OCI status or NRI sponsor required</span>
+                        </div>
+                      </div>
+                    )}
+                    {stateRules.counselling_authority && (
+                      <p className={`pt-1 ${s.muted}`}>State counselling authority: <span className="font-semibold text-primary">{stateRules.counselling_authority}</span></p>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className={`text-sm ${s.muted} leading-relaxed`}>
+                {mgmtNote?.note || `No Management Quota colleges were found for ${stateName} with your selected filters. Try selecting a different target state, or use AIQ or State Quota to see government college options.`}
+              </p>
+            )}
           </div>
         );
       })()}

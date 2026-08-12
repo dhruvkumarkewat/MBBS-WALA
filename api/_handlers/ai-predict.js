@@ -7,6 +7,8 @@
 import supabase from './db-client.js';
 import { callAI, verifyGrounding, buildFallbackResponse } from './ai-service.js';
 import { getRoundMultiplier } from './_courses.js';
+import { evaluateEligibility, classifyCollege, getEligibilityNote } from './_eligibility-engine.js';
+import { getStateRules } from './_state-rules.js';
 
 // ── Authority Resolution (deterministic, spec Section 3) ────────────────────
 export const maxDuration = 60;
@@ -319,24 +321,61 @@ const DEEMED_KEYWORDS = [
     };
   });
 
-  // Filter to eligible tiers and prioritize closest ranks
-  const eligible = scored.filter((c) => c._tier !== 'Unlikely');
+  // ── Attach per-college eligibility evaluation ──────────────────────────────
+  const candidate = {
+    domicile_state: domicileState,
+    category: category,
+    rank: candidateRank,
+    is_nri: !!(query.nri_status),
+    is_minority: !!(query.minority_status),
+  };
+
+  const scoredWithEligibility = scored.map(c => {
+    // Find the original college record to get type info
+    const matchedCol = (allColleges || []).find(
+      col => col.name && c.college_name &&
+        col.name.toLowerCase().replace(/[^a-z0-9]/g, '') ===
+        c.college_name.toLowerCase().replace(/[^a-z0-9]/g, '')
+    );
+    const collegeForEval = {
+      name: c.college_name,
+      state: c.state,
+      type: matchedCol?.type || (c.quota_code === 'Deemed-Central' ? 'Deemed' : c.quota_code === 'AIQ' ? 'Government' : 'Private'),
+    };
+    const eligibility = evaluateEligibility(candidate, collegeForEval);
+    return { ...c, _eligibility: eligibility };
+  });
+
+  const eligible = scoredWithEligibility.filter((c) => c._tier !== 'Unlikely');
   let highTier = eligible
     .filter((c) => c._tier === 'High')
-    .sort((a, b) => a._closing - b._closing) // Absolute best colleges they can get
+    .sort((a, b) => a._closing - b._closing)
     .slice(0, 20);
   let modTier = eligible
     .filter((c) => c._tier === 'Moderate')
-    .sort((a, b) => a._diff - b._diff) // Most achievable moderate
+    .sort((a, b) => a._diff - b._diff)
     .slice(0, 10);
   let reachTier = eligible
     .filter((c) => c._tier === 'Reach')
-    .sort((a, b) => a._diff - b._diff) // Most achievable reach
+    .sort((a, b) => a._diff - b._diff)
     .slice(0, 5);
 
   let finalClosingRanks = [...highTier, ...modTier, ...reachTier];
   if (finalClosingRanks.length < 5 && deduplicated.length > 0) {
-    finalClosingRanks = deduplicated.slice(0, 20);
+    // Re-score deduplicated with eligibility
+    finalClosingRanks = deduplicated.map(c => {
+      const matchedCol = (allColleges || []).find(
+        col => col.name && c.college_name &&
+          col.name.toLowerCase().replace(/[^a-z0-9]/g, '') ===
+          c.college_name.toLowerCase().replace(/[^a-z0-9]/g, '')
+      );
+      const collegeForEval = {
+        name: c.college_name,
+        state: c.state,
+        type: matchedCol?.type || 'Unknown',
+      };
+      return { ...c, _eligibility: evaluateEligibility(candidate, collegeForEval) };
+    }).slice(0, 20);
   }
 
   // 5. Fee structures
@@ -404,8 +443,10 @@ const DEEMED_KEYWORDS = [
     scholarships: matchedScholarships,
     seat_matrix: seatMatrix || [],
     calendar_rounds: calendarRounds || [],
-    _mgmt_quota_available: isMgmtQuotaAvailable,
+    _candidate: candidate,
     _target_state: query.target_state || query.domicile_state || null,
+    // Legacy flag kept for backward compatibility
+    _mgmt_quota_available: isMgmtQuotaAvailable,
   };
 }
 
@@ -567,6 +608,9 @@ export default async function handler(req, res) {
         volatility: c.chance_tier === 'High' ? 'Low' : 'Moderate',
         reason: reasonText,
         
+        // Per-college, per-seat-type eligibility from the engine
+        eligibility: c._eligibility || null,
+        
         data_source: [
            `MCC Counselling ${year - 1}`,
            c.closing_rank_reference?.[0]?.round || 'Round 1',
@@ -704,10 +748,36 @@ export default async function handler(req, res) {
     // Attach query so frontend can display candidate rank
     response.query = query;
     
-    // Attach quota availability metadata for the frontend
+    // Attach quota availability metadata for the frontend — now powered by the eligibility engine
+    const targetStateRules = getStateRules(query.target_state || query.domicile_state);
     response.quota_availability = {
+      // Legacy field kept for backward compatibility
       management_quota_available: context._mgmt_quota_available || false,
       target_state: context._target_state || null,
+      // Rich per-seat-type breakdown for the target state
+      target_state_rules: targetStateRules ? {
+        counselling_authority: targetStateRules.counselling_authority,
+        government: targetStateRules.government,
+        private: targetStateRules.private,
+      } : null,
+      // Specific quota notes for the selected quotas
+      selected_quota_notes: (query.quotas || []).map(q => {
+        if (!targetStateRules) return { quota: q, available: null, note: 'State rules not available' };
+        let rule = null;
+        const qL = q.toLowerCase();
+        if (qL === 'management') rule = targetStateRules.private?.management;
+        else if (qL === 'state') rule = targetStateRules.government?.state_quota || targetStateRules.private?.state_quota;
+        else if (qL === 'aiq') rule = targetStateRules.government?.aiq;
+        else if (qL === 'nri') rule = targetStateRules.private?.nri;
+        if (!rule) return { quota: q, available: null, note: null };
+        return {
+          quota: q,
+          available: rule.available,
+          non_domicile_allowed: rule.non_domicile_allowed,
+          counselling: rule.counselling,
+          note: rule.note,
+        };
+      }),
     };
 
     return res.status(200).json(response);
