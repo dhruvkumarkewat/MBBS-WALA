@@ -680,9 +680,6 @@ export default function Login({ defaultPortal }: LoginProps) {
                     <span className="px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 text-[11px] font-bold border border-orange-500/20 flex items-center gap-1">
                       <UserCheck className="h-3 w-3" /> Super Admin
                     </span>
-                    <span className="px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[11px] font-bold border border-amber-500/20 flex items-center gap-1">
-                      <Shield className="h-3 w-3" /> Admin
-                    </span>
                     <span className="px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[11px] font-bold border border-blue-500/20 flex items-center gap-1">
                       <LockKeyhole className="h-3 w-3" /> Counsellor
                     </span>

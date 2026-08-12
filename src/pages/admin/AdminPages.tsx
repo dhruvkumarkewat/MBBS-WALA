@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useAdminRole } from '../../components/admin/AdminLayout';
 import {
   Users,
   UserCheck,
@@ -159,6 +160,7 @@ export function AdminOverviewPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
+  const roleOverride = useAdminRole();
 
   useEffect(() => {
     apiJson('/api/admin-overview', {}, true)
@@ -171,7 +173,8 @@ export function AdminOverviewPage() {
   if (err) return <ErrorBox msg={err} />;
 
   const s = data.stats || {};
-  const isSuper = data.role === 'super_admin';
+  // Use roleOverride so Super Admin in 'Counsellor View' sees counsellor content
+  const isSuper = roleOverride === 'super_admin';
   const pipeline = data.pipeline || [];
   const maxPipe = Math.max(1, ...pipeline.map((p: any) => p.count));
   const firstName = data.staff?.name?.split(' ')[0] || (isSuper ? 'Admin' : 'Counsellor');
@@ -591,28 +594,27 @@ export function AdminStudentsPage() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(true);
-  const [role, setRole] = useState('sub_admin');
   const [toast, setToast] = useState('');
   const navigate = useNavigate();
+  const roleOverride = useAdminRole();
+  const role = roleOverride;
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const auth = await apiJson<any>('/api/admin-auth', {}, true);
-      setRole(auth.role);
       const params = new URLSearchParams();
       if (q) params.set('q', q);
       if (status) params.set('status', status);
       const data = await apiJson<any[]>(`/api/admin-students?${params}`, {}, true);
       setRows(data);
-      if (auth.role === 'super_admin') {
+      if (role === 'super_admin') {
         const s = await apiJson<any[]>('/api/admin-staff', {}, true);
         setStaff(s.filter((x) => x.is_active));
       }
     } finally {
       setLoading(false);
     }
-  }, [q, status]);
+  }, [q, status, role]);
 
   useEffect(() => {
     load();
@@ -749,7 +751,7 @@ export function AdminStudentsPage() {
 export function AdminStudentDetailPage() {
   const { id } = useParams();
   const [pack, setPack] = useState<any>(null);
-  const [role, setRole] = useState('sub_admin');
+  const role = useAdminRole();
   const [note, setNote] = useState('');
   const [msg, setMsg] = useState('');
   const [followNote, setFollowNote] = useState('');
@@ -764,16 +766,14 @@ export function AdminStudentDetailPage() {
   const [staff, setStaff] = useState<any[]>([]);
 
   const load = useCallback(async () => {
-    const auth = await apiJson<any>('/api/admin-auth', {}, true);
-    setRole(auth.role);
     const data = await apiJson<any>(`/api/admin-students?id=${id}`, {}, true);
     setPack(data);
     setStatus(data.student.counselling_status);
-    if (auth.role === 'super_admin') {
+    if (role === 'super_admin') {
       const s = await apiJson<any[]>('/api/admin-staff', {}, true);
       setStaff(s.filter((x) => x.is_active));
     }
-  }, [id]);
+  }, [id, role]);
 
   useEffect(() => {
     load().catch((e) => setErr(e.message));
