@@ -35,9 +35,9 @@ interface Plan {
 const PLANS: Plan[] = [
   {
     id: 'neet-ug',
-    name: 'NEET UG Counselling Pro',
-    price: 4999,
-    originalPrice: 8999,
+    name: 'BASIC',
+    price: 99,
+    originalPrice: 4999,
     badge: 'Most Popular',
     popular: true,
     description: 'Complete AI-powered choice filling, cutoffs, and predictions for MBBS, BDS, and AYUSH.',
@@ -54,8 +54,8 @@ const PLANS: Plan[] = [
   },
   {
     id: 'neet-pg',
-    name: 'NEET PG / INI-CET Pro',
-    price: 6999,
+    name: 'NEET UG Counselling Pro',
+    price: 4999,
     originalPrice: 11999,
     badge: 'Specialized',
     popular: false,
@@ -411,11 +411,15 @@ export function SubscriptionPage() {
           return (
             <div
               key={plan.id}
+<<<<<<< HEAD
               className={`relative rounded-3xl border flex flex-col p-6 sm:p-7 transition-all duration-300 ${
                 plan.popular
+=======
+              className={`relative rounded-3xl border flex flex-col p-5 lg:p-4 xl:p-6 transition-all duration-300 ${plan.popular
+>>>>>>> 7051e38 (Update subscription package names and pricing)
                   ? 'border-primary bg-gradient-to-b from-primary/10 via-card to-card shadow-2xl shadow-primary/15 md:-translate-y-2'
                   : 'border-border/60 bg-card hover:border-border shadow-sm'
-              }`}
+                }`}
             >
               {plan.badge && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-gradient-to-r from-primary to-orange-500 text-white text-[10px] font-black uppercase tracking-wider shadow-md">
@@ -460,15 +464,14 @@ export function SubscriptionPage() {
                   }
                 }}
                 disabled={upgradingPlan !== null}
-                className={`w-full py-3 px-4 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all ${
-                  isCurrent
+                className={`w-full py-3 px-4 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all ${isCurrent
                     ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/20'
                     : isPremium
-                    ? 'bg-muted text-foreground hover:bg-muted/80'
-                    : plan.popular
-                    ? 'bg-gradient-to-r from-primary to-orange-500 text-white shadow-lg shadow-primary/25 hover:opacity-95 hover:scale-[1.02]'
-                    : 'bg-primary text-primary-foreground hover:opacity-90'
-                } disabled:opacity-50`}
+                      ? 'bg-muted text-foreground hover:bg-muted/80'
+                      : plan.popular
+                        ? 'bg-gradient-to-r from-primary to-orange-500 text-white shadow-lg shadow-primary/25 hover:opacity-95 hover:scale-[1.02]'
+                        : 'bg-primary text-primary-foreground hover:opacity-90'
+                  } disabled:opacity-50`}
               >
                 {upgradingPlan === plan.id ? (
                   <>
@@ -552,13 +555,12 @@ export function SubscriptionPage() {
                     <td className="py-3 px-3 font-black text-foreground">₹{Number(p.amount || 0).toLocaleString()}</td>
                     <td className="py-3 px-3 font-mono text-muted-foreground">{p.order_id || p.payment_id || '—'}</td>
                     <td className="py-3 px-3">
-                      <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[10px] ${
-                        p.status === 'failed' 
+                      <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[10px] ${p.status === 'failed'
                           ? 'bg-destructive/10 text-destructive'
                           : p.status === 'created' || p.status === 'pending'
-                          ? 'bg-amber-500/10 text-amber-500' 
-                          : 'bg-emerald-500/10 text-emerald-500'
-                      }`}>
+                            ? 'bg-amber-500/10 text-amber-500'
+                            : 'bg-emerald-500/10 text-emerald-500'
+                        }`}>
                         {p.status || 'captured'}
                       </span>
                     </td>
