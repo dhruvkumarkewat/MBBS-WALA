@@ -870,10 +870,11 @@ export function FinderPage() {
   };
 
   return (
-    <div>
-      <PageHead title="College Finder" sub={`GET /api/colleges · ${total} total · page ${page}/${totalPages} · MBBS–BNYS`} />
-      <ErrorBox message={error} />
-      <div className="flex flex-col sm:flex-row gap-2 mb-4">
+    <PremiumGate featureName="Advanced College Finder">
+      <div>
+        <PageHead title="College Finder" sub={`GET /api/colleges · ${total} total · page ${page}/${totalPages} · MBBS–BNYS`} />
+        <ErrorBox message={error} />
+        <div className="flex flex-col sm:flex-row gap-2 mb-4">
         <div className="relative flex-1">
           <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${s.muted}`} />
           <input
@@ -1030,7 +1031,8 @@ export function FinderPage() {
         onClose={() => setSelectedCollegeInfo(null)} 
         s={s}
       />
-    </div>
+      </div>
+    </PremiumGate>
   );
 }
 
@@ -1132,12 +1134,13 @@ export function ComparePage() {
   }, [a, b]);
 
   return (
-    <div>
-      <PageHead
-        title="Compare colleges"
-        sub="Seats · AIQ cutoffs · category bands · decision insights"
-      />
-      <ErrorBox message={error} />
+    <PremiumGate featureName="College Comparison">
+      <div>
+        <PageHead
+          title="Compare colleges"
+          sub="Seats · AIQ cutoffs · category bands · decision insights"
+        />
+        <ErrorBox message={error} />
       {loading ? (
         <div className={`h-40 rounded-2xl animate-pulse ${s.chip}`} />
       ) : (
@@ -1176,7 +1179,8 @@ export function ComparePage() {
           )}
         </>
       )}
-    </div>
+      </div>
+    </PremiumGate>
   );
 }
 
