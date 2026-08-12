@@ -1,13 +1,12 @@
 /**
- * /api/ai-predict — AI-Grounded College & Scholarship Predictor
+ * /api/ai-predict — AI-Powered College & Scholarship Predictor
  *
- * Pipeline: Retrieve context from Supabase → Resolve authority/rounds deterministically →
- * Call AI with grounded prompt + context → Verify grounding → Return PredictorResponse
+ * Pipeline: Resolve authority/rounds → Pass state eligibility rules to AI →
+ * AI generates predictions from its own knowledge → Return response
  */
 import supabase from './db-client.js';
-import { callAI, verifyGrounding, buildFallbackResponse } from './ai-service.js';
+import { callAI } from './ai-service.js';
 import { getRoundMultiplier } from './_courses.js';
-import { evaluateEligibility, classifyCollege, getEligibilityNote } from './_eligibility-engine.js';
 import { getStateRules } from './_state-rules.js';
 
 // ── Authority Resolution (deterministic, spec Section 3) ────────────────────
@@ -529,211 +528,76 @@ export default async function handler(req, res) {
     const resolved = buildResolved(query, context);
 
     // Step 3: Prepare payload for AI
-    // Strip massive arrays (fees, seat_matrix) to fit inside Groq's 12k token limit
-    // Also limit closing_ranks and scholarships to reduce payload size
-    const trimmedClosingRanks = (context.closing_ranks || []).slice(0, 45).map(r => ({
-      college_name: r.college_name,
-      state: r.state,
-      closing_rank: r.closing_rank,
-      category: r.category,
-      quota_code: r.quota_code,
-      tier: r._tier,
-      admission_chance_percentage: r._chance_percentage,
-      course_name: r.course_name,
-      fee_amount: r.fee_amount,
-      round_name: r.round_name,
-    }));
+    // Pass state eligibility rules as context so the AI knows what quotas are valid
+    // but do NOT pass DB colleges — let the AI predict from its own knowledge
+    const targetStateRulesForAI = getStateRules(query.target_state || query.domicile_state);
+    const domicileStateRulesForAI = query.domicile_state ? getStateRules(query.domicile_state) : null;
+    
     const aiPayload = { 
       query, 
       context: {
-        closing_ranks: trimmedClosingRanks,
-        scholarships: (context.scholarships || []).slice(0, 5)
+        // Pass state eligibility rules to guide the AI
+        target_state_rules: targetStateRulesForAI ? {
+          state: query.target_state || query.domicile_state,
+          counselling_authority: targetStateRulesForAI.counselling_authority,
+          government: targetStateRulesForAI.government,
+          private: targetStateRulesForAI.private,
+        } : null,
+        domicile_state_rules: domicileStateRulesForAI && domicileStateRulesForAI !== targetStateRulesForAI ? {
+          state: query.domicile_state,
+          counselling_authority: domicileStateRulesForAI.counselling_authority,
+          government: domicileStateRulesForAI.government,
+          private: domicileStateRulesForAI.private,
+        } : null,
+        // Pass scholarships from DB (these are useful data, not college predictions)
+        scholarships: (context.scholarships || []).slice(0, 5),
       }, 
       resolved 
-    };
-
-    const userRank = query.score_or_rank?.value || 0;
-    const year = query.score_or_rank?.neet_year || new Date().getFullYear();
-    const mapCollege = (c) => {
-      const closing = c.closing_rank_reference?.[0]?.rank || c.closing_rank || 0;
-      const margin = userRank > 0 && closing > 0 ? (closing - userRank) : 0;
-      
-      let feeString = c.fee?.formatted || null;
-      if (feeString && feeString.includes('NaN')) {
-          feeString = null;
-      }
-
-      let reasonText = '';
-      if (margin > 0) {
-          reasonText = `Your AIR (${userRank}) is ${margin} ranks better than the recent closing rank (${closing}), placing this college well within the historical admission range.`;
-      } else if (margin > -2000) {
-          reasonText = `Your AIR (${userRank}) is close to the expected cutoff (${closing}). Minor shifts in this year's counselling could affect admission chances.`;
-      } else {
-          reasonText = `Although highly competitive, keeping this on your preference list is recommended if cutoffs drop.`;
-      }
-      
-      return {
-        name: c.college_name,
-        course: c.course || (query.exam_track === 'AYUSH' ? 'BAMS' : 'MBBS'),
-        probability: c.chance_tier === 'High' ? '93%' : (c.chance_tier === 'Moderate' ? '68%' : '35%'),
-        confidence: c.chance_tier === 'High' ? 'High' : (c.chance_tier === 'Moderate' ? 'Moderate' : 'Low'),
-        expected_round: c.closing_rank_reference?.[0]?.round || 'Round 2',
-        category: c.category || query.category || 'General',
-        quota: c.quota || 'AIQ',
-        closing_rank: closing,
-        predicted_closing_rank: closing,
-        margin: margin >= 0 ? `+${margin}` : `${margin}`,
-        
-        fees: feeString,
-        is_fee_verified: !!feeString && !feeString.includes('Est.'),
-        tuition_fee: feeString,
-        
-        hostel_fee: null,
-        is_hostel_fee_verified: false,
-        
-        seats: c.seats || null,
-        is_seats_verified: !!c.seats,
-        
-        bond: c.bond || null,
-        is_bond_verified: !!c.bond,
-        
-        nmc_recognition: 'Recognized',
-        
-        hospital_beds: c.hospital_beds || null,
-        is_hospital_beds_verified: !!c.hospital_beds,
-        
-        internship_stipend: c.internship_stipend || null,
-        is_internship_stipend_verified: !!c.internship_stipend,
-        
-        volatility: c.chance_tier === 'High' ? 'Low' : 'Moderate',
-        reason: reasonText,
-        
-        // Per-college, per-seat-type eligibility from the engine
-        eligibility: c._eligibility || null,
-        
-        data_source: [
-           `MCC Counselling ${year - 1}`,
-           c.closing_rank_reference?.[0]?.round || 'Round 1',
-           c.category || query.category || 'General',
-           c.quota || 'AIQ',
-           'Verified'
-        ],
-        
-        historical_trend: closing > 0 ? [
-          { year: '2025', opening_rank: Math.round(closing * 0.15), closing_rank: closing },
-          { year: '2024', opening_rank: Math.round(closing * 0.14), closing_rank: Math.round(closing * 0.95) },
-          { year: '2023', opening_rank: Math.round(closing * 0.12), closing_rank: Math.round(closing * 0.88) }
-        ] : []
-      };
     };
 
     let response;
 
     try {
-      // Step 4: Call AI with failover
+      // Step 4: Call AI — use AI's response directly (no DB override)
       const aiResponse = await callAI(aiPayload);
-
-      // Step 4.5: GUARANTEE 100% Accuracy
-      // The AI generates good summaries and insights, but LLMs cannot reliably predict exact
-      // cutoffs for hundreds of colleges. We completely override the AI's hallucinated college list
-      // with our deterministic database matches (exactData) mapped to the rich UI format.
-      const exactData = buildFallbackResponse(query, context, resolved);
-      const safeColleges = exactData.colleges.filter(c => c.chance_tier === 'High');
-      const moderateColleges = exactData.colleges.filter(c => c.chance_tier === 'Moderate');
-      const reachColleges = exactData.colleges.filter(c => c.chance_tier === 'Reach');
       
-      aiResponse.college_predictions = {
-        safe: safeColleges.map(mapCollege),
-        moderate: moderateColleges.map(mapCollege),
-        reach: reachColleges.map(mapCollege)
-      };
-      
-      // CRITICAL: If deterministic engine found safe colleges, override AI's 
-      // unlikely_mbbs_guidance to prevent showing "rank is too low" when it isn't.
-      if (safeColleges.length > 0 || moderateColleges.length > 0) {
-        if (aiResponse.unlikely_mbbs_guidance) {
-          aiResponse.unlikely_mbbs_guidance.active = false;
-        }
+      // The AI generates all college predictions from its own knowledge.
+      // We only verify basic structure is present.
+      if (!aiResponse.college_predictions) {
+        aiResponse.college_predictions = { safe: [], moderate: [], reach: [] };
       }
-      
-      // Override hallucinated management quotas with actual Management/Deemed colleges from the DB
-      // NOTE: buildFallbackResponse uses `quota` field (not `quota_code`)
-      const realManagementColleges = exactData.colleges
-          .filter(c => c.quota === 'Management' || c.quota === 'Deemed-Central')
-          .slice(0, 6);
-          
-      if (realManagementColleges.length > 0) {
-        aiResponse.management_quota_opportunities = realManagementColleges.map(c => {
-            // buildFallbackResponse uses fee.formatted, not fee_amount
-            const feeString = c.fee?.formatted || '₹18,00,000+';
-            let numericFee = parseInt(feeString.replace(/\D/g, '')) || 1800000;
-            if (numericFee < 10000) numericFee = 1800000;
-            const totalCostNum = numericFee * 4.5;
-            const formattedTotal = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(totalCostNum);
-
-            return {
-              college: c.college_name,
-              state: c.state || 'India',
-              course: c.course || 'MBBS',
-              expected_rank: c._closing ? `${Math.max(1, c._closing - 50000)} - ${c._closing + 50000}` : 'Unknown',
-              approx_fees: `${feeString} per annum`,
-              hostel_fees: '₹1,50,000 - ₹2,50,000',
-              bond: c.bond || 'None',
-              total_cost: `${formattedTotal} (approx. for 4.5 years)`,
-              chances: c.chance_tier === 'High' ? 'High' : (c.chance_tier === 'Moderate' ? 'Moderate' : 'Low'),
-              donation_expected: false
-            };
-        });
-      } else {
+      if (!aiResponse.management_quota_opportunities) {
         aiResponse.management_quota_opportunities = [];
       }
-      
-      // Override hallucinated private options with actual private colleges from the DB
-      // NOTE: buildFallbackResponse uses `quota` field (not `quota_code`)
-      if (aiResponse.unlikely_mbbs_guidance && aiResponse.unlikely_mbbs_guidance.active) {
-        const realPrivateColleges = exactData.colleges
-          .filter(c => c.quota !== 'AIQ' && c.quota !== 'State' && c.quota !== 'All India')
-          .slice(0, 3);
-          
-        if (realPrivateColleges.length > 0) {
-          aiResponse.unlikely_mbbs_guidance.private_options = realPrivateColleges.map(c => ({
-            name: c.college_name,
-            state: c.state || 'India',
-            fees: c.fee?.formatted || '₹15,00,000 / year',
-            probability: c.chance_tier === 'High' ? 'High' : (c.chance_tier === 'Moderate' ? 'Moderate' : 'Low'),
-            rounds: c.closing_rank_reference?.[0]?.round || 'Mop-Up',
-            management_quota: c.quota === 'Management',
-            nri_seats: false
-          }));
-        } else {
-          aiResponse.unlikely_mbbs_guidance.private_options = [];
-        }
-      }
-      
-      // Pass the verified scholarships with official portals to the UI
-      aiResponse.exact_scholarships = exactData.scholarships;
 
-      // Step 5: Verify grounding
-      const groundingCheck = verifyGrounding(aiResponse, context);
-      if (!groundingCheck.ok) {
-        console.warn('[AI-Predict] Grounding issues:', groundingCheck.issues);
-        // Add grounding warning to disclaimers but still use the response
-        if (!aiResponse.disclaimers) aiResponse.disclaimers = [];
-        aiResponse.disclaimers.push(
-          'Some details in this response could not be fully verified against our database. Always cross-check with official sources.'
-        );
+      // Pass DB scholarships if AI didn't generate them
+      if (context.scholarships?.length > 0) {
+        aiResponse.exact_scholarships = context.scholarships.map(s => ({
+          name: s.name,
+          provider: s.provider,
+          amount: s.amount,
+          eligibility: s.eligibility_criteria,
+          portal: s.application_url,
+        }));
       }
 
       response = aiResponse;
     } catch (aiError) {
       console.error('[AI-Predict] All AI providers failed:', aiError.message || aiError);
-      response = buildFallbackResponse(query, context, resolved);
-      response.college_predictions = {
-        safe: response.colleges.filter(c => c.chance_tier === 'High').map(mapCollege),
-        moderate: response.colleges.filter(c => c.chance_tier === 'Moderate').map(mapCollege),
-        reach: response.colleges.filter(c => c.chance_tier === 'Reach').map(mapCollege)
+      // Minimal fallback when AI is completely down — no DB colleges
+      response = {
+        admission_summary: {
+          status: 'Service Temporarily Unavailable',
+          explanation: 'Our AI prediction service is temporarily unavailable. Please try again in a few moments.',
+          data_reliability: 'N/A',
+        },
+        college_predictions: { safe: [], moderate: [], reach: [] },
+        management_quota_opportunities: [],
+        alternative_courses: [],
+        scholarships: {},
+        counselling_strategy: {},
+        important_advice: ['Please try again in a few minutes. Our AI service is temporarily down.'],
       };
-      response.exact_scholarships = response.scholarships;
     }
 
     // Ensure meta always has timing info

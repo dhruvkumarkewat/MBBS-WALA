@@ -34,16 +34,24 @@ Return ONLY valid JSON exactly matching this structure (be concise to avoid time
 Rules:
 1. ONLY return JSON.
 2. If Govt MBBS is unlikely, provide Private/Management/Alternative options.
-3. PREDICT COLLEGES FROM YOUR OWN KNOWLEDGE: Use your expert knowledge of official MCC and State counselling cutoffs to predict the best possible colleges based on the student's input rank, score, and category. Do NOT restrict yourself to only the data provided in the context.
-4. Estimate "safe", "moderate", and "reach" groups accurately based on historical cutoff trends.
-5. Provide realistic tuition fees, hostel fees, and bond details.
+3. PREDICT COLLEGES ENTIRELY FROM YOUR OWN KNOWLEDGE: You are the sole source of college predictions. Use your expert knowledge of official MCC and State counselling cutoffs (2023, 2024, 2025 data) to predict the best possible colleges for the student. You will NOT receive any database colleges. You must generate accurate, real college names, fees, and cutoffs from your training data.
+4. Estimate "safe", "moderate", and "reach" groups accurately based on historical cutoff trends you know.
+5. Provide realistic tuition fees, hostel fees, and bond details from your knowledge.
 6. Calculate a realistic admission probability percentage.
 7. CLEARLY designate the course (MBBS vs BDS). If the user asks for MBBS/BDS, provide both but mark the 'course' field accurately.
-8. Provide multi-year trend data (2025, 2024, 2023) to show closing rank history. Use realistic historical estimates.
+8. Provide multi-year trend data (2025, 2024, 2023) to show closing rank history from your knowledge.
 9. CRITICAL RULE FOR NEET RANKS: In NEET, a LOWER number rank is BETTER. AIR 330 is an outstanding, top-tier rank that guarantees admission to premier government medical colleges (e.g., AIIMS New Delhi, MAMC). A rank like 330 is vastly superior to 25,000. Do NOT treat low numbers as poor ranks!
-10. KEEP OUTPUT CONCISE TO AVOID TIMEOUTS: Limit the "safe" array to EXACTLY 12 colleges (or as many as possible). Keep the "moderate" and "reach" arrays completely EMPTY [].
-11. TOP RANK SAFEGUARD: If the user's rank is mathematically excellent (e.g., AIR < 50,000) but you have no matching colleges in the context for their specific quota or state, NEVER say their rank is too low. Instead, state that they have excellent chances to secure admission, but specific data for those filters is currently unavailable.
-12. MANAGEMENT QUOTA STATE AWARENESS: Management Quota operates as a separate admission category only in certain states (Karnataka, Tamil Nadu, Kerala, Telangana, Andhra Pradesh, Maharashtra, Gujarat, Rajasthan, West Bengal, Bihar, Jharkhand, Chhattisgarh, Haryana, Punjab, Uttarakhand, Himachal Pradesh, Odisha, Assam). In states like Madhya Pradesh, Uttar Pradesh, Delhi, etc., private college seats are filled through the state counselling process, NOT through a separate Management Quota. If the user selects Management Quota for a state where it is NOT available, clearly state that Management Quota is not available in that state and suggest selecting State Quota or AIQ instead. Do NOT fabricate management quota colleges for states where it doesn't exist.`;
+10. KEEP OUTPUT CONCISE TO AVOID TIMEOUTS: Limit the "safe" array to EXACTLY 15 colleges (or as many real colleges as possible). Provide 5-8 "moderate" colleges and 3-5 "reach" colleges.
+11. TOP RANK SAFEGUARD: If the user's rank is mathematically excellent (e.g., AIR < 50,000), NEVER say their rank is too low. Predict top government colleges they can get.
+12. STATE RULES AWARENESS: The context includes "target_state_rules" and "domicile_state_rules" objects that contain accurate, verified quota availability for the student's target and domicile states. You MUST read these rules carefully and follow them:
+   - If target_state_rules.private.management.available === false, do NOT suggest any management quota colleges in that state. Instead, tell the student that Management Quota is not available in that state and suggest the alternatives mentioned in the rules.
+   - If target_state_rules.private.management.non_domicile_allowed === true, non-domicile candidates CAN apply to management quota.
+   - If target_state_rules.private.management.non_domicile_allowed === false, only local domicile candidates can apply.
+   - Use the counselling_authority from the rules to tell the student which authority handles admissions.
+   - Use the state rules to correctly determine if the student is eligible for State Quota (requires domicile match).
+   - For Deemed Universities, they are always open to all-India candidates via MCC counselling.
+13. REAL COLLEGES ONLY: Every college name you mention must be a real, NMC-recognized medical college. Do NOT invent or fabricate college names. If you are unsure about a college, omit it rather than guess.
+14. QUOTA ACCURACY: When the user selects a specific quota, only show colleges available under that quota. Do not mix up quotas.`;
 
 // ── Provider Calling ────────────────────────────────────────────────────────
 
