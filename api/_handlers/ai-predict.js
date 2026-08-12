@@ -8,6 +8,7 @@ import supabase from './db-client.js';
 import { callAI } from './ai-service.js';
 import { getRoundMultiplier } from './_courses.js';
 import { getStateRules } from './_state-rules.js';
+import { evaluateEligibility } from './_eligibility-engine.js';
 
 // ── Authority Resolution (deterministic, spec Section 3) ────────────────────
 export const maxDuration = 60;
@@ -527,32 +528,117 @@ export default async function handler(req, res) {
     // Step 2: Build deterministic resolved values
     const resolved = buildResolved(query, context);
 
-    // Step 3: Prepare payload for AI
-    // Pass state eligibility rules as context so the AI knows what quotas are valid
-    // but do NOT pass DB colleges — let the AI predict from its own knowledge
+    // Step 3: Build rich human-readable user prompt for AI
     const targetStateRulesForAI = getStateRules(query.target_state || query.domicile_state);
     const domicileStateRulesForAI = query.domicile_state ? getStateRules(query.domicile_state) : null;
-    
-    const aiPayload = { 
-      query, 
+    const targetStateName = query.target_state || query.domicile_state || 'All India';
+    const domicileStateName = query.domicile_state || 'Not specified';
+    const domicileMatchesTarget = query.domicile_state && query.target_state &&
+      query.domicile_state.toLowerCase() === query.target_state.toLowerCase();
+
+    // Pre-compute quota eligibility for each quota type
+    const quotaEligibility = {};
+    const selectedQuotas = query.quotas || ['AIQ'];
+
+    const mgmtRules = targetStateRulesForAI?.private?.management;
+    const nriRules  = targetStateRulesForAI?.private?.nri;
+    const stateGovtRules = targetStateRulesForAI?.government?.state_quota;
+    const aiqRules  = targetStateRulesForAI?.government?.aiq;
+
+    quotaEligibility.aiq = {
+      available: true,
+      eligible: true,
+      note: `AIQ (15% All India Quota) — Open to all candidates regardless of domicile. Counselling by MCC. Available in all government colleges in ${targetStateName}.`,
+    };
+    quotaEligibility.state_quota = {
+      available: stateGovtRules?.available !== false,
+      eligible: domicileMatchesTarget || !query.target_state,
+      counselling_authority: targetStateRulesForAI?.counselling_authority || 'State Counselling Authority',
+      note: domicileMatchesTarget
+        ? `State Quota (85%) — You ARE eligible. Your domicile (${domicileStateName}) matches target state (${targetStateName}). Counselling by ${targetStateRulesForAI?.counselling_authority || 'state authority'}.`
+        : `State Quota (85%) — You are NOT eligible. State Quota in ${targetStateName} requires ${targetStateName} domicile. Your domicile is ${domicileStateName}. You can apply for AIQ or Management Quota instead.`,
+    };
+    quotaEligibility.management = {
+      available: mgmtRules?.available !== false,
+      eligible: mgmtRules?.available && (mgmtRules?.non_domicile_allowed !== false),
+      non_domicile_allowed: mgmtRules?.non_domicile_allowed,
+      note: mgmtRules?.available === false
+        ? `Management Quota — NOT AVAILABLE in ${targetStateName}. ${mgmtRules?.note || `Private college seats in ${targetStateName} are filled through state counselling, not through a separate Management Quota.`} Suggest: Try AIQ or State Quota (if domicile matches).`
+        : mgmtRules?.non_domicile_allowed === false
+          ? `Management Quota — Available in ${targetStateName} but ONLY for ${targetStateName} domicile holders. Your domicile is ${domicileStateName}, so you are NOT eligible. Suggest: Try AIQ or Management Quota in a different state.`
+          : `Management Quota — Available in ${targetStateName} and open to ALL India candidates (no domicile restriction). Counselling by ${mgmtRules?.counselling || targetStateRulesForAI?.counselling_authority}. ${mgmtRules?.note || ''}`,
+    };
+    quotaEligibility.nri = {
+      available: nriRules?.available !== false,
+      eligible: false, // requires NRI/PIO/OCI status — we can't confirm from student input
+      note: nriRules?.available === false
+        ? `NRI Quota — NOT AVAILABLE in ${targetStateName}.`
+        : `NRI Quota — Available in ${targetStateName} but requires NRI/PIO/OCI status or a qualifying NRI sponsor. Higher fees (typically ₹20-50 lakh/year). Student must confirm NRI eligibility separately.`,
+    };
+    quotaEligibility.deemed = {
+      available: true,
+      eligible: true,
+      note: `Deemed Universities — Always open to all-India candidates regardless of domicile. Counselling by MCC. Higher fees than government colleges. Not counted in state quota.`,
+    };
+
+    // Build the user prompt as a clear human brief
+    const userPromptText = `
+=== STUDENT PROFILE ===
+Exam Track: ${query.exam_track || 'MBBS / BDS'}
+NEET AIR: ${query.score_or_rank.value} (Year: ${query.score_or_rank.neet_year || 2026})
+Category: ${query.category || 'General'}
+Domicile State: ${domicileStateName}
+Target State: ${targetStateName}
+Domicile matches Target State: ${domicileMatchesTarget ? 'YES' : 'NO'}
+Requested Quotas: ${selectedQuotas.join(', ')}
+Counselling Round: ${query.round || 'Round 1'}
+
+=== PRE-VERIFIED QUOTA ELIGIBILITY FOR ${targetStateName.toUpperCase()} ===
+${Object.entries(quotaEligibility).map(([k, v]) => `[${k.toUpperCase()}] ${v.eligible ? '✅ ELIGIBLE' : v.available === false ? '🚫 NOT AVAILABLE IN THIS STATE' : '⚠️ INELIGIBLE FOR THIS STUDENT'} — ${v.note}`).join('\n')}
+
+=== COUNSELLING AUTHORITY FOR ${targetStateName.toUpperCase()} ===
+${targetStateRulesForAI?.counselling_authority || 'State Counselling Body'}
+
+=== WHAT TO PREDICT ===
+The student has selected: ${selectedQuotas.join(', ')} in ${targetStateName}.
+
+${selectedQuotas.map(q => {
+  const qL = q.toLowerCase();
+  if (qL.includes('management') || qL === 'management quota') return quotaEligibility.management.available === false
+    ? `MANAGEMENT QUOTA: 🚫 NOT AVAILABLE in ${targetStateName}. Show NO management quota colleges. Instead, in quota_wise_analysis.management_quota set available_in_state: false and give a helpful message suggesting alternatives (${quotaEligibility.aiq.eligible ? 'AIQ' : ''}${domicileMatchesTarget ? ', State Quota' : ''}, Management Quota in other states like Karnataka/Tamil Nadu/Maharashtra).`
+    : quotaEligibility.management.eligible
+      ? `MANAGEMENT QUOTA: ✅ Show real private ${targetStateName} medical colleges with management quota seats. Non-domicile allowed. Show 8-12 real colleges.`
+      : `MANAGEMENT QUOTA: ⚠️ Not eligible (domicile mismatch). Show message and suggest alternatives.`;
+  if (qL === 'aiq' || qL.includes('all india')) return `AIQ: ✅ Show real government MBBS colleges in ${targetStateName} under AIQ. Use actual 2023-2025 closing ranks for ${query.category} category, Round 1 AIQ. Show 10-15 real colleges.`;
+  if (qL.includes('state')) return domicileMatchesTarget
+    ? `STATE QUOTA: ✅ Show real government colleges in ${targetStateName} under 85% state quota for ${query.category} category. Show 8-12 real colleges.`
+    : `STATE QUOTA: ⚠️ Not eligible — domicile mismatch. Tell student they need ${targetStateName} domicile for state quota.`;
+  if (qL.includes('nri')) return `NRI QUOTA: Show NRI quota colleges in ${targetStateName} if available, with fee structure. Note that NRI status must be verified.`;
+  return `${q}: Show relevant colleges if available.`;
+}).join('\n')}
+
+For each college you show:
+1. Use the EXACT official college name (real NMC-recognized college)
+2. Compare student AIR ${query.score_or_rank.value} (${query.category}) against actual historical closing ranks
+3. Only show colleges where the student has a realistic chance (rank ≤ closing rank = safe, within 20% = moderate, 20-40% = reach)
+4. Show historical_trend as an ARRAY: [{year: 2025, closing_rank: XXXX}, {year: 2024, closing_rank: XXXX}, {year: 2023, closing_rank: XXXX}]
+5. Set margin to: closing_rank - student_rank (positive = safe, negative = harder)
+6. Government college fees: ₹10,000-₹50,000/year. Private fees: ₹8L-₹25L/year. Deemed: ₹15L-₹30L/year. Management: ₹15L-₹35L/year.
+
+CRITICAL: LOWER AIR NUMBER = BETTER. AIR ${query.score_or_rank.value} is ${query.score_or_rank.value < 5000 ? 'an EXCELLENT top-tier rank' : query.score_or_rank.value < 25000 ? 'a GOOD rank with many options' : query.score_or_rank.value < 75000 ? 'a MODERATE rank' : query.score_or_rank.value < 150000 ? 'a rank with limited government options but good private options' : 'a rank where private/management/AYUSH options are recommended'}.
+`.trim();
+
+    const aiPayload = {
+      user_prompt: userPromptText,
+      // Also pass structured data for any provider that uses it
+      query,
       context: {
-        // Pass state eligibility rules to guide the AI
-        target_state_rules: targetStateRulesForAI ? {
-          state: query.target_state || query.domicile_state,
-          counselling_authority: targetStateRulesForAI.counselling_authority,
-          government: targetStateRulesForAI.government,
-          private: targetStateRulesForAI.private,
-        } : null,
-        domicile_state_rules: domicileStateRulesForAI && domicileStateRulesForAI !== targetStateRulesForAI ? {
-          state: query.domicile_state,
-          counselling_authority: domicileStateRulesForAI.counselling_authority,
-          government: domicileStateRulesForAI.government,
-          private: domicileStateRulesForAI.private,
-        } : null,
-        // Pass scholarships from DB (these are useful data, not college predictions)
+        target_state_rules: targetStateRulesForAI,
+        domicile_state_rules: domicileStateRulesForAI,
+        quota_eligibility: quotaEligibility,
         scholarships: (context.scholarships || []).slice(0, 5),
-      }, 
-      resolved 
+      },
+      resolved,
     };
 
     let response;
