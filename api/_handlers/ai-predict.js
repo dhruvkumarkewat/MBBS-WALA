@@ -560,17 +560,80 @@ export default async function handler(req, res) {
     try {
       // Step 4: Call AI — use AI's response directly (no DB override)
       const aiResponse = await callAI(aiPayload);
-      
-      // The AI generates all college predictions from its own knowledge.
-      // We only verify basic structure is present.
-      if (!aiResponse.college_predictions) {
-        aiResponse.college_predictions = { safe: [], moderate: [], reach: [] };
+
+      // ── Normalize AI response to handle structural variations ───────────────
+      // Gemini sometimes uses different field names than specified in the prompt.
+      // We normalize here so the frontend always gets a consistent shape.
+
+      // 1. Normalize admission_summary
+      const as = aiResponse.admission_summary || {};
+      aiResponse.admission_summary = {
+        status: as.status || as.overall_status || as.summary_status || as.outlook || 'Prediction Ready',
+        explanation: as.explanation || as.overall_outlook || as.summary || as.description || '',
+        data_reliability: as.data_reliability || 'Medium',
+        expected_probability: as.expected_probability || as.probability || '70%',
+      };
+
+      // 2. Normalize college_predictions — ensure safe/moderate/reach exist
+      //    and each college has a 'name' field (AI sometimes uses 'college_name')
+      const cp = aiResponse.college_predictions || {};
+      ['safe', 'moderate', 'reach'].forEach(tier => {
+        if (!Array.isArray(cp[tier])) cp[tier] = [];
+        cp[tier] = cp[tier].map(c => {
+          // Coerce name field
+          c.name = c.name || c.college_name || c.institution || c.college || 'Unknown College';
+          // Coerce predicted_closing_rank to number
+          if (typeof c.predicted_closing_rank === 'string') {
+            c.predicted_closing_rank = parseInt(c.predicted_closing_rank.replace(/[^\d]/g, '')) || 0;
+          }
+          // Ensure historical_trend is an array
+          if (!Array.isArray(c.historical_trend)) {
+            c.historical_trend = c.historical_trend ? [c.historical_trend] : [];
+          }
+          // Ensure quota field
+          c.quota = c.quota || c.quota_type || c.admission_quota || 'AIQ';
+          // Ensure probability is a string percentage
+          if (typeof c.probability === 'number') c.probability = `${c.probability}%`;
+          return c;
+        });
+      });
+      aiResponse.college_predictions = cp;
+
+      // 3. Normalize quota_wise_analysis — AI sometimes returns a flat array
+      //    instead of our named sub-object structure
+      const qwa = aiResponse.quota_wise_analysis;
+      if (Array.isArray(qwa)) {
+        // AI returned an array of quota objects — convert to named sub-objects
+        const normalized = {};
+        (qwa).forEach(q => {
+          const t = (q.quota_type || q.type || '').toLowerCase();
+          if (t.includes('aiq') || t.includes('all india')) normalized.aiq = q;
+          else if (t.includes('state')) normalized.state_quota = q;
+          else if (t.includes('management') || t.includes('mgmt')) normalized.management_quota = q;
+          else if (t.includes('nri')) normalized.nri_quota = q;
+          else if (t.includes('deemed')) normalized.deemed_universities = q;
+        });
+        aiResponse.quota_wise_analysis = normalized;
+      } else if (qwa && !qwa.aiq && !qwa.state_quota && !qwa.management_quota) {
+        // AI returned a flat object with non-standard keys — wrap it
+        // Try to extract per-quota data from whatever keys exist
+        const flat = qwa;
+        aiResponse.quota_wise_analysis = {
+          aiq: { eligible: true, explanation: flat.aiq_explanation || flat.all_india_quota || 'AIQ available — no domicile restriction via MCC.' },
+          state_quota: { eligible: flat.state_eligible ?? null, explanation: flat.state_explanation || flat.state_quota || 'State Quota requires matching domicile.' },
+          management_quota: { available_in_state: flat.mgmt_available ?? true, eligible: flat.mgmt_eligible ?? null, non_domicile_allowed: flat.non_domicile ?? true, explanation: flat.mgmt_explanation || flat.management || '' },
+          nri_quota: { eligible: false, explanation: 'NRI Quota requires NRI/PIO/OCI status or NRI sponsor.' },
+          deemed_universities: { eligible: true, explanation: 'Deemed universities open to all-India candidates via MCC counselling.' },
+        };
       }
-      if (!aiResponse.management_quota_opportunities) {
+      if (!aiResponse.quota_wise_analysis) aiResponse.quota_wise_analysis = null;
+
+      // 4. Ensure management_quota_opportunities is an array
+      if (!Array.isArray(aiResponse.management_quota_opportunities)) {
         aiResponse.management_quota_opportunities = [];
       }
 
-      // Pass DB scholarships if AI didn't generate them
+      // 5. Pass DB scholarships if AI didn't generate them
       if (context.scholarships?.length > 0) {
         aiResponse.exact_scholarships = context.scholarships.map(s => ({
           name: s.name,
