@@ -112,6 +112,25 @@ const DEEMED_KEYWORDS = [
   'dr. m.g.r.', 'drmgr', 'deemed'
 ];
 
+  // ── State-Aware Quota Availability ─────────────────────────────────────────
+  // States where a separate Management Quota exists (private colleges fill seats
+  // via management/institutional quota outside state counselling).
+  // In other states, private college seats go through the state counselling process
+  // (e.g., DMET MP, DMER MH state rounds), so "Management Quota" as a separate
+  // category doesn't apply — those seats are part of State Quota.
+  const MANAGEMENT_QUOTA_STATES = new Set([
+    'karnataka', 'tamil nadu', 'kerala', 'telangana', 'andhra pradesh',
+    'maharashtra', 'gujarat', 'rajasthan', 'west bengal', 'bihar',
+    'jharkhand', 'chhattisgarh', 'haryana', 'punjab', 'uttarakhand',
+    'himachal pradesh', 'odisha', 'assam',
+  ]);
+
+  const targetStateLower = (query.target_state || '').toLowerCase();
+  const domicileStateLower = (domicileState || '').toLowerCase();
+  // Determine if management quota is relevant for the target or domicile state
+  const mgmtQuotaRelevantState = targetStateLower || domicileStateLower;
+  const isMgmtQuotaAvailable = MANAGEMENT_QUOTA_STATES.has(mgmtQuotaRelevantState);
+
   // Map colleges into structured closing ranks
   const collegeCutoffs = (allColleges || []).map((col) => {
     if (!col.name || col.name === '-' || col.name.length < 3) return null;
@@ -123,14 +142,16 @@ const DEEMED_KEYWORDS = [
 
     let baseClosing = getCategoryClosing(col.cutoff, category);
     
-    // For Private/Deemed/Management colleges without explicit cutoffs in the database, 
-    // estimate a very high closing rank (1,500,000) because admission is largely guaranteed 
-    // if the candidate is simply NEET qualified and willing to pay the fees.
+    // For Private/Deemed colleges without explicit cutoffs:
+    // Only assign a default closing rank if Management Quota is actually available
+    // in the relevant state. Otherwise, drop the college — it would fabricate data.
     if (!baseClosing) {
-      if (!isGovt) {
-        baseClosing = 1500000;
+      const colStateLower = (col.state || '').toLowerCase();
+      const colStateHasMgmt = MANAGEMENT_QUOTA_STATES.has(colStateLower);
+      if (!isGovt && colStateHasMgmt) {
+        baseClosing = 1500000; // Management quota is fee-based; any NEET-qualified candidate eligible
       } else {
-        return null;
+        return null; // No cutoff data and no management quota → skip
       }
     }
     
@@ -383,6 +404,8 @@ const DEEMED_KEYWORDS = [
     scholarships: matchedScholarships,
     seat_matrix: seatMatrix || [],
     calendar_rounds: calendarRounds || [],
+    _mgmt_quota_available: isMgmtQuotaAvailable,
+    _target_state: query.target_state || query.domicile_state || null,
   };
 }
 
@@ -680,6 +703,12 @@ export default async function handler(req, res) {
     
     // Attach query so frontend can display candidate rank
     response.query = query;
+    
+    // Attach quota availability metadata for the frontend
+    response.quota_availability = {
+      management_quota_available: context._mgmt_quota_available || false,
+      target_state: context._target_state || null,
+    };
 
     return res.status(200).json(response);
   } catch (err) {

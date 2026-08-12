@@ -542,20 +542,31 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
              </div>
           )}
         </div>
-      ) : (
-        <div className={`rounded-2xl border p-5 ${s.card} border-l-4 border-l-slate-500/60`}>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-lg">🏛️</span>
-            <h3 className="font-black text-sm uppercase tracking-wider">Management Quota — No Data Available</h3>
+      ) : (() => {
+        const qa = aiResponse.quota_availability;
+        const stateName = qa?.target_state || 'your selected state';
+        const mgmtAvailable = qa?.management_quota_available;
+        
+        return (
+          <div className={`rounded-2xl border p-5 ${s.card} border-l-4 ${mgmtAvailable === false ? 'border-l-amber-500/60' : 'border-l-slate-500/60'}`}>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-lg">{mgmtAvailable === false ? '🚫' : '🏛️'}</span>
+              <h3 className="font-black text-sm uppercase tracking-wider">
+                {mgmtAvailable === false 
+                  ? `Management Quota Not Available in ${stateName}`
+                  : 'Management Quota — No Data Found'
+                }
+              </h3>
+            </div>
+            <p className={`text-sm ${s.muted} leading-relaxed`}>
+              {mgmtAvailable === false 
+                ? `Management Quota does not operate as a separate admission category in ${stateName}. In this state, private college seats are filled through the state counselling process (State Quota). Please try selecting "State Quota (85%)" or "AIQ (15% All India Quota)" instead to see available colleges.`
+                : `No Management Quota colleges were found for ${stateName} with your selected filters. Try selecting a different target state, or use AIQ or State Quota to see government college options.`
+              }
+            </p>
           </div>
-          <p className={`text-sm ${s.muted} leading-relaxed`}>
-            No Management Quota data is currently available for your selected state and filters. This may mean: 
-            (1) The database does not yet include Management Quota cutoffs for this state, or 
-            (2) No private colleges with management seats match your selected course/round. 
-            Try selecting a different target state, or use AIQ or State Quota to see government college options.
-          </p>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── Alternative Courses ── */}
       {aiResponse.alternative_courses && aiResponse.alternative_courses.length > 0 && (
