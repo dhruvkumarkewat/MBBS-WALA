@@ -139,10 +139,10 @@ export default async function handler(req, res) {
       }
       
       const PLANS = {
-        'neet-ug': { name: 'NEET UG Counselling Pro', price: 4999 },
-        'neet-pg': { name: 'NEET PG / INI-CET Pro', price: 6999 },
-        'ultimate-bundle': { name: 'Ultimate Medical Master Bundle', price: 9999 },
-        'premium': { name: 'Premium Plan', price: 4999 }
+        'basic': { name: 'BASIC', price: 99 },
+        'neet-ug-pro': { name: 'NEET UG Counselling Pro', price: 4999 },
+        'ultimate': { name: 'Ultimate Medical Master Bundle', price: 9999 },
+        'premium': { name: 'Premium Plan', price: 4999 } // Fallback for legacy
       };
       const plan = PLANS[plan_slug] || PLANS['premium'];
       const plan_name = plan.name;
@@ -168,9 +168,12 @@ export default async function handler(req, res) {
             .maybeSingle();
             
           if (!existingAsReferee) {
-            finalAmount = Math.max(0, finalAmount - 500);
-            appliedReferralCode = refCode;
-            referrerId = referrerWallet.user_id;
+            // Do not apply referral discount to the ₹99 BASIC plan
+            if (plan_slug !== 'basic') {
+              finalAmount = Math.max(0, finalAmount - 500);
+              appliedReferralCode = refCode;
+              referrerId = referrerWallet.user_id;
+            }
           }
         }
       }

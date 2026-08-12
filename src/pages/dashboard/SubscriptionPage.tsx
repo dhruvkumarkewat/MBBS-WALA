@@ -34,7 +34,7 @@ interface Plan {
 
 const PLANS: Plan[] = [
   {
-    id: 'neet-ug',
+    id: 'basic',
     name: 'BASIC',
     price: 99,
     originalPrice: 4999,
@@ -42,7 +42,7 @@ const PLANS: Plan[] = [
     popular: true,
     description: 'Complete AI-powered choice filling, cutoffs, and predictions for MBBS, BDS, and AYUSH.',
     features: [
-      'Unlimited College Predictor (1000+ Colleges)',
+      '15 College Pridictions',
       'MCC AIQ + All 28 State Quota Round-wise Cutoffs',
       'AI Smart Choice Preference Order Sequence',
       'Category & Domicile Matrix Analyzer',
@@ -53,7 +53,7 @@ const PLANS: Plan[] = [
     ],
   },
   {
-    id: 'neet-pg',
+    id: 'neet-ug-pro',
     name: 'NEET UG Counselling Pro',
     price: 4999,
     originalPrice: 11999,
@@ -70,7 +70,7 @@ const PLANS: Plan[] = [
     ],
   },
   {
-    id: 'ultimate-bundle',
+    id: 'ultimate',
     name: 'Ultimate Medical Master Bundle',
     price: 9999,
     originalPrice: 16999,
