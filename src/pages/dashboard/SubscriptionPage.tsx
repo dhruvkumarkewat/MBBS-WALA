@@ -411,12 +411,7 @@ export function SubscriptionPage() {
           return (
             <div
               key={plan.id}
-<<<<<<< HEAD
-              className={`relative rounded-3xl border flex flex-col p-6 sm:p-7 transition-all duration-300 ${
-                plan.popular
-=======
               className={`relative rounded-3xl border flex flex-col p-5 lg:p-4 xl:p-6 transition-all duration-300 ${plan.popular
->>>>>>> 7051e38 (Update subscription package names and pricing)
                   ? 'border-primary bg-gradient-to-b from-primary/10 via-card to-card shadow-2xl shadow-primary/15 md:-translate-y-2'
                   : 'border-border/60 bg-card hover:border-border shadow-sm'
                 }`}
