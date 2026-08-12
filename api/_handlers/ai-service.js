@@ -101,7 +101,28 @@ Return ONLY valid JSON matching this structure:
   "nri_quota": {"eligible_colleges": ["..."], "approx_fees": "...", "eligibility": "...", "required_documents": ["..."]},
   "unlikely_mbbs_guidance": {"active": false, "message": "...", "private_options": []},
   "alternative_courses": [{"course": "BDS/BAMS/BHMS/BUMS/BSMS", "career_scope": "...", "average_salary": "...", "higher_studies": "...", "admission_chances": "...", "top_colleges": ["..."]}],
-  "scholarships": {"government": ["..."], "state": ["..."], "private": ["..."], "minority": ["..."], "category": ["..."], "income_based": ["..."]},
+  "scholarships_analysis": {
+    "eligible": [
+      {
+        "name": "Scholarship Name",
+        "provider": "Provider Name",
+        "amount": "₹X/year",
+        "eligibility": "Full eligibility criteria",
+        "portal": "https://...",
+        "match_reason": "You are eligible because your rank is X and category is Y."
+      }
+    ],
+    "ineligible": [
+      {
+        "name": "Scholarship Name",
+        "provider": "Provider Name",
+        "amount": "₹X/year",
+        "eligibility": "Full eligibility criteria",
+        "portal": "https://...",
+        "rejection_reason": "You are NOT eligible because this requires X (e.g. SC category or Karnataka domicile)."
+      }
+    ]
+  },
   "counselling_strategy": {"round_1": "...", "round_2": "...", "round_3": "...", "stray_vacancy": "...", "state_counselling": "..."},
   "expected_cutoff_comparison": [{"college": "...", "last_year_closing_rank": 25000, "your_rank": 20000, "difference": "+5000", "admission_chance": "95%"}],
   "fee_comparison": {"government": "₹X/year", "private": "₹X/year", "management": "₹X/year", "nri": "₹X/year", "total_course_cost": "₹X for 4.5 years"},

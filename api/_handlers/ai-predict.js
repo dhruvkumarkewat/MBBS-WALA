@@ -626,6 +626,10 @@ For each college you show:
 6. Government college fees: ₹10,000-₹50,000/year. Private fees: ₹8L-₹25L/year. Deemed: ₹15L-₹30L/year. Management: ₹15L-₹35L/year.
 
 CRITICAL: LOWER AIR NUMBER = BETTER. AIR ${query.score_or_rank.value} is ${query.score_or_rank.value < 5000 ? 'an EXCELLENT top-tier rank' : query.score_or_rank.value < 25000 ? 'a GOOD rank with many options' : query.score_or_rank.value < 75000 ? 'a MODERATE rank' : query.score_or_rank.value < 150000 ? 'a rank with limited government options but good private options' : 'a rank where private/management/AYUSH options are recommended'}.
+
+=== SCHOLARSHIPS TO ANALYZE ===
+Analyze these scholarships based on the student's rank (${query.score_or_rank.value}), category (${query.category}), and domicile (${domicileStateName}). Place them into the "eligible" or "ineligible" arrays in "scholarships_analysis". For ineligible ones, explain exactly why (e.g. requires different category or domicile). If we don't have enough info (like income), assume eligible but note it in match_reason.
+${(context.scholarships || []).slice(0, 5).map(s => `- Name: ${s.name}\n  Provider: ${s.provider}\n  Amount: ${s.amount}\n  Eligibility: ${s.eligibility_criteria}\n  Portal: ${s.application_url}`).join('\n\n')}
 `.trim();
 
     const aiPayload = {
@@ -719,16 +723,19 @@ CRITICAL: LOWER AIR NUMBER = BETTER. AIR ${query.score_or_rank.value} is ${query
         aiResponse.management_quota_opportunities = [];
       }
 
-      // 5. Pass DB scholarships if AI didn't generate them
-      if (context.scholarships?.length > 0) {
-        aiResponse.exact_scholarships = context.scholarships.map(s => ({
-          name: s.name,
-          provider: s.provider,
-          amount: s.amount,
-          eligibility: s.eligibility_criteria,
-          portal: s.application_url,
-        }));
+      // 5. Normalize scholarships_analysis
+      const sa = aiResponse.scholarships_analysis || aiResponse.scholarships || {};
+      aiResponse.scholarships_analysis = {
+        eligible: Array.isArray(sa.eligible) ? sa.eligible : [],
+        ineligible: Array.isArray(sa.ineligible) ? sa.ineligible : []
+      };
+      // Fallback: If AI put array in root instead of inside eligible/ineligible
+      if (Array.isArray(sa)) {
+        aiResponse.scholarships_analysis.eligible = sa;
       }
+      // Delete old deprecated keys to avoid confusion
+      delete aiResponse.scholarships;
+      delete aiResponse.exact_scholarships;
 
       response = aiResponse;
     } catch (aiError) {
