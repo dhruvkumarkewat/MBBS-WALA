@@ -541,8 +541,8 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             <span className="text-lg">🏛️</span>
             <h3 className="font-black text-sm uppercase tracking-wider">Management Quota Opportunities</h3>
           </div>
-          <p className={`text-sm ${s.muted}`}>
-            Management Quota is either not available in your selected state(s) or there are no suitable options available for your current rank.
+          <p className={`text-sm ${s.muted} leading-relaxed`}>
+            If you searched with Management Quota and it is not available in your selected state, try another quota like NRI Quota. If you cannot get admission through NRI or Management Quota, please try other alternative courses as your rank is too low for MBBS/BDS.
           </p>
         </div>
       )}
