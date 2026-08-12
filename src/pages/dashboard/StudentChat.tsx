@@ -55,13 +55,18 @@ export default function StudentChat() {
       if (counselor?.id) {
         apiJson<any>(`/api/messages?otherUserId=${counselor.id}`, {}, true).then((res) => {
           if (!res.error) {
-            setMessages(res as Message[]);
-            apiJson('/api/notifications', { method: 'PUT', body: JSON.stringify({ mark_chat: true }) }, true).catch(() => {});
+            setMessages((prevMessages) => {
+              const newMessages = res as Message[];
+              if (prevMessages.length !== newMessages.length) {
+                // Only mark as read if there are actually new messages
+                apiJson('/api/notifications', { method: 'PUT', body: JSON.stringify({ mark_chat: true }) }, true).catch(() => {});
+              }
+              return newMessages;
+            });
           }
         });
       }
-    }, 2000);
-    
+    }, 10000);
     return () => clearInterval(interval);
   }, [counselor?.id]);
 

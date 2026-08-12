@@ -795,7 +795,7 @@ export function AdminStudentDetailPage() {
       } catch {
         // ignore polling errors
       }
-    }, 2000);
+    }, 10000);
     
     return () => clearInterval(interval);
   }, [pack?.student?.id]);
