@@ -629,7 +629,7 @@ CRITICAL: LOWER AIR NUMBER = BETTER. AIR ${query.score_or_rank.value} is ${query
 
 === SCHOLARSHIPS TO ANALYZE ===
 Analyze these scholarships based on the student's rank (${query.score_or_rank.value}), category (${query.category}), and domicile (${domicileStateName}). Place them into the "eligible" or "ineligible" arrays in "scholarships_analysis". For ineligible ones, explain exactly why (e.g. requires different category or domicile). If we don't have enough info (like income), assume eligible but note it in match_reason.
-${(context.scholarships || []).slice(0, 5).map(s => `- Name: ${s.name}\n  Provider: ${s.provider}\n  Amount: ${s.amount}\n  Eligibility: ${s.eligibility_criteria}\n  Portal: ${s.application_url}`).join('\n\n')}
+${(context.scholarships || []).slice(0, 5).map(s => `- Name: ${s.name}\n  Provider: ${s.provider}\n  Amount: ${s.amount_description || s.amount}\n  Eligibility: ${s.eligibility}\n  Portal: ${s.official_portal}`).join('\n\n')}
 `.trim();
 
     const aiPayload = {
