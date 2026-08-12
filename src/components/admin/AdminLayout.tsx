@@ -40,15 +40,27 @@ type StaffInfo = {
 type AdminThemeCtx = {
   dark: boolean;
   toggleDark: () => void;
+  viewAsCounsellor: boolean;
+  isSuper: boolean;
 };
 
 const AdminThemeContext = createContext<AdminThemeCtx>({
   dark: false,
   toggleDark: () => undefined,
+  viewAsCounsellor: false,
+  isSuper: false,
 });
 
 export function useAdminTheme() {
   return useContext(AdminThemeContext);
+}
+
+export function useAdminRole() {
+  const { viewAsCounsellor, isSuper } = useContext(AdminThemeContext);
+  // If super admin is viewing as counsellor, return 'counsellor' role for page content
+  if (isSuper && viewAsCounsellor) return 'counsellor';
+  if (isSuper) return 'super_admin';
+  return 'counsellor';
 }
 
 type NavItem = {
@@ -86,6 +98,7 @@ export default function AdminLayout() {
   const [staffInfo, setStaffInfo] = useState<StaffInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [viewAsCounsellor, setViewAsCounsellor] = useState(false);
   const [error, setError] = useState('');
   const [dark, setDark] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -270,9 +283,9 @@ export default function AdminLayout() {
     );
   }
 
-  const links = staffInfo.role === 'super_admin' ? superLinks : subLinks;
-  const name = staffInfo.staff?.full_name || 'Admin';
   const isSuper = staffInfo.role === 'super_admin';
+  const links = isSuper && !viewAsCounsellor ? superLinks : subLinks;
+  const name = staffInfo.staff?.full_name || 'Admin';
   const photo =
     user?.user_metadata?.avatar_url ||
     user?.user_metadata?.picture ||
@@ -280,7 +293,7 @@ export default function AdminLayout() {
     `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=FF7A1A&color=fff&bold=true&size=128`;
 
   return (
-    <AdminThemeContext.Provider value={{ dark, toggleDark }}>
+    <AdminThemeContext.Provider value={{ dark, toggleDark, viewAsCounsellor, isSuper }}>
       <div
         className={`admin-shell min-h-screen ${
           dark ? 'admin-dark bg-[#0a0b10] text-slate-100' : 'admin-light bg-[#F4F7FB] text-slate-900'
@@ -358,7 +371,7 @@ export default function AdminLayout() {
                 />
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-orange-500">
-                    {isSuper ? 'Super Admin' : 'Counsellor'}
+                    {isSuper && viewAsCounsellor ? 'Super (Counsellor View)' : isSuper ? 'Super Admin' : 'Counsellor'}
                   </p>
                   <p className={`text-[13px] font-semibold truncate leading-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
                     {name}
@@ -420,6 +433,29 @@ export default function AdminLayout() {
                 dark ? 'border-white/[0.07]' : 'border-slate-200'
               }`}
             >
+              {isSuper && (
+                <button
+                  type="button"
+                  onClick={() => setViewAsCounsellor(!viewAsCounsellor)}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition ${
+                    dark
+                      ? 'text-white/60 hover:text-white hover:bg-white/[0.06]'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="inline-flex items-center gap-3">
+                    <UserCog className="w-[18px] h-[18px]" />
+                    Counsellor view
+                  </span>
+                  <span className={`w-9 h-5 rounded-full relative transition-colors ${viewAsCounsellor ? 'bg-orange-500' : (dark ? 'bg-white/20' : 'bg-slate-300')}`}>
+                    <span
+                      className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${
+                        viewAsCounsellor ? 'left-[18px]' : 'left-0.5'
+                      }`}
+                    />
+                  </span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={toggleDark}
