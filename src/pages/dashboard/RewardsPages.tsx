@@ -139,23 +139,7 @@ export function ReferEarnPage() {
     }
   };
 
-  const shareNative = async () => {
-    if (!data) return;
-    const text = `Join MBBSWala with my code ${data.referral_code} — get ₹${data.rewards.referee} off counselling. I get ₹${data.rewards.referrer} too! ${data.share_url}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: 'MBBSWala Referral', text, url: data.share_url });
-        await apiJson('/api/challenges', {
-          method: 'POST',
-          body: JSON.stringify({ challenge_slug: 'share-story' }),
-        }, true).catch(() => null);
-      } catch {
-        /* cancelled */
-      }
-    } else {
-      copy(text, 'link');
-    }
-  };
+
 
   const apply = async (e: FormEvent) => {
     e.preventDefault();
@@ -243,13 +227,6 @@ export function ReferEarnPage() {
               credits the moment they apply it.
             </p>
             <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={shareNative}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 font-semibold text-[13px] tracking-wide transition-all shadow-lg shadow-orange-500/30"
-              >
-                <Share2 className="w-4 h-4" /> Share invite
-              </button>
               <Link
                 to="/dashboard/wallet"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/8 hover:bg-white/12 font-semibold text-[13px] tracking-wide border border-white/12"
@@ -276,21 +253,6 @@ export function ReferEarnPage() {
                   ) : (
                     <Copy className="w-5 h-5" />
                   )}
-                </button>
-              </div>
-            </div>
-            <div className="rounded-2xl bg-white/[0.07] backdrop-blur-md border border-white/12 p-5">
-              <p className="refer-label text-white/45 mb-2.5">Invite link</p>
-              <div className="flex items-center gap-3">
-                <p className="refer-link flex-1 truncate text-white/80">
-                  {data?.share_url || '—'}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => data && copy(data.share_url, 'link')}
-                  className="h-10 px-3.5 rounded-xl bg-white/12 text-[11px] font-semibold tracking-wide uppercase hover:bg-white/20 shrink-0"
-                >
-                  {copied === 'link' ? 'Copied' : 'Copy'}
                 </button>
               </div>
             </div>
