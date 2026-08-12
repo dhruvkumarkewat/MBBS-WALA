@@ -146,7 +146,7 @@ const PROVIDER_CONFIGS = {
   },
 };
 
-for (let i = 1; i <= 3; i++) {
+for (let i = 1; i <= 15; i++) {
   PROVIDER_CONFIGS[`gemini_${i}`] = {
     name: `Gemini Key ${i}`,
     buildRequest: (payload) => {
@@ -189,7 +189,7 @@ function getProviderOrder() {
   if (envOrder) {
     return envOrder.split(',').map((s) => s.trim().toLowerCase()).filter((p) => PROVIDER_CONFIGS[p]);
   }
-  return ['gemini', 'groq'];
+  return ['gemini', 'gemini_1', 'gemini_2', 'gemini_3', 'gemini_4', 'gemini_5', 'gemini_6', 'gemini_7', 'gemini_8', 'gemini_9', 'gemini_10', 'gemini_11', 'gemini_12', 'gemini_13', 'gemini_14', 'gemini_15', 'groq'];
 }
 
 /**
@@ -230,8 +230,17 @@ export async function callAI(payload) {
 
       return { ...parsed, _provider_used: providerKey };
     } catch (err) {
-      console.error(`[AI] ${config.name} failed:`, err.message || err);
+      console.warn(`[AI] ${config.name} failed:`, err.message);
       lastError = err;
+      
+      // If the error was a timeout, DO NOT retry other Gemini keys to prevent 504 Gateway Timeout.
+      // We only want to retry on instant failures (like 429 rate limit or 400 invalid model).
+      if (err.name === 'TimeoutError' || err.message.includes('timeout') || err.message.includes('aborted')) {
+        console.warn(`[AI] Timeout detected. Skipping remaining Gemini keys to prevent Nginx 504.`);
+        if (providerKey.startsWith('gemini')) {
+           break;
+        }
+      }
     }
   }
 
