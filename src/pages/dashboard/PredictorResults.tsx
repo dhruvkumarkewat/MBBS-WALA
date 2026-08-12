@@ -613,6 +613,93 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
         );
       })()}
 
+      {/* ── Quota-Wise Analysis (from AI) ── */}
+      {aiResponse.quota_wise_analysis && (
+        <div className={`rounded-2xl border p-5 ${s.card}`}>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-lg">📊</span>
+            <h3 className="font-black text-sm uppercase tracking-wider">Quota-Wise Eligibility Analysis</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {/* AIQ */}
+            {aiResponse.quota_wise_analysis.aiq && (
+              <div className={`p-3 rounded-xl border ${s.dark ? 'border-blue-500/20 bg-blue-500/5' : 'border-blue-200 bg-blue-50'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${aiResponse.quota_wise_analysis.aiq.eligible ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                    {aiResponse.quota_wise_analysis.aiq.eligible ? '✅ Eligible' : '❌ Not Eligible'}
+                  </span>
+                </div>
+                <h4 className="font-bold text-sm mb-1">AIQ (15% All India)</h4>
+                <p className={`text-[11px] ${s.muted} leading-relaxed`}>{aiResponse.quota_wise_analysis.aiq.explanation}</p>
+                {aiResponse.quota_wise_analysis.aiq.total_colleges_found > 0 && (
+                  <p className="text-[11px] font-semibold mt-1 text-primary">{aiResponse.quota_wise_analysis.aiq.total_colleges_found} colleges found</p>
+                )}
+              </div>
+            )}
+            {/* State Quota */}
+            {aiResponse.quota_wise_analysis.state_quota && (
+              <div className={`p-3 rounded-xl border ${s.dark ? 'border-purple-500/20 bg-purple-500/5' : 'border-purple-200 bg-purple-50'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${aiResponse.quota_wise_analysis.state_quota.eligible ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                    {aiResponse.quota_wise_analysis.state_quota.eligible ? '✅ Eligible' : '❌ Not Eligible'}
+                  </span>
+                </div>
+                <h4 className="font-bold text-sm mb-1">State Quota (85%)</h4>
+                <p className={`text-[11px] ${s.muted} leading-relaxed`}>{aiResponse.quota_wise_analysis.state_quota.explanation}</p>
+                {aiResponse.quota_wise_analysis.state_quota.counselling_authority && (
+                  <p className="text-[11px] font-semibold mt-1">Authority: {aiResponse.quota_wise_analysis.state_quota.counselling_authority}</p>
+                )}
+              </div>
+            )}
+            {/* Management Quota */}
+            {aiResponse.quota_wise_analysis.management_quota && (
+              <div className={`p-3 rounded-xl border ${s.dark ? 'border-pink-500/20 bg-pink-500/5' : 'border-pink-200 bg-pink-50'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${aiResponse.quota_wise_analysis.management_quota.available_in_state === false ? 'bg-amber-500/20 text-amber-400' : aiResponse.quota_wise_analysis.management_quota.eligible ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                    {aiResponse.quota_wise_analysis.management_quota.available_in_state === false ? '🚫 Not Available' : aiResponse.quota_wise_analysis.management_quota.eligible ? '✅ Eligible' : '❌ Not Eligible'}
+                  </span>
+                </div>
+                <h4 className="font-bold text-sm mb-1">Management Quota</h4>
+                <p className={`text-[11px] ${s.muted} leading-relaxed`}>{aiResponse.quota_wise_analysis.management_quota.explanation}</p>
+                {aiResponse.quota_wise_analysis.management_quota.note && (
+                  <p className="text-[11px] text-amber-400 mt-1">⚠️ {aiResponse.quota_wise_analysis.management_quota.note}</p>
+                )}
+              </div>
+            )}
+            {/* NRI Quota */}
+            {aiResponse.quota_wise_analysis.nri_quota && (
+              <div className={`p-3 rounded-xl border ${s.dark ? 'border-cyan-500/20 bg-cyan-500/5' : 'border-cyan-200 bg-cyan-50'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${aiResponse.quota_wise_analysis.nri_quota.eligible ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-500/20 text-slate-400'}`}>
+                    {aiResponse.quota_wise_analysis.nri_quota.eligible ? '✅ Eligible' : 'ℹ️ Requires NRI Status'}
+                  </span>
+                </div>
+                <h4 className="font-bold text-sm mb-1">NRI Quota</h4>
+                <p className={`text-[11px] ${s.muted} leading-relaxed`}>{aiResponse.quota_wise_analysis.nri_quota.explanation}</p>
+              </div>
+            )}
+            {/* Deemed Universities */}
+            {aiResponse.quota_wise_analysis.deemed_universities && (
+              <div className={`p-3 rounded-xl border ${s.dark ? 'border-amber-500/20 bg-amber-500/5' : 'border-amber-200 bg-amber-50'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${aiResponse.quota_wise_analysis.deemed_universities.eligible ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                    {aiResponse.quota_wise_analysis.deemed_universities.eligible ? '✅ Eligible' : '❌ Not Eligible'}
+                  </span>
+                </div>
+                <h4 className="font-bold text-sm mb-1">Deemed Universities</h4>
+                <p className={`text-[11px] ${s.muted} leading-relaxed`}>{aiResponse.quota_wise_analysis.deemed_universities.explanation}</p>
+                {aiResponse.quota_wise_analysis.deemed_universities.top_colleges?.length > 0 && (
+                  <div className="mt-1">
+                    <p className="text-[10px] font-bold uppercase">Top Options:</p>
+                    <p className={`text-[11px] ${s.muted}`}>{aiResponse.quota_wise_analysis.deemed_universities.top_colleges.slice(0, 5).join(', ')}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ── Alternative Courses ── */}
       {aiResponse.alternative_courses && aiResponse.alternative_courses.length > 0 && (
         <div className={`rounded-2xl border p-5 ${s.card}`}>
