@@ -431,16 +431,230 @@ export const STATE_RULES = {
       minority: { available: false },
     },
   },
+
+  // ── Goa ──────────────────────────────────────────────────────────────────────
+  goa: {
+    counselling_authority: 'DMER Goa / Goa Medical College',
+    government: {
+      aiq: { available: true, domicile_required: false, counselling: 'MCC' },
+      state_quota: { available: true, domicile_required: true, counselling: 'DMER Goa' },
+    },
+    private: {
+      state_quota: { available: true, domicile_required: true, counselling: 'DMER Goa' },
+      management: { available: false,
+        note: 'Limited private medical colleges in Goa; seats filled through state counselling.' },
+      institutional: { available: false },
+      nri: { available: true, sponsor_allowed: true },
+      minority: { available: 'college_specific' },
+    },
+  },
+
+  // ── Tripura ──────────────────────────────────────────────────────────────────
+  tripura: {
+    counselling_authority: 'DMER Tripura',
+    government: {
+      aiq: { available: true, domicile_required: false, counselling: 'MCC' },
+      state_quota: { available: true, domicile_required: true, counselling: 'DMER Tripura' },
+    },
+    private: {
+      state_quota: { available: true, domicile_required: true, counselling: 'DMER Tripura' },
+      management: { available: true, non_domicile_allowed: true, counselling: 'Institution',
+        note: 'Private colleges in Tripura have management quota; non-domicile candidates permitted.' },
+      institutional: { available: false },
+      nri: { available: true, sponsor_allowed: true },
+      minority: { available: 'college_specific' },
+    },
+  },
+
+  // ── Manipur ──────────────────────────────────────────────────────────────────
+  manipur: {
+    counselling_authority: 'DMER Manipur',
+    government: {
+      aiq: { available: true, domicile_required: false, counselling: 'MCC' },
+      state_quota: { available: true, domicile_required: true, counselling: 'DMER Manipur' },
+    },
+    private: {
+      state_quota: { available: false, note: 'No private medical colleges in Manipur currently.' },
+      management: { available: false, note: 'No private medical colleges in Manipur.' },
+      institutional: { available: false },
+      nri: { available: false },
+      minority: { available: false },
+    },
+  },
+
+  // ── Meghalaya ────────────────────────────────────────────────────────────────
+  meghalaya: {
+    counselling_authority: 'DMER Meghalaya',
+    government: {
+      aiq: { available: true, domicile_required: false, counselling: 'MCC' },
+      state_quota: { available: true, domicile_required: true, counselling: 'DMER Meghalaya' },
+    },
+    private: {
+      state_quota: { available: false, note: 'No private medical colleges in Meghalaya currently.' },
+      management: { available: false, note: 'No private medical colleges in Meghalaya.' },
+      institutional: { available: false },
+      nri: { available: false },
+      minority: { available: false },
+    },
+  },
+
+  // ── Mizoram ──────────────────────────────────────────────────────────────────
+  mizoram: {
+    counselling_authority: 'DMER Mizoram',
+    government: {
+      aiq: { available: true, domicile_required: false, counselling: 'MCC' },
+      state_quota: { available: true, domicile_required: true, counselling: 'DMER Mizoram' },
+    },
+    private: {
+      state_quota: { available: false, note: 'No private medical colleges in Mizoram currently.' },
+      management: { available: false, note: 'No private medical colleges in Mizoram.' },
+      institutional: { available: false },
+      nri: { available: false },
+      minority: { available: false },
+    },
+  },
+
+  // ── Nagaland ─────────────────────────────────────────────────────────────────
+  nagaland: {
+    counselling_authority: 'DMER Nagaland',
+    government: {
+      aiq: { available: true, domicile_required: false, counselling: 'MCC' },
+      state_quota: { available: true, domicile_required: true, counselling: 'DMER Nagaland' },
+    },
+    private: {
+      state_quota: { available: false, note: 'No private medical colleges in Nagaland currently.' },
+      management: { available: false, note: 'No private medical colleges in Nagaland.' },
+      institutional: { available: false },
+      nri: { available: false },
+      minority: { available: false },
+    },
+  },
+
+  // ── Sikkim ───────────────────────────────────────────────────────────────────
+  sikkim: {
+    counselling_authority: 'DMER Sikkim',
+    government: {
+      aiq: { available: true, domicile_required: false, counselling: 'MCC' },
+      state_quota: { available: true, domicile_required: true, counselling: 'DMER Sikkim' },
+    },
+    private: {
+      state_quota: { available: false, note: 'Limited private medical infrastructure in Sikkim.' },
+      management: { available: false, note: 'No private medical colleges with management quota in Sikkim.' },
+      institutional: { available: false },
+      nri: { available: false },
+      minority: { available: false },
+    },
+  },
+
+  // ── Arunachal Pradesh ────────────────────────────────────────────────────────
+  'arunachal pradesh': {
+    counselling_authority: 'DMER Arunachal Pradesh',
+    government: {
+      aiq: { available: true, domicile_required: false, counselling: 'MCC' },
+      state_quota: { available: true, domicile_required: true, counselling: 'DMER Arunachal Pradesh' },
+    },
+    private: {
+      state_quota: { available: false, note: 'No private medical colleges in Arunachal Pradesh currently.' },
+      management: { available: false, note: 'No private medical colleges in Arunachal Pradesh.' },
+      institutional: { available: false },
+      nri: { available: false },
+      minority: { available: false },
+    },
+  },
+
+  // ── Chandigarh (UT) ──────────────────────────────────────────────────────────
+  chandigarh: {
+    counselling_authority: 'PGI Chandigarh / GMCH-32',
+    government: {
+      aiq: { available: true, domicile_required: false, counselling: 'MCC' },
+      state_quota: { available: true, domicile_required: true, counselling: 'UT Chandigarh Administration' },
+    },
+    private: {
+      state_quota: { available: false, note: 'No private medical colleges in Chandigarh UT.' },
+      management: { available: false, note: 'No private medical colleges in Chandigarh.' },
+      institutional: { available: false },
+      nri: { available: false },
+      minority: { available: false },
+    },
+  },
+
+  // ── Ladakh (UT) ──────────────────────────────────────────────────────────────
+  ladakh: {
+    counselling_authority: 'UT Ladakh Administration',
+    government: {
+      aiq: { available: true, domicile_required: false, counselling: 'MCC' },
+      state_quota: { available: true, domicile_required: true, counselling: 'UT Ladakh' },
+    },
+    private: {
+      state_quota: { available: false },
+      management: { available: false, note: 'No private medical colleges in Ladakh.' },
+      institutional: { available: false },
+      nri: { available: false },
+      minority: { available: false },
+    },
+  },
+
+  // ── Dadra and Nagar Haveli / Daman and Diu (UT) ──────────────────────────────
+  'dadra and nagar haveli': {
+    counselling_authority: 'UT Administration',
+    government: {
+      aiq: { available: true, domicile_required: false, counselling: 'MCC' },
+      state_quota: { available: true, domicile_required: true, counselling: 'UT Administration' },
+    },
+    private: {
+      state_quota: { available: false },
+      management: { available: false, note: 'No private medical colleges in this UT.' },
+      institutional: { available: false },
+      nri: { available: false },
+      minority: { available: false },
+    },
+  },
+
+  // ── Andaman and Nicobar Islands (UT) ─────────────────────────────────────────
+  'andaman and nicobar islands': {
+    counselling_authority: 'UT Administration',
+    government: {
+      aiq: { available: true, domicile_required: false, counselling: 'MCC' },
+      state_quota: { available: true, domicile_required: true, counselling: 'UT Administration' },
+    },
+    private: {
+      state_quota: { available: false },
+      management: { available: false, note: 'No private medical colleges in Andaman & Nicobar.' },
+      institutional: { available: false },
+      nri: { available: false },
+      minority: { available: false },
+    },
+  },
+
+  // ── Lakshadweep (UT) ─────────────────────────────────────────────────────────
+  lakshadweep: {
+    counselling_authority: 'UT Administration',
+    government: {
+      aiq: { available: true, domicile_required: false, counselling: 'MCC' },
+      state_quota: { available: false, note: 'No medical college in Lakshadweep.' },
+    },
+    private: {
+      state_quota: { available: false },
+      management: { available: false, note: 'No medical colleges in Lakshadweep.' },
+      institutional: { available: false },
+      nri: { available: false },
+      minority: { available: false },
+    },
+  },
 };
 
 /**
  * Normalize state name string to the key used in STATE_RULES.
- * Handles variations like "Madhya Pradesh", "madhya pradesh", "MP" etc.
+ * Handles all DB variations: "Madhya Pradesh", "Delhi (NCT)", "Jammu And Kashmir", etc.
  */
 export function normalizeStateName(rawState) {
   if (!rawState) return null;
-  const s = rawState.trim().toLowerCase();
-  // Common abbreviations
+  let s = rawState.trim().toLowerCase();
+
+  // Strip parenthetical suffixes like "(NCT)", "(UT)" 
+  s = s.replace(/\s*\(.*?\)\s*/g, '').trim();
+
+  // Common abbreviations and alternate spellings
   const abbrevMap = {
     'mp': 'madhya pradesh',
     'up': 'uttar pradesh',
@@ -463,15 +677,40 @@ export function normalizeStateName(rawState) {
     'br': 'bihar',
     'jh': 'jharkhand',
     'dl': 'delhi',
+    'ga': 'goa',
+    'tr': 'tripura',
+    'mn': 'manipur',
+    'ml': 'meghalaya',
+    'mz': 'mizoram',
+    'nl': 'nagaland',
+    'sk': 'sikkim',
+    'ar': 'arunachal pradesh',
+    'ch': 'chandigarh',
+    'la': 'ladakh',
+    'an': 'andaman and nicobar islands',
+    'ld': 'lakshadweep',
+    'py': 'puducherry',
     'jk': 'jammu and kashmir',
     'j&k': 'jammu and kashmir',
     'pondicherry': 'puducherry',
+    'orissa': 'odisha',
+    'delhi nct': 'delhi',
+    'nct': 'delhi',
+    'nct of delhi': 'delhi',
+    'daman and diu': 'dadra and nagar haveli',
+    'daman & diu': 'dadra and nagar haveli',
+    'dadra & nagar haveli': 'dadra and nagar haveli',
+    'dadra and nagar haveli and daman and diu': 'dadra and nagar haveli',
+    'andaman & nicobar': 'andaman and nicobar islands',
+    'andaman and nicobar': 'andaman and nicobar islands',
+    'a&n islands': 'andaman and nicobar islands',
   };
   return abbrevMap[s] || s;
 }
 
 /**
  * Get state rules for a given state name (case-insensitive).
+ * Handles all DB naming variations.
  * Returns null if state is not in the database.
  */
 export function getStateRules(stateName) {
@@ -479,9 +718,15 @@ export function getStateRules(stateName) {
   if (!key) return null;
   // Direct match
   if (STATE_RULES[key]) return STATE_RULES[key];
-  // Partial match (e.g. "jammu and kashmir" matches "jammu & kashmir")
+  // Partial match (handles cases like "jammu and kashmir" vs "jammu & kashmir")
   for (const [k, v] of Object.entries(STATE_RULES)) {
     if (key.includes(k) || k.includes(key)) return v;
   }
+  // Fallback: try matching without spaces/special chars
+  const keyClean = key.replace(/[^a-z]/g, '');
+  for (const [k, v] of Object.entries(STATE_RULES)) {
+    if (k.replace(/[^a-z]/g, '') === keyClean) return v;
+  }
   return null;
 }
+
