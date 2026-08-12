@@ -432,6 +432,19 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
         </div>
       )}
 
+      {(!preds?.safe || preds.safe.length === 0) && (
+        <div className={`rounded-2xl border p-5 ${s.card} border-l-4 border-l-rose-500/60`}>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-lg">⚠️</span>
+            <h3 className="font-black text-sm uppercase tracking-wider text-rose-400">No Safe Colleges Possible</h3>
+          </div>
+          <p className={`text-sm ${s.muted} leading-relaxed`}>
+            Based on your current rank and selected parameters, we could not find any safe or guaranteed college options. 
+            Please review the admission guidance below, and consider alternative options such as Management Quota, Private Colleges, or other courses.
+          </p>
+        </div>
+      )}
+
 
 
       {/* ── Unlikely MBBS Guidance ── */}
@@ -474,7 +487,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
       )}
       
       {/* ── Management Quota ── */}
-      {aiResponse.management_quota_opportunities && aiResponse.management_quota_opportunities.length > 0 && (
+      {aiResponse.management_quota_opportunities && aiResponse.management_quota_opportunities.length > 0 ? (
         <div className={`rounded-2xl border p-5 ${s.card}`}>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-lg">🏛️</span>
@@ -521,6 +534,16 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
                <Link to="/dashboard/subscription" className="text-[10px] bg-primary text-white px-3 py-1.5 rounded-full font-bold inline-block">Upgrade Now</Link>
              </div>
           )}
+        </div>
+      ) : (
+        <div className={`rounded-2xl border p-5 ${s.card} border-l-4 border-l-slate-500/60`}>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-lg">🏛️</span>
+            <h3 className="font-black text-sm uppercase tracking-wider">Management Quota Opportunities</h3>
+          </div>
+          <p className={`text-sm ${s.muted}`}>
+            Management Quota is either not available in your selected state(s) or there are no suitable options available for your current rank.
+          </p>
         </div>
       )}
 
