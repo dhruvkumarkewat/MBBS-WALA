@@ -436,11 +436,18 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
         <div className={`rounded-2xl border p-5 ${s.card} border-l-4 border-l-rose-500/60`}>
           <div className="flex items-center gap-2 mb-3">
             <span className="text-lg">⚠️</span>
-            <h3 className="font-black text-sm uppercase tracking-wider text-rose-400">No Safe Colleges Possible</h3>
+            <h3 className="font-black text-sm uppercase tracking-wider text-rose-400">
+              {(preds?.moderate?.length > 0 || preds?.reach?.length > 0) 
+                ? 'No Safe Colleges — But Options Exist Below'
+                : 'No Matching Colleges Found'
+              }
+            </h3>
           </div>
           <p className={`text-sm ${s.muted} leading-relaxed`}>
-            Based on your current rank and selected parameters, we could not find any safe or guaranteed college options. 
-            Please review the admission guidance below, and consider alternative options such as Management Quota, Private Colleges, or other courses.
+            {(preds?.moderate?.length > 0 || preds?.reach?.length > 0) 
+              ? `No 'safe' (high-chance) colleges match your exact filters, but we found ${preds?.moderate?.length || 0} moderate-chance and ${preds?.reach?.length || 0} reach colleges below. Scroll down to review them.`
+              : 'Based on your selected filters (quota, state, category, round), we could not find any matching colleges in our database. Try changing your target state, selecting a different quota, or broadening your search.'
+            }
           </p>
         </div>
       )}
@@ -539,10 +546,13 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
         <div className={`rounded-2xl border p-5 ${s.card} border-l-4 border-l-slate-500/60`}>
           <div className="flex items-center gap-2 mb-3">
             <span className="text-lg">🏛️</span>
-            <h3 className="font-black text-sm uppercase tracking-wider">Management Quota Opportunities</h3>
+            <h3 className="font-black text-sm uppercase tracking-wider">Management Quota — No Data Available</h3>
           </div>
           <p className={`text-sm ${s.muted} leading-relaxed`}>
-            If you searched with Management Quota and it is not available in your selected state, try another quota like NRI Quota. If you cannot get admission through NRI or Management Quota, please try other alternative courses as your rank is too low for MBBS/BDS.
+            No Management Quota data is currently available for your selected state and filters. This may mean: 
+            (1) The database does not yet include Management Quota cutoffs for this state, or 
+            (2) No private colleges with management seats match your selected course/round. 
+            Try selecting a different target state, or use AIQ or State Quota to see government college options.
           </p>
         </div>
       )}

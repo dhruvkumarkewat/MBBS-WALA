@@ -571,28 +571,43 @@ export default async function handler(req, res) {
       // cutoffs for hundreds of colleges. We completely override the AI's hallucinated college list
       // with our deterministic database matches (exactData) mapped to the rich UI format.
       const exactData = buildFallbackResponse(query, context, resolved);
+      const safeColleges = exactData.colleges.filter(c => c.chance_tier === 'High');
+      const moderateColleges = exactData.colleges.filter(c => c.chance_tier === 'Moderate');
+      const reachColleges = exactData.colleges.filter(c => c.chance_tier === 'Reach');
+      
       aiResponse.college_predictions = {
-        safe: exactData.colleges.filter(c => c.chance_tier === 'High').map(mapCollege),
-        moderate: exactData.colleges.filter(c => c.chance_tier === 'Moderate').map(mapCollege),
-        reach: exactData.colleges.filter(c => c.chance_tier === 'Reach').map(mapCollege)
+        safe: safeColleges.map(mapCollege),
+        moderate: moderateColleges.map(mapCollege),
+        reach: reachColleges.map(mapCollege)
       };
       
+      // CRITICAL: If deterministic engine found safe colleges, override AI's 
+      // unlikely_mbbs_guidance to prevent showing "rank is too low" when it isn't.
+      if (safeColleges.length > 0 || moderateColleges.length > 0) {
+        if (aiResponse.unlikely_mbbs_guidance) {
+          aiResponse.unlikely_mbbs_guidance.active = false;
+        }
+      }
+      
       // Override hallucinated management quotas with actual Management/Deemed colleges from the DB
+      // NOTE: buildFallbackResponse uses `quota` field (not `quota_code`)
       const realManagementColleges = exactData.colleges
-          .filter(c => c.quota_code === 'Management' || c.quota_code === 'Deemed-Central')
-          .slice(0, 3);
+          .filter(c => c.quota === 'Management' || c.quota === 'Deemed-Central')
+          .slice(0, 6);
           
       if (realManagementColleges.length > 0) {
         aiResponse.management_quota_opportunities = realManagementColleges.map(c => {
-            const feeString = c.fee_amount || '₹18,00,000+';
-            // Parse numeric value to estimate total cost
+            // buildFallbackResponse uses fee.formatted, not fee_amount
+            const feeString = c.fee?.formatted || '₹18,00,000+';
             let numericFee = parseInt(feeString.replace(/\D/g, '')) || 1800000;
-            if (numericFee < 10000) numericFee = 1800000; // fallback if parsing failed
+            if (numericFee < 10000) numericFee = 1800000;
             const totalCostNum = numericFee * 4.5;
             const formattedTotal = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(totalCostNum);
 
             return {
               college: c.college_name,
+              state: c.state || 'India',
+              course: c.course || 'MBBS',
               expected_rank: c._closing ? `${Math.max(1, c._closing - 50000)} - ${c._closing + 50000}` : 'Unknown',
               approx_fees: `${feeString} per annum`,
               hostel_fees: '₹1,50,000 - ₹2,50,000',
@@ -603,24 +618,24 @@ export default async function handler(req, res) {
             };
         });
       } else {
-        // Clear hallucinated management quota if the DB returned none for this state/quota
         aiResponse.management_quota_opportunities = [];
       }
       
       // Override hallucinated private options with actual private colleges from the DB
+      // NOTE: buildFallbackResponse uses `quota` field (not `quota_code`)
       if (aiResponse.unlikely_mbbs_guidance && aiResponse.unlikely_mbbs_guidance.active) {
         const realPrivateColleges = exactData.colleges
-          .filter(c => c.quota_code !== 'AIQ' && c.quota_code !== 'State' && c.quota_code !== 'All India')
+          .filter(c => c.quota !== 'AIQ' && c.quota !== 'State' && c.quota !== 'All India')
           .slice(0, 3);
           
         if (realPrivateColleges.length > 0) {
           aiResponse.unlikely_mbbs_guidance.private_options = realPrivateColleges.map(c => ({
             name: c.college_name,
             state: c.state || 'India',
-            fees: c.fee_amount || '₹15,00,000 / year',
+            fees: c.fee?.formatted || '₹15,00,000 / year',
             probability: c.chance_tier === 'High' ? 'High' : (c.chance_tier === 'Moderate' ? 'Moderate' : 'Low'),
-            rounds: c.round_name || 'Mop-Up',
-            management_quota: c.quota_code === 'Management',
+            rounds: c.closing_rank_reference?.[0]?.round || 'Mop-Up',
+            management_quota: c.quota === 'Management',
             nri_seats: false
           }));
         } else {
