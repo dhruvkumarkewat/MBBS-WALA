@@ -126,17 +126,7 @@ export default async function handler(req, res) {
         .order('id', { ascending: false })
         .limit(1);
 
-      const hasActiveSub = (activeSubList && activeSubList.length > 0 && (!activeSubList[0].end_date || new Date(activeSubList[0].end_date).getTime() > Date.now()));
-      const isAlreadyPaid = (Boolean(userProfile?.is_premium) && userProfile?.subscription_status === 'active') || hasActiveSub;
-
-      if (isAlreadyPaid) {
-        return res.status(400).json({
-          error: `You already have an active subscription (${userProfile?.subscription_plan || activeSubList?.[0]?.plan_name || 'Premium Plan'}). You cannot pay again for the same plan.`,
-          already_subscribed: true,
-          is_premium: true,
-          redirect: '/dashboard',
-        });
-      }
+      const currentPlanName = userProfile?.subscription_plan || activeSubList?.[0]?.plan_name || 'Free Plan';
       
       const PLANS = {
         'basic': { name: 'BASIC', price: 99 },
@@ -144,6 +134,32 @@ export default async function handler(req, res) {
         'ultimate': { name: 'Ultimate Medical Master Bundle', price: 9999 },
         'premium': { name: 'Premium Plan', price: 4999 } // Fallback for legacy
       };
+      
+      const PLAN_LEVELS = {
+        'Free Plan': 0,
+        'BASIC': 1,
+        'NEET UG Counselling Pro': 2,
+        'Premium Plan': 2,
+        'Ultimate Medical Master Bundle': 3
+      };
+      
+      const targetLevel = PLAN_LEVELS[PLANS[plan_slug]?.name] || PLAN_LEVELS['Premium Plan'];
+      const currentLevel = PLAN_LEVELS[currentPlanName] || 0;
+      
+      const hasActiveSub = (activeSubList && activeSubList.length > 0 && (!activeSubList[0].end_date || new Date(activeSubList[0].end_date).getTime() > Date.now()));
+      const isAlreadyPaid = (Boolean(userProfile?.is_premium) && userProfile?.subscription_status === 'active') || hasActiveSub;
+
+      // Only block if they already have this EXACT plan or a HIGHER plan (meaning this is a downgrade or lateral move).
+      // We allow them to purchase if targetLevel > currentLevel (upgrade).
+      if (isAlreadyPaid && currentLevel >= targetLevel) {
+        return res.status(400).json({
+          error: `You already have an active subscription (${currentPlanName}). You cannot purchase a lower or equal tier plan.`,
+          already_subscribed: true,
+          is_premium: true,
+          redirect: '/dashboard',
+        });
+      }
+      
       const plan = PLANS[plan_slug] || PLANS['premium'];
       const plan_name = plan.name;
       let finalAmount = plan.price;

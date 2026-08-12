@@ -163,12 +163,6 @@ export function SubscriptionPage() {
       return;
     }
 
-    if (isPremium) {
-      success('Already Subscribed', `You already have an active ${subscriptionPlan || 'Premium'} plan. Taking you to your Dashboard...`);
-      navigate('/dashboard', { replace: true });
-      return;
-    }
-
     try {
       setUpgradingPlan(plan.id);
       setError('');
@@ -407,7 +401,26 @@ export function SubscriptionPage() {
       {/* Pricing Cards Grid */}
       <div className="grid md:grid-cols-3 gap-6">
         {PLANS.map((plan) => {
-          const isCurrent = isPremium && subscriptionPlan?.toLowerCase().includes(plan.id);
+          const PLAN_LEVELS: Record<string, number> = {
+            'basic': 1,
+            'neet-ug-pro': 2,
+            'ultimate': 3
+          };
+          
+          const PLAN_NAME_LEVELS: Record<string, number> = {
+            'BASIC': 1,
+            'NEET UG Counselling Pro': 2,
+            'Premium Plan': 2, // Legacy
+            'Ultimate Medical Master Bundle': 3
+          };
+
+          const currentPlanLevel = isPremium ? (PLAN_NAME_LEVELS[subscriptionPlan || ''] || 2) : 0;
+          const thisPlanLevel = PLAN_LEVELS[plan.id] || 0;
+          
+          const isCurrent = isPremium && currentPlanLevel === thisPlanLevel;
+          const isIncluded = isPremium && currentPlanLevel > thisPlanLevel;
+          const isUpgrade = isPremium && currentPlanLevel < thisPlanLevel;
+
           return (
             <div
               key={plan.id}
@@ -452,20 +465,19 @@ export function SubscriptionPage() {
               <button
                 type="button"
                 onClick={() => {
-                  if (isPremium) {
+                  if (isCurrent || isIncluded) {
                     navigate('/dashboard');
                   } else {
                     handleUpgrade(plan);
                   }
                 }}
                 disabled={upgradingPlan !== null}
-                className={`w-full py-3 px-4 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all ${isCurrent
+                className={`w-full py-3 px-4 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+                  isCurrent || isIncluded
                     ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/20'
-                    : isPremium
-                      ? 'bg-muted text-foreground hover:bg-muted/80'
-                      : plan.popular
-                        ? 'bg-gradient-to-r from-primary to-orange-500 text-white shadow-lg shadow-primary/25 hover:opacity-95 hover:scale-[1.02]'
-                        : 'bg-primary text-primary-foreground hover:opacity-90'
+                    : plan.popular
+                      ? 'bg-gradient-to-r from-primary to-orange-500 text-white shadow-lg shadow-primary/25 hover:opacity-95 hover:scale-[1.02]'
+                      : 'bg-primary text-primary-foreground hover:opacity-90'
                   } disabled:opacity-50`}
               >
                 {upgradingPlan === plan.id ? (
@@ -479,10 +491,16 @@ export function SubscriptionPage() {
                     <span>Active Plan — Open Dashboard</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
-                ) : isPremium ? (
+                ) : isIncluded ? (
                   <>
                     <Check className="w-4 h-4" />
-                    <span>Unlocked — Go to Dashboard</span>
+                    <span>Unlocked (Included) — Go to Dashboard</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                ) : isUpgrade ? (
+                  <>
+                    <Crown className="w-4 h-4" />
+                    <span>Upgrade Plan Now</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 ) : (
