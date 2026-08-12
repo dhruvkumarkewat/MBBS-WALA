@@ -290,19 +290,19 @@ const DEEMED_KEYWORDS = [
   let highTier = eligible
     .filter((c) => c._tier === 'High')
     .sort((a, b) => a._closing - b._closing) // Absolute best colleges they can get
-    .slice(0, 40);
+    .slice(0, 20);
   let modTier = eligible
     .filter((c) => c._tier === 'Moderate')
     .sort((a, b) => a._diff - b._diff) // Most achievable moderate
-    .slice(0, 25);
+    .slice(0, 10);
   let reachTier = eligible
     .filter((c) => c._tier === 'Reach')
     .sort((a, b) => a._diff - b._diff) // Most achievable reach
-    .slice(0, 25);
+    .slice(0, 5);
 
   let finalClosingRanks = [...highTier, ...modTier, ...reachTier];
-  if (finalClosingRanks.length < 15 && deduplicated.length > 0) {
-    finalClosingRanks = deduplicated.slice(0, 40);
+  if (finalClosingRanks.length < 5 && deduplicated.length > 0) {
+    finalClosingRanks = deduplicated.slice(0, 20);
   }
 
   // 5. Fee structures
