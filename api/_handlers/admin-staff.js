@@ -19,6 +19,7 @@ export default async function handler(req, res) {
       const { data, error } = await supabase
         .from('staff_profiles')
         .select('*')
+        .neq('role', 'deleted')
         .order('created_at', { ascending: false });
       if (error) throw error;
 
@@ -230,8 +231,13 @@ export default async function handler(req, res) {
 
       await supabase
         .from('staff_profiles')
-        .update({ is_active: false })
+        .update({ is_active: false, role: 'deleted' })
         .eq('user_id', user_id);
+
+      await supabase
+        .from('profiles')
+        .update({ role: 'deleted' })
+        .eq('id', user_id);
 
       try {
         await supabase.auth.admin.deleteUser(user_id);
