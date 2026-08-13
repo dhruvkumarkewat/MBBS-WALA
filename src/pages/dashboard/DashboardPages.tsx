@@ -337,7 +337,7 @@ export function PredictorPage() {
   const [category, setCategory] = useState(profile?.category || 'General');
   const [domicileState, setDomicileState] = useState(profile?.domicile_state || profile?.state || '');
   const [targetState, setTargetState] = useState('');
-  const [quotas, setQuotas] = useState<string[]>(['AIQ', 'State']);
+  const [quotas, setQuotas] = useState<string[]>(['AIQ']);
   const [round, setRound] = useState('Round 1');
   const [neetYear, setNeetYear] = useState(new Date().getFullYear());
 
@@ -387,9 +387,8 @@ export function PredictorPage() {
     }
   }, [profile]);
 
-  // Toggle a quota in the multi-select
-  const toggleQuota = (v: string) =>
-    setQuotas((prev) => prev.includes(v) ? prev.filter((q) => q !== v) : [...prev, v]);
+  // Select a single quota
+  const toggleQuota = (v: string) => setQuotas([v]);
 
   // ── Run prediction ──
   const run = async (e: FormEvent) => {
@@ -442,85 +441,9 @@ export function PredictorPage() {
           }, true).catch(() => {});
         }
       } catch (aiErr: any) {
-        // AI call failed — fallback to legacy endpoints
-        console.warn('[Predictor] AI endpoint failed, using legacy:', aiErr.message);
-
-        const targetRank = mode === 'rank' ? rankNum : 0;
-        let resolvedRank = targetRank;
-
-        if (mode === 'score') {
-          const calc = await apiJson<{ predicted_rank_min: number; predicted_rank_max: number }>(
-            '/api/rank-calculator',
-            { method: 'POST', body: JSON.stringify({ exam: 'NEET UG', score: scoreNum, category }) }
-          );
-          resolvedRank = Math.round((calc.predicted_rank_min + calc.predicted_rank_max) / 2);
-        }
-
-        const legacy = await apiJson<{
-          matches: Array<{
-            college_name: string; state: string; chance: string;
-            chance_score: number; chance_tone: string; best_path: string;
-            round?: string;
-            aiq_rank: number; total_seats: number | null;
-          }>;
-          scholarships?: Array<{
-            name: string; provider: string; match_reason: string;
-            estimated_amount: string | null; official_portal: string;
-            source_id?: string;
-          }>;
-          summary: { safe_count: number; moderate_count: number; reach_count: number };
-        }>('/api/college-matches', {
-          method: 'POST',
-          body: JSON.stringify({
-            rank: resolvedRank,
-            category,
-            round,
-            course: undefined,
-            exam_track: examTrack,
-            state: targetState || (quotas.includes('State') && !quotas.includes('AIQ') && domicileState ? domicileState : undefined),
-            limit: 25,
-          }),
-        });
-
-        // Shape legacy response to match PredictorResponse
-        const toneToTier = (t: string) =>
-          t === 'safe' || t === 'likely' ? 'High' :
-          t === 'moderate' ? 'Moderate' : 'Reach';
-
-        const filteredMatches = (legacy.matches || []).filter((m) => {
-          if (quotas.includes('State') && !quotas.includes('AIQ') && domicileState) {
-            return (m.state || '').toLowerCase().includes(domicileState.toLowerCase());
-          }
-          return true;
-        });
-
-        setAiResponse({
-          meta: { exam_track: examTrack, qualifying_floor_met: true },
-          colleges: filteredMatches.map((m) => {
-            const isHomeState = Boolean(domicileState && (m.state || '').toLowerCase().includes(domicileState.toLowerCase()));
-            return {
-              college_name: m.college_name,
-              state: m.state,
-              course: (m as any).course || 'MBBS',
-              quota: (m as any).quota || (isHomeState && quotas.includes('State') ? 'State' : 'AIQ'),
-              category,
-              chance_tier: toneToTier(m.chance_tone) as CollegePrediction['chance_tier'],
-              closing_rank_reference: m.aiq_rank ? [{ year: neetYear - 1, round: m.round || round || 'Round 1', rank: m.aiq_rank }] : [],
-              fee: ((m as any).fee ? { formatted: `₹${Number((m as any).fee).toLocaleString('en-IN')}/yr` } : null) as any,
-              source_ids: [],
-            };
-          }),
-          scholarships: (legacy.scholarships || []).map((s) => ({
-            name: s.name,
-            provider: s.provider,
-            match_reason: s.match_reason,
-            estimated_amount: s.estimated_amount,
-            official_portal: s.official_portal,
-            source_id: s.source_id || '',
-          })),
-          disclaimers: ['Data from official counselling cutoffs.'],
-          _provider_used: 'legacy-fallback',
-        });
+        // AI call failed
+        console.warn('[Predictor] AI endpoint failed:', aiErr.message);
+        throw new Error('Network error, please try again.');
       }
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.');
@@ -686,7 +609,7 @@ export function PredictorPage() {
 
         {/* Quota Multi-Select */}
         <div>
-          <span className={`text-xs font-bold uppercase ${s.muted}`}>Quota (select all that apply)</span>
+          <span className={`text-xs font-bold uppercase ${s.muted}`}>Quota (select one)</span>
           <div className="flex flex-wrap gap-2 mt-2">
             {QUOTA_OPTIONS.map(({ value, label }) => (
               <button

@@ -740,20 +740,7 @@ ${(context.scholarships || []).slice(0, 5).map(s => `- Name: ${s.name}\n  Provid
       response = aiResponse;
     } catch (aiError) {
       console.error('[AI-Predict] All AI providers failed:', aiError.message || aiError);
-      // Minimal fallback when AI is completely down — no DB colleges
-      response = {
-        admission_summary: {
-          status: 'Service Temporarily Unavailable',
-          explanation: 'Our AI prediction service is temporarily unavailable. Please try again in a few moments.',
-          data_reliability: 'N/A',
-        },
-        college_predictions: { safe: [], moderate: [], reach: [] },
-        management_quota_opportunities: [],
-        alternative_courses: [],
-        scholarships: {},
-        counselling_strategy: {},
-        important_advice: ['Please try again in a few minutes. Our AI service is temporarily down.'],
-      };
+      throw aiError;
     }
 
     // Ensure meta always has timing info
