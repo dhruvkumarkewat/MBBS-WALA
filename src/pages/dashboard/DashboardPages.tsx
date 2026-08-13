@@ -344,6 +344,8 @@ export function PredictorPage() {
   // ── Result state ──
   const [aiResponse, setAiResponse] = useState<PredictorResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [loadingMessage, setLoadingMessage] = useState('Initializing AI Predictor...');
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'colleges' | 'scholarships'>('colleges');
   const [tierFilter, setTierFilter] = useState<'ALL' | 'High' | 'Moderate' | 'Reach'>('ALL');
@@ -389,6 +391,29 @@ export function PredictorPage() {
 
   // Select a single quota
   const toggleQuota = (v: string) => setQuotas([v]);
+
+  // ── Animated Loading Progress ──
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (loading) {
+      setProgress(0);
+      setLoadingMessage('Fetching latest MCC/State cutoffs...');
+      interval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 98) return 98; // Asymptotic approach
+          const increment = prev < 50 ? Math.random() * 5 + 2 : prev < 80 ? Math.random() * 3 + 1 : Math.random() * 1 + 0.1;
+          const next = prev + increment;
+          
+          if (next > 20 && prev <= 20) setLoadingMessage('Analyzing your NEET rank & category...');
+          if (next > 50 && prev <= 50) setLoadingMessage('Running deep AI prediction models...');
+          if (next > 80 && prev <= 80) setLoadingMessage('Finalizing list of safe & reach colleges...');
+          
+          return next > 99 ? 99 : next;
+        });
+      }, 600);
+    }
+    return () => clearInterval(interval);
+  }, [loading]);
 
   // ── Run prediction ──
   const run = async (e: FormEvent) => {
@@ -646,13 +671,29 @@ export function PredictorPage() {
           </p>
         )}
 
-        <button type="submit" disabled={loading} className="zn-cta zn-cta-primary w-full justify-center text-sm">
-          {loading ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Analysing with AI…</>
-          ) : (
-            `🔮 Predict Colleges${mode === 'rank' && rank ? ` for Rank #${Number(rank).toLocaleString()}` : ''}`
-          )}
-        </button>
+        {loading ? (
+          <div className="w-full bg-slate-50 dark:bg-white/5 border border-primary/20 rounded-2xl p-4 flex flex-col items-center justify-center space-y-3">
+            <div className="relative w-full h-2 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
+              <div 
+                className="absolute top-0 left-0 h-full bg-primary transition-all duration-300 ease-out rounded-full"
+                style={{ width: `${Math.min(progress, 100)}%` }}
+              >
+                <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+              </div>
+            </div>
+            <div className="flex w-full items-center justify-between text-xs font-bold">
+              <div className="flex items-center gap-2 text-primary animate-pulse">
+                <Loader2 className="w-4 h-4 animate-spin" /> 
+                {loadingMessage}
+              </div>
+              <span className="text-primary/70">{Math.floor(progress)}%</span>
+            </div>
+          </div>
+        ) : (
+          <button type="submit" disabled={loading} className="zn-cta zn-cta-primary w-full justify-center text-sm">
+            🔮 Predict Colleges{mode === 'rank' && rank ? ` for Rank #${Number(rank).toLocaleString()}` : ''}
+          </button>
+        )}
       </form>
       ) : (
         <div className={`rounded-2xl border p-5 mb-5 flex flex-col sm:flex-row items-center justify-between gap-4 ${s.card}`}>
