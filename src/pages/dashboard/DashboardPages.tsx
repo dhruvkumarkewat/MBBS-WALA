@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Bot,
@@ -556,12 +556,116 @@ export function PredictorPage() {
     return Array.from(new Set(colleges.map((c) => c.quota).filter(Boolean)));
   }, [colleges]);
 
+  // ── Loading overlay: stays visible until aiResponse is ready, then fades out ──
+  const LOADING_STEPS = [
+    'Analyzing your NEET rank & category…',
+    'Fetching MCC & state counselling data…',
+    'Matching colleges across all quotas…',
+    'Calculating seat availability & cutoffs…',
+    'Running AI probability engine…',
+    'Preparing your personalized results…',
+  ];
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [loadingPct, setLoadingPct] = useState(0);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [overlayFading, setOverlayFading] = useState(false);
+  const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const overlayHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Show overlay as soon as loading starts
+  useEffect(() => {
+    if (loading) {
+      setShowOverlay(true);
+      setOverlayFading(false);
+      setLoadingStep(0);
+      setLoadingPct(0);
+      let step = 0;
+      let pct = 0;
+      loadingIntervalRef.current = setInterval(() => {
+        pct += Math.random() * 6 + 2;
+        if (pct >= 95) pct = 95; // Never reaches 100% while loading
+        setLoadingPct(Math.round(pct));
+        const nextStep = Math.min(
+          Math.floor((pct / 95) * LOADING_STEPS.length),
+          LOADING_STEPS.length - 1
+        );
+        if (nextStep !== step) { step = nextStep; setLoadingStep(nextStep); }
+      }, 600);
+    } else {
+      // Loading finished — stop interval, snap to 100%
+      if (loadingIntervalRef.current) clearInterval(loadingIntervalRef.current);
+      setLoadingPct(100);
+      setLoadingStep(LOADING_STEPS.length); // triggers "Results Ready!"
+    }
+    return () => {
+      if (loadingIntervalRef.current) clearInterval(loadingIntervalRef.current);
+    };
+  }, [loading]);
+
+  // Only hide overlay AFTER aiResponse is populated in state
+  useEffect(() => {
+    if (!loading && aiResponse && showOverlay) {
+      // Data is ready — start fade-out after short moment so user sees 100%
+      overlayHideTimerRef.current = setTimeout(() => {
+        setOverlayFading(true);
+        // Remove overlay from DOM after fade transition completes
+        setTimeout(() => setShowOverlay(false), 500);
+      }, 700);
+    }
+    return () => {
+      if (overlayHideTimerRef.current) clearTimeout(overlayHideTimerRef.current);
+    };
+  }, [loading, aiResponse, showOverlay]);
+
   return (
     <div className="w-full">
       <PageHead
         title="AI College Predictor"
         sub="Grounded in real MCC/state counselling data — AI explains, never invents"
       />
+
+      {/* ── Video Loading Overlay ── */}
+      {showOverlay && (
+        <div
+          className="fixed inset-0 z-[999] flex items-center justify-center bg-black/70 backdrop-blur-sm transition-opacity duration-500"
+          style={{ opacity: overlayFading ? 0 : 1, pointerEvents: overlayFading ? 'none' : 'auto' }}
+        >
+          <div className="w-full max-w-xl mx-4 rounded-2xl overflow-hidden bg-[#0d1b2a] border border-white/10 shadow-2xl">
+            {/* Video */}
+            <div className="relative w-full" style={{ aspectRatio: '16/5', background: '#0d1b2a' }}>
+              <video
+                src="/Character_runs_across_progress_bar_no_audio.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              />
+            </div>
+            {/* Status row */}
+            <div className="px-5 py-4 flex items-center justify-between gap-3 border-t border-white/8">
+              <div className="flex items-center gap-2.5 min-w-0">
+                {loadingStep < LOADING_STEPS.length ? (
+                  <span className="inline-block w-3.5 h-3.5 rounded-full border-2 border-orange-400 border-t-transparent animate-spin shrink-0" />
+                ) : (
+                  <span className="inline-block w-3.5 h-3.5 text-emerald-400 shrink-0 font-black text-base leading-none">✓</span>
+                )}
+                <p className="text-sm font-semibold text-white/90 truncate transition-all duration-500">
+                  {loadingStep < LOADING_STEPS.length
+                    ? LOADING_STEPS[loadingStep]
+                    : '✅ Results Ready! Loading your colleges…'}
+                </p>
+              </div>
+              <span
+                className="shrink-0 text-xs font-black text-white px-2.5 py-1 rounded-lg tabular-nums transition-colors duration-300"
+                style={{ background: loadingPct === 100 ? '#22c55e' : '#f97316' }}
+              >
+                {loadingPct}%
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Form or Recalculate State ── */}
       {!aiResponse ? (
@@ -724,11 +828,7 @@ export function PredictorPage() {
         )}
 
         <button type="submit" disabled={loading} className="zn-cta zn-cta-primary w-full justify-center text-sm">
-          {loading ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Analysing with AI…</>
-          ) : (
-            `🔮 Predict Colleges${mode === 'rank' && rank ? ` for Rank #${Number(rank).toLocaleString()}` : ''}`
-          )}
+          {`🔮 Predict Colleges${mode === 'rank' && rank ? ` for Rank #${Number(rank).toLocaleString()}` : ''}`}
         </button>
       </form>
       ) : (
