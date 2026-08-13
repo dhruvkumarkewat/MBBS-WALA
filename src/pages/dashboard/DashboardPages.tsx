@@ -349,8 +349,7 @@ export function PredictorPage() {
   const [loadingMessage, setLoadingMessage] = useState('Initializing MBBS WALA AI...');
   const [showOverlay, setShowOverlay] = useState(false);
   const [overlayFading, setOverlayFading] = useState(false);
-  const [videoFinished, setVideoFinished] = useState(false);
-  const overlayHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [minimumTimePassed, setMinimumTimePassed] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'colleges' | 'scholarships'>('colleges');
   const [tierFilter, setTierFilter] = useState<'ALL' | 'High' | 'Moderate' | 'Reach'>('ALL');
@@ -402,7 +401,7 @@ export function PredictorPage() {
     if (loading) {
       setShowOverlay(true);
       setOverlayFading(false);
-      setVideoFinished(false);
+      setMinimumTimePassed(false);
       setProgress(0);
       setLoadingMessage('Fetching latest MCC/State cutoffs...');
     } else {
@@ -410,6 +409,17 @@ export function PredictorPage() {
       setLoadingMessage('✅ Results Ready! Loading your colleges...');
     }
   }, [loading]);
+
+  // Robust timer that guarantees the video has played long enough to look good (7.5s)
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    if (showOverlay) {
+      timer = setTimeout(() => {
+        setMinimumTimePassed(true);
+      }, 7500);
+    }
+    return () => clearTimeout(timer);
+  }, [showOverlay]);
 
   const handleVideoTimeUpdate = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
     const currentTime = e.currentTarget.currentTime;
@@ -423,26 +433,16 @@ export function PredictorPage() {
     if (calculated > 80 && calculated <= 99) setLoadingMessage('Finalizing list of safe & reach colleges...');
   }, []);
 
-  // Only hide overlay AFTER API is done AND video has played once
+  // Only hide overlay AFTER API is done AND minimum display time has passed
   useEffect(() => {
-    // If API finishes with error, or if API finishes with response AND video is done
+    // If API finishes with error, or if API finishes with response
     const isApiDone = !loading && (aiResponse || error);
-    if (isApiDone && showOverlay && videoFinished) {
+    if (isApiDone && showOverlay && minimumTimePassed) {
       // Instantly hide overlay with NO GAP
       setShowOverlay(false);
       setOverlayFading(false);
     }
-    
-    // Fallback: If video somehow fails to fire onEnded, close it anyway after 8 seconds
-    let fallbackTimer: ReturnType<typeof setTimeout>;
-    if (loading) {
-      fallbackTimer = setTimeout(() => setVideoFinished(true), 8000);
-    }
-
-    return () => {
-      if (fallbackTimer) clearTimeout(fallbackTimer);
-    };
-  }, [loading, aiResponse, error, showOverlay, videoFinished]);
+  }, [loading, aiResponse, error, showOverlay, minimumTimePassed]);
 
   // ── Run prediction ──
   const run = async (e: FormEvent) => {
@@ -555,7 +555,6 @@ export function PredictorPage() {
                 muted
                 playsInline
                 onTimeUpdate={handleVideoTimeUpdate}
-                onEnded={() => setVideoFinished(true)}
                 className="w-full h-full object-cover"
               />
             </div>
