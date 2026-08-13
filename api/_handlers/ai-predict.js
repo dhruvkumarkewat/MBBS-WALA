@@ -689,6 +689,48 @@ ${(context.scholarships || []).slice(0, 5).map(s => `- Name: ${s.name}\n  Provid
       });
       aiResponse.college_predictions = cp;
 
+      // 2b. POST-PROCESSING SAFETY NET — Re-classify colleges with incorrect margins.
+      //     AI sometimes puts a college in "safe" even though the margin is negative
+      //     (student rank is worse than closing rank). Fix this automatically.
+      const studentRank = query.score_or_rank?.value || 0;
+      if (studentRank > 0) {
+        const reclassify = [];
+        // Check safe → should have positive margin (student rank <= closing rank)
+        cp.safe = cp.safe.filter(c => {
+          const closing = Number(c.predicted_closing_rank) || 0;
+          const marginNum = typeof c.margin === 'string' ? parseInt(c.margin.replace(/[^-\d]/g, '')) : Number(c.margin) || 0;
+          // If closing rank exists and student rank is WORSE (higher number) than closing
+          if (closing > 0 && studentRank > closing) {
+            // Margin is negative — this is NOT safe
+            reclassify.push({ ...c, _reclassified_from: 'safe' });
+            return false;
+          }
+          // Also check if margin string is explicitly negative
+          if (marginNum < 0) {
+            reclassify.push({ ...c, _reclassified_from: 'safe' });
+            return false;
+          }
+          return true;
+        });
+        // Move reclassified colleges to moderate or reach based on how far off they are
+        reclassify.forEach(c => {
+          const closing = Number(c.predicted_closing_rank) || 0;
+          const gap = closing > 0 ? ((studentRank - closing) / closing) : 0;
+          if (gap <= 0.15) {
+            // Within 15% → moderate
+            c.probability = c.probability || '50-70%';
+            cp.moderate.push(c);
+          } else {
+            // Beyond 15% → reach
+            c.probability = c.probability || '20-40%';
+            cp.reach.push(c);
+          }
+        });
+        if (reclassify.length > 0) {
+          console.log(`[AI-Predict] Re-classified ${reclassify.length} college(s) from safe → moderate/reach due to negative margin`);
+        }
+      }
+
       // 3. Normalize quota_wise_analysis — AI sometimes returns a flat array
       //    instead of our named sub-object structure
       const qwa = aiResponse.quota_wise_analysis;
