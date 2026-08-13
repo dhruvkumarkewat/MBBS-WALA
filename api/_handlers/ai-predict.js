@@ -624,6 +624,16 @@ For each college you show:
 4. Show historical_trend as an ARRAY: [{year: 2025, closing_rank: XXXX}, {year: 2024, closing_rank: XXXX}, {year: 2023, closing_rank: XXXX}]
 5. Set margin to: closing_rank - student_rank (positive = safe, negative = harder)
 6. Government college fees: ₹10,000-₹50,000/year. Private fees: ₹8L-₹25L/year. Deemed: ₹15L-₹30L/year. Management: ₹15L-₹35L/year.
+7. Set the "state" field to the EXACT state the college is physically located in.
+
+🚨🚨🚨 ABSOLUTE RULE — TARGET STATE FILTER 🚨🚨🚨
+The student selected TARGET STATE: "${targetStateName}".
+→ EVERY SINGLE college in your response MUST be physically located in ${targetStateName}.
+→ Do NOT include ANY college from any other state. Not even one.
+→ If a college is in Uttar Pradesh, Maharashtra, Tamil Nadu or any other state — DO NOT include it.
+→ Double-check the city of each college: it MUST be a city in ${targetStateName}.
+→ Set the "state" field to "${targetStateName}" for every college.
+→ VIOLATION OF THIS RULE = COMPLETE FAILURE.
 
 CRITICAL: LOWER AIR NUMBER = BETTER. AIR ${query.score_or_rank.value} is ${query.score_or_rank.value < 5000 ? 'an EXCELLENT top-tier rank' : query.score_or_rank.value < 25000 ? 'a GOOD rank with many options' : query.score_or_rank.value < 75000 ? 'a MODERATE rank' : query.score_or_rank.value < 150000 ? 'a rank with limited government options but good private options' : 'a rank where private/management/AYUSH options are recommended'}.
 
@@ -728,6 +738,80 @@ ${(context.scholarships || []).slice(0, 5).map(s => `- Name: ${s.name}\n  Provid
         });
         if (reclassify.length > 0) {
           console.log(`[AI-Predict] Re-classified ${reclassify.length} college(s) from safe → moderate/reach due to negative margin`);
+        }
+      }
+
+      // 2c. HARD TARGET STATE FILTER — Remove any college NOT in the target state.
+      //     AI sometimes hallucinates colleges from other states even when the prompt
+      //     explicitly says to only show colleges from the target state. This is a
+      //     hard safety net that guarantees 100% state accuracy.
+      const targetStateForFilter = query.target_state || query.domicile_state;
+      if (targetStateForFilter) {
+        const targetLower = targetStateForFilter.toLowerCase().trim();
+        // Common state name aliases
+        const stateAliases = {
+          'madhya pradesh': ['madhya pradesh', 'mp'],
+          'uttar pradesh': ['uttar pradesh', 'up'],
+          'andhra pradesh': ['andhra pradesh', 'ap'],
+          'himachal pradesh': ['himachal pradesh', 'hp'],
+          'arunachal pradesh': ['arunachal pradesh'],
+          'tamil nadu': ['tamil nadu', 'tn', 'tamilnadu'],
+          'west bengal': ['west bengal', 'wb'],
+          'jammu and kashmir': ['jammu and kashmir', 'j&k', 'jammu & kashmir'],
+          'delhi': ['delhi', 'new delhi', 'nct of delhi'],
+          'gujarat': ['gujarat', 'gujrat'],
+          'maharashtra': ['maharashtra'],
+          'karnataka': ['karnataka'],
+          'rajasthan': ['rajasthan'],
+          'kerala': ['kerala'],
+          'bihar': ['bihar'],
+          'odisha': ['odisha', 'orissa'],
+          'punjab': ['punjab'],
+          'haryana': ['haryana'],
+          'telangana': ['telangana'],
+          'chhattisgarh': ['chhattisgarh', 'chattisgarh'],
+          'jharkhand': ['jharkhand'],
+          'uttarakhand': ['uttarakhand', 'uttaranchal'],
+          'goa': ['goa'],
+          'tripura': ['tripura'],
+          'meghalaya': ['meghalaya'],
+          'manipur': ['manipur'],
+          'nagaland': ['nagaland'],
+          'mizoram': ['mizoram'],
+          'sikkim': ['sikkim'],
+          'assam': ['assam'],
+          'puducherry': ['puducherry', 'pondicherry'],
+          'chandigarh': ['chandigarh'],
+        };
+
+        // Build a list of acceptable state strings for matching
+        const acceptable = new Set();
+        acceptable.add(targetLower);
+        for (const [canonical, aliases] of Object.entries(stateAliases)) {
+          if (aliases.includes(targetLower) || canonical === targetLower) {
+            aliases.forEach(a => acceptable.add(a));
+            acceptable.add(canonical);
+          }
+        }
+
+        const matchesTargetState = (collegeState) => {
+          if (!collegeState) return false;
+          const s = collegeState.toLowerCase().trim();
+          return acceptable.has(s);
+        };
+
+        let removedCount = 0;
+        ['safe', 'moderate', 'reach'].forEach(tier => {
+          cp[tier] = cp[tier].filter(c => {
+            if (matchesTargetState(c.state)) return true;
+            // College is from the WRONG state — remove it
+            console.log(`[AI-Predict] REMOVED wrong-state college: "${c.name}" (state: "${c.state}") — target is "${targetStateForFilter}"`);
+            removedCount++;
+            return false;
+          });
+        });
+        if (removedCount > 0) {
+          console.log(`[AI-Predict] Removed ${removedCount} college(s) from wrong states. Target: ${targetStateForFilter}`);
         }
       }
 
