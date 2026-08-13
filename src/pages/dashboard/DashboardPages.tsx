@@ -43,6 +43,7 @@ import { usePremium, UpgradePrompt, PremiumGate } from '../../lib/premium';
 import { INDIAN_STATES, COUNSELLING_ROUNDS } from '../../lib/courses';
 import { PredictorResults } from './PredictorResults';
 import Cutoffs from '../../pages/Cutoffs';
+import { PredictorLoaderUI } from '../../components/ui/PredictorLoaderUI';
 
 export { ProfilePage } from './ProfilePage';
 export { SubscriptionPage } from './SubscriptionPage';
@@ -349,7 +350,6 @@ export function PredictorPage() {
   const [loadingMessage, setLoadingMessage] = useState('Initializing MBBS WALA AI...');
   const [showOverlay, setShowOverlay] = useState(false);
   const [overlayFading, setOverlayFading] = useState(false);
-  const [videoFinished, setVideoFinished] = useState(false);
   const overlayHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'colleges' | 'scholarships'>('colleges');
@@ -403,7 +403,6 @@ export function PredictorPage() {
     if (loading) {
       setShowOverlay(true);
       setOverlayFading(false);
-      setVideoFinished(false);
       setProgress(0);
       setLoadingMessage('Fetching latest MCC/State cutoffs...');
       interval = setInterval(() => {
@@ -429,24 +428,16 @@ export function PredictorPage() {
 
   // Only hide overlay AFTER API is done AND video has played once
   useEffect(() => {
-    // If API finishes with error, or if API finishes with response AND video is done
+    // If API finishes with error, or if API finishes with response
     const isApiDone = !loading && (aiResponse || error);
-    if (isApiDone && showOverlay && videoFinished) {
+    if (isApiDone && showOverlay) {
       // Instantly hide overlay with NO GAP
       setShowOverlay(false);
       setOverlayFading(false);
     }
     
-    // Fallback: If video somehow fails to fire onEnded, close it anyway after 8 seconds
-    let fallbackTimer: ReturnType<typeof setTimeout>;
-    if (loading) {
-      fallbackTimer = setTimeout(() => setVideoFinished(true), 8000);
-    }
-
-    return () => {
-      if (fallbackTimer) clearTimeout(fallbackTimer);
-    };
-  }, [loading, aiResponse, error, showOverlay, videoFinished]);
+    // We removed the video, so we don't need a fallback timer for the video ending anymore
+  }, [loading, aiResponse, error, showOverlay]);
 
   // ── Run prediction ──
   const run = async (e: FormEvent) => {
@@ -551,17 +542,9 @@ export function PredictorPage() {
           style={{ opacity: overlayFading ? 0 : 1, pointerEvents: overlayFading ? 'none' : 'auto' }}
         >
           <div className="w-full max-w-xl mx-4 rounded-2xl overflow-hidden bg-[#0d1b2a] border border-white/10 shadow-2xl">
-            {/* Video */}
-            <div className="relative w-full" style={{ aspectRatio: '16/5', background: '#0d1b2a' }}>
-              <video
-                src="/Character_runs_across_progress_bar_no_audio.mp4"
-                autoPlay
-                muted
-                playsInline
-                onEnded={() => setVideoFinished(true)}
-                className="w-full h-full object-cover"
-              />
-            </div>
+            {/* Code-driven Animation */}
+            <PredictorLoaderUI progress={progress} loadingMessage={loadingMessage} />
+
             {/* Status row */}
             <div className="px-5 py-4 flex items-center justify-between gap-3 border-t border-white/8">
               <div className="flex items-center gap-2.5 min-w-0">
