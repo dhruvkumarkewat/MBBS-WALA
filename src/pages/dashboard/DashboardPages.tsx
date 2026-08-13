@@ -404,9 +404,6 @@ export function PredictorPage() {
       setMinimumTimePassed(false);
       setProgress(0);
       setLoadingMessage('Fetching latest MCC/State cutoffs...');
-    } else {
-      setProgress(100);
-      setLoadingMessage('✅ Results Ready! Loading your colleges...');
     }
   }, [loading]);
 
@@ -438,6 +435,9 @@ export function PredictorPage() {
     // If API finishes with error, or if API finishes with response
     const isApiDone = !loading && (aiResponse || error);
     if (isApiDone && showOverlay && minimumTimePassed) {
+      // Force exactly 100% right before closing so it visually perfects
+      setProgress(100);
+      
       // Instantly hide overlay with NO GAP
       setShowOverlay(false);
       setOverlayFading(false);
