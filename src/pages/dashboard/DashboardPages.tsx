@@ -349,6 +349,7 @@ export function PredictorPage() {
   const [loadingMessage, setLoadingMessage] = useState('Initializing MBBS WALA AI...');
   const [showOverlay, setShowOverlay] = useState(false);
   const [overlayFading, setOverlayFading] = useState(false);
+  const [videoFinished, setVideoFinished] = useState(false);
   const overlayHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'colleges' | 'scholarships'>('colleges');
@@ -402,6 +403,7 @@ export function PredictorPage() {
     if (loading) {
       setShowOverlay(true);
       setOverlayFading(false);
+      setVideoFinished(false);
       setProgress(0);
       setLoadingMessage('Fetching latest MCC/State cutoffs...');
       interval = setInterval(() => {
@@ -425,20 +427,30 @@ export function PredictorPage() {
     return () => clearInterval(interval);
   }, [loading]);
 
-  // Only hide overlay AFTER aiResponse is populated in state
+  // Only hide overlay AFTER API is done AND video has played once
   useEffect(() => {
-    if (!loading && aiResponse && showOverlay) {
-      // Data is ready — start fade-out after short moment so user sees 100%
+    // If API finishes with error, or if API finishes with response AND video is done
+    const isApiDone = !loading && (aiResponse || error);
+    if (isApiDone && showOverlay && videoFinished) {
+      // Data is ready & video finished — start fade-out after short moment
       overlayHideTimerRef.current = setTimeout(() => {
         setOverlayFading(true);
         // Remove overlay from DOM after fade transition completes
         setTimeout(() => setShowOverlay(false), 500);
       }, 700);
     }
+    
+    // Fallback: If video somehow fails to fire onEnded, close it anyway after 8 seconds
+    let fallbackTimer: ReturnType<typeof setTimeout>;
+    if (loading) {
+      fallbackTimer = setTimeout(() => setVideoFinished(true), 8000);
+    }
+
     return () => {
       if (overlayHideTimerRef.current) clearTimeout(overlayHideTimerRef.current);
+      if (fallbackTimer) clearTimeout(fallbackTimer);
     };
-  }, [loading, aiResponse, showOverlay]);
+  }, [loading, aiResponse, error, showOverlay, videoFinished]);
 
   // ── Run prediction ──
   const run = async (e: FormEvent) => {
@@ -548,9 +560,9 @@ export function PredictorPage() {
               <video
                 src="/Character_runs_across_progress_bar_no_audio.mp4"
                 autoPlay
-                loop
                 muted
                 playsInline
+                onEnded={() => setVideoFinished(true)}
                 className="w-full h-full object-cover"
               />
             </div>
