@@ -350,6 +350,9 @@ export function PredictorPage() {
   const [showOverlay, setShowOverlay] = useState(false);
   const [overlayFading, setOverlayFading] = useState(false);
   const [minimumTimePassed, setMinimumTimePassed] = useState(false);
+  const apiDoneRef = useRef(false);       // tracks if API finished (avoids stale closure)
+  const timerDoneRef = useRef(false);     // tracks if 7.5s timer fired
+  const overlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'colleges' | 'scholarships'>('colleges');
   const [tierFilter, setTierFilter] = useState<'ALL' | 'High' | 'Moderate' | 'Reach'>('ALL');
@@ -397,52 +400,55 @@ export function PredictorPage() {
   const toggleQuota = (v: string) => setQuotas([v]);
 
   // ── Animated Loading Progress ──
+  // Central dismiss: called whenever either condition changes
+  const tryDismissOverlay = useCallback(() => {
+    if (apiDoneRef.current && timerDoneRef.current) {
+      setProgress(100);
+      // Use a tiny rAF to let the 100% render first, then hide
+      requestAnimationFrame(() => {
+        setShowOverlay(false);
+      });
+    }
+  }, []);
+
   useEffect(() => {
     if (loading) {
+      // Reset everything when a new request starts
+      apiDoneRef.current = false;
+      timerDoneRef.current = false;
+      if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
       setShowOverlay(true);
       setOverlayFading(false);
       setMinimumTimePassed(false);
       setProgress(0);
       setLoadingMessage('Fetching latest MCC/State cutoffs...');
-    }
-  }, [loading]);
 
-  // Robust timer that guarantees the video has played long enough to look good (7.5s)
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    if (showOverlay) {
-      timer = setTimeout(() => {
-        setMinimumTimePassed(true);
+      // 7.5s timer — fires when video animation completes
+      overlayTimerRef.current = setTimeout(() => {
+        timerDoneRef.current = true;
+        setMinimumTimePassed(true); // keep state in sync for debugging
+        tryDismissOverlay();
       }, 7500);
+    } else {
+      // API finished — mark done and try to dismiss
+      apiDoneRef.current = true;
+      tryDismissOverlay();
     }
-    return () => clearTimeout(timer);
-  }, [showOverlay]);
+    return () => {
+      if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
+    };
+  }, [loading, tryDismissOverlay]);
 
   const handleVideoTimeUpdate = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
     const currentTime = e.currentTarget.currentTime;
-    // The visual progress bar fills up over ~7.5 seconds in the 8-second trimmed video
-    const maxTime = 7.5; 
+    const maxTime = 7.5;
     const calculated = Math.min((currentTime / maxTime) * 100, 100);
     setProgress(calculated);
-    
+
     if (calculated > 20 && calculated <= 50) setLoadingMessage('Analyzing your NEET rank & category...');
     if (calculated > 50 && calculated <= 80) setLoadingMessage('Running deep AI prediction models...');
     if (calculated > 80 && calculated <= 99) setLoadingMessage('Finalizing list of safe & reach colleges...');
   }, []);
-
-  // Only hide overlay AFTER API is done AND minimum display time has passed
-  useEffect(() => {
-    // If API finishes with error, or if API finishes with response
-    const isApiDone = !loading && (aiResponse || error);
-    if (isApiDone && showOverlay && minimumTimePassed) {
-      // Force exactly 100% right before closing so it visually perfects
-      setProgress(100);
-      
-      // Instantly hide overlay with NO GAP
-      setShowOverlay(false);
-      setOverlayFading(false);
-    }
-  }, [loading, aiResponse, error, showOverlay, minimumTimePassed]);
 
   // ── Run prediction ──
   const run = async (e: FormEvent) => {
