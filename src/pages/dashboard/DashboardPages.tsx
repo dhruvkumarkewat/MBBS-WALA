@@ -142,7 +142,7 @@ export function AiAssistantPage() {
         ...m,
         {
           role: 'assistant',
-          text: "🔒 You've used your free AI Assistant trial queries. Upgrade to NEET Counselling Pro to unlock 24/7 unlimited AI counselling, round analysis, and cutoff recommendations!",
+          text: "🔒 You've used your free MBBS WALA AI Assistant trial queries. Upgrade to NEET Counselling Pro to unlock 24/7 unlimited AI counselling, round analysis, and cutoff recommendations!",
         },
       ]);
       return;
@@ -178,7 +178,7 @@ export function AiAssistantPage() {
 
   return (
     <div className="max-w-3xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
-      <PageHead title="AI Assistant" sub="Guidance layer on top of live APIs — verify with official notices" />
+      <PageHead title="MBBS WALA AI Assistant" sub="Guidance layer on top of live APIs — verify with official notices" />
       <div className={`flex-1 rounded-2xl border overflow-hidden flex flex-col ${s.card}`}>
         <div className="flex-1 overflow-y-auto p-4 space-y-3 zn-scroll">
           {messages.map((m, i) => (
@@ -346,7 +346,7 @@ export function PredictorPage() {
   const [aiResponse, setAiResponse] = useState<PredictorResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [loadingMessage, setLoadingMessage] = useState('Initializing AI Predictor...');
+  const [loadingMessage, setLoadingMessage] = useState('Initializing MBBS WALA AI...');
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'colleges' | 'scholarships'>('colleges');
   const [tierFilter, setTierFilter] = useState<'ALL' | 'High' | 'Moderate' | 'Reach'>('ALL');
@@ -508,7 +508,7 @@ export function PredictorPage() {
   return (
     <div className="w-full">
       <PageHead
-        title="AI College Predictor"
+        title="MBBS WALA AI College Predictor"
         sub="Grounded in real MCC/state counselling data — AI explains, never invents"
       />
 
@@ -1546,7 +1546,7 @@ export function CounsellingPage() {
             <div className="grid grid-cols-2 gap-4">
               {[
                 { label: 'Seat Matrix', sub: 'Category breakdown', link: '/dashboard/seat-matrix', primary: false },
-                { label: 'AI Predictor', sub: 'Check probabilities', link: '/dashboard/predictor', primary: true },
+                { label: 'MBBS WALA AI Predictor', sub: 'Check probabilities', link: '/dashboard/predictor', primary: true },
                 { label: 'College Finder', sub: '1200+ indexed', link: '/dashboard/finder', primary: false },
               ].map((tool, i) => (
                 <Link key={i} to={tool.link} className={`flex flex-col items-center justify-center p-5 rounded-2xl border text-center transition-all hover:-translate-y-1 ${

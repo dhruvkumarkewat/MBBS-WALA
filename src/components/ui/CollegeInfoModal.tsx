@@ -76,7 +76,7 @@ export function CollegeInfoModal({ collegeName, isOpen, onClose, s = { dark: tru
             <div className="flex flex-col items-center justify-center py-20 space-y-4">
               <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-orange-500"></div>
               <p className="text-orange-400 font-medium text-sm animate-pulse">
-                Gemini AI is researching this college...
+                MBBS WALA AI is researching this college...
               </p>
             </div>
           ) : error ? (

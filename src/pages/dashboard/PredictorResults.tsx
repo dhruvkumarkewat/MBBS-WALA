@@ -362,7 +362,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
       <div className={`rounded-2xl border p-4 ${s.card}`}>
         <div className="flex items-center justify-between flex-wrap gap-3">
           <p className="font-bold text-sm">
-            AI Predictor Analysis Complete
+            MBBS WALA AI Analysis Complete
             {aiResponse.meta?.authority && (
               <span className={`ml-2 text-xs font-semibold ${s.muted}`}>
                 via {aiResponse.meta.authority}
@@ -371,7 +371,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
           </p>
           {aiResponse._provider_used && aiResponse._provider_used !== 'legacy-fallback' && (
             <p className={`text-[10px] font-medium mt-0.5 ${s.muted}`}>
-              AI: {aiResponse._provider_used} · {aiResponse._response_time_ms || 0}ms
+              Powered by MBBS WALA AI · {aiResponse._response_time_ms || 0}ms
             </p>
           )}
         </div>

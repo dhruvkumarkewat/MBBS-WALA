@@ -398,7 +398,7 @@ export default function OnboardingPage() {
                     <Sparkles className="w-5 h-5 text-orange-400" />
                   </h1>
                   <p className="text-xs sm:text-sm text-white/50 mt-1">
-                    Answer 4 quick questions so our AI Predictor can calculate your 100% accurate college chances.
+                    Answer 4 quick questions so our MBBS WALA AI can calculate your 100% accurate college chances.
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">

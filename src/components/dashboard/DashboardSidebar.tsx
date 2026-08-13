@@ -37,7 +37,7 @@ const sections: { title: string; items: Item[] }[] = [
     items: [
       { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
       { label: 'Chat with Counselor', path: '/dashboard/chat', icon: MessageSquare, badge: 'New' },
-      { label: 'AI Assistant', path: '/dashboard/ai', icon: Sparkles, badge: 'New' },
+      { label: 'MBBS WALA AI', path: '/dashboard/ai', icon: Sparkles, badge: 'New' },
     ],
   },
   {

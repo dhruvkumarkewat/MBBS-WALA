@@ -86,7 +86,7 @@ export default function DashboardRightPanel() {
           to="/dashboard/ai"
           className="inline-flex items-center gap-1 text-sm font-bold text-[#f97316] hover:underline underline-offset-2"
         >
-          Ask AI Assistant <ArrowRight className="w-3.5 h-3.5" />
+          Ask MBBS WALA AI <ArrowRight className="w-3.5 h-3.5" />
         </Link>
       </div>
 
