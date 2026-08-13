@@ -347,6 +347,9 @@ export function PredictorPage() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [loadingMessage, setLoadingMessage] = useState('Initializing MBBS WALA AI...');
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [overlayFading, setOverlayFading] = useState(false);
+  const overlayHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'colleges' | 'scholarships'>('colleges');
   const [tierFilter, setTierFilter] = useState<'ALL' | 'High' | 'Moderate' | 'Reach'>('ALL');
@@ -397,6 +400,8 @@ export function PredictorPage() {
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
     if (loading) {
+      setShowOverlay(true);
+      setOverlayFading(false);
       setProgress(0);
       setLoadingMessage('Fetching latest MCC/State cutoffs...');
       interval = setInterval(() => {
@@ -412,9 +417,28 @@ export function PredictorPage() {
           return next > 99 ? 99 : next;
         });
       }, 600);
+    } else {
+      if (interval!) clearInterval(interval);
+      setProgress(100);
+      setLoadingMessage('✅ Results Ready! Loading your colleges...');
     }
     return () => clearInterval(interval);
   }, [loading]);
+
+  // Only hide overlay AFTER aiResponse is populated in state
+  useEffect(() => {
+    if (!loading && aiResponse && showOverlay) {
+      // Data is ready — start fade-out after short moment so user sees 100%
+      overlayHideTimerRef.current = setTimeout(() => {
+        setOverlayFading(true);
+        // Remove overlay from DOM after fade transition completes
+        setTimeout(() => setShowOverlay(false), 500);
+      }, 700);
+    }
+    return () => {
+      if (overlayHideTimerRef.current) clearTimeout(overlayHideTimerRef.current);
+    };
+  }, [loading, aiResponse, showOverlay]);
 
   // ── Run prediction ──
   const run = async (e: FormEvent) => {
@@ -508,9 +532,50 @@ export function PredictorPage() {
   return (
     <div className="w-full">
       <PageHead
-        title="MBBS WALA AI College Predictor"
+        title="AI College Predictor"
         sub="Grounded in real MCC/state counselling data — AI explains, never invents"
       />
+
+      {/* ── Video Loading Overlay ── */}
+      {showOverlay && (
+        <div
+          className="fixed inset-0 z-[999] flex items-center justify-center bg-black/70 backdrop-blur-sm transition-opacity duration-500"
+          style={{ opacity: overlayFading ? 0 : 1, pointerEvents: overlayFading ? 'none' : 'auto' }}
+        >
+          <div className="w-full max-w-xl mx-4 rounded-2xl overflow-hidden bg-[#0d1b2a] border border-white/10 shadow-2xl">
+            {/* Video */}
+            <div className="relative w-full" style={{ aspectRatio: '16/5', background: '#0d1b2a' }}>
+              <video
+                src="/Character_runs_across_progress_bar_no_audio.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              />
+            </div>
+            {/* Status row */}
+            <div className="px-5 py-4 flex items-center justify-between gap-3 border-t border-white/8">
+              <div className="flex items-center gap-2.5 min-w-0">
+                {progress < 100 ? (
+                  <span className="inline-block w-3.5 h-3.5 rounded-full border-2 border-orange-400 border-t-transparent animate-spin shrink-0" />
+                ) : (
+                  <span className="inline-block w-3.5 h-3.5 text-emerald-400 shrink-0 font-black text-base leading-none">✓</span>
+                )}
+                <p className="text-sm font-semibold text-white/90 truncate transition-all duration-500">
+                  {loadingMessage}
+                </p>
+              </div>
+              <span
+                className="shrink-0 text-xs font-black text-white px-2.5 py-1 rounded-lg tabular-nums transition-colors duration-300"
+                style={{ background: progress === 100 ? '#22c55e' : '#f97316' }}
+              >
+                {Math.floor(progress)}%
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Form or Recalculate State ── */}
       {!aiResponse ? (
@@ -672,57 +737,9 @@ export function PredictorPage() {
           </p>
         )}
 
-        {loading ? (
-          <div className="w-full bg-slate-50 dark:bg-[#112233] border border-primary/30 rounded-2xl p-6 flex flex-col items-center justify-center space-y-6 relative overflow-hidden">
-            {/* Background glowing orb */}
-            <motion.div 
-              animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-              transition={{ repeat: Infinity, duration: 2 }}
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-primary/20 blur-3xl rounded-full"
-            />
-            
-            <div className="relative w-full pt-8">
-              {/* Animated Cyclist moving with progress */}
-              <motion.div 
-                className="absolute top-0 text-4xl drop-shadow-lg"
-                initial={{ left: '0%' }}
-                animate={{ left: `${Math.min(progress, 95)}%`, y: [0, -5, 0] }}
-                transition={{ 
-                  left: { ease: "easeOut", duration: 0.5 },
-                  y: { repeat: Infinity, duration: 0.4 }
-                }}
-                style={{ transform: 'translateX(-50%)' }}
-              >
-                🚴‍♂️
-              </motion.div>
-              
-              <div className="relative w-full h-3 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden shadow-inner">
-                <motion.div 
-                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-orange-400 to-orange-600 shadow-[0_0_12px_rgba(249,115,22,0.8)] rounded-full"
-                  initial={{ width: '0%' }}
-                  animate={{ width: `${Math.min(progress, 100)}%` }}
-                  transition={{ ease: "easeOut", duration: 0.5 }}
-                >
-                  <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
-                </motion.div>
-              </div>
-            </div>
-            
-            <div className="flex w-full items-center justify-between text-sm font-bold relative z-10">
-              <div className="flex items-center gap-3 text-primary">
-                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}>
-                  <Loader2 className="w-5 h-5" />
-                </motion.div>
-                <span className="tracking-wide drop-shadow-sm">{loadingMessage}</span>
-              </div>
-              <span className="text-primary/90 text-lg tabular-nums bg-primary/10 px-3 py-1 rounded-xl font-black">{Math.floor(progress)}%</span>
-            </div>
-          </div>
-        ) : (
-          <button type="submit" disabled={loading} className="zn-cta zn-cta-primary w-full justify-center text-sm">
-            🔮 Predict Colleges{mode === 'rank' && rank ? ` for Rank #${Number(rank).toLocaleString()}` : ''}
-          </button>
-        )}
+        <button type="submit" disabled={loading} className="zn-cta zn-cta-primary w-full justify-center text-sm">
+          🔮 Predict Colleges{mode === 'rank' && rank ? ` for Rank #${Number(rank).toLocaleString()}` : ''}
+        </button>
       </form>
       ) : (
         <div className={`rounded-2xl border p-5 mb-5 flex flex-col sm:flex-row items-center justify-between gap-4 ${s.card}`}>
