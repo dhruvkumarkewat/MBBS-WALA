@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   Bot,
   Send,
@@ -672,21 +673,49 @@ export function PredictorPage() {
         )}
 
         {loading ? (
-          <div className="w-full bg-slate-50 dark:bg-white/5 border border-primary/20 rounded-2xl p-4 flex flex-col items-center justify-center space-y-3">
-            <div className="relative w-full h-2 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
-              <div 
-                className="absolute top-0 left-0 h-full bg-primary transition-all duration-300 ease-out rounded-full"
-                style={{ width: `${Math.min(progress, 100)}%` }}
+          <div className="w-full bg-slate-50 dark:bg-[#112233] border border-primary/30 rounded-2xl p-6 flex flex-col items-center justify-center space-y-6 relative overflow-hidden">
+            {/* Background glowing orb */}
+            <motion.div 
+              animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-primary/20 blur-3xl rounded-full"
+            />
+            
+            <div className="relative w-full pt-8">
+              {/* Animated Cyclist moving with progress */}
+              <motion.div 
+                className="absolute top-0 text-4xl drop-shadow-lg"
+                initial={{ left: '0%' }}
+                animate={{ left: `${Math.min(progress, 95)}%`, y: [0, -5, 0] }}
+                transition={{ 
+                  left: { ease: "easeOut", duration: 0.5 },
+                  y: { repeat: Infinity, duration: 0.4 }
+                }}
+                style={{ transform: 'translateX(-50%)' }}
               >
-                <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                🚴‍♂️
+              </motion.div>
+              
+              <div className="relative w-full h-3 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden shadow-inner">
+                <motion.div 
+                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-orange-400 to-orange-600 shadow-[0_0_12px_rgba(249,115,22,0.8)] rounded-full"
+                  initial={{ width: '0%' }}
+                  animate={{ width: `${Math.min(progress, 100)}%` }}
+                  transition={{ ease: "easeOut", duration: 0.5 }}
+                >
+                  <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                </motion.div>
               </div>
             </div>
-            <div className="flex w-full items-center justify-between text-xs font-bold">
-              <div className="flex items-center gap-2 text-primary animate-pulse">
-                <Loader2 className="w-4 h-4 animate-spin" /> 
-                {loadingMessage}
+            
+            <div className="flex w-full items-center justify-between text-sm font-bold relative z-10">
+              <div className="flex items-center gap-3 text-primary">
+                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}>
+                  <Loader2 className="w-5 h-5" />
+                </motion.div>
+                <span className="tracking-wide drop-shadow-sm">{loadingMessage}</span>
               </div>
-              <span className="text-primary/70">{Math.floor(progress)}%</span>
+              <span className="text-primary/90 text-lg tabular-nums bg-primary/10 px-3 py-1 rounded-xl font-black">{Math.floor(progress)}%</span>
             </div>
           </div>
         ) : (
