@@ -213,7 +213,8 @@ const PROVIDER_CONFIGS = {
             generationConfig: {
               responseMimeType: 'application/json',
               temperature: 0.15,
-              maxOutputTokens: 8192,
+              maxOutputTokens: 12288,
+              thinkingConfig: { thinkingBudget: 2048 },
             },
           }),
         },
@@ -252,7 +253,8 @@ const PROVIDER_CONFIGS = {
             generationConfig: {
               responseMimeType: 'application/json',
               temperature: 0.15,
-              maxOutputTokens: 8192,
+              maxOutputTokens: 12288,
+              thinkingConfig: { thinkingBudget: 2048 },
             },
           }),
         },
@@ -326,6 +328,7 @@ for (let i = 1; i <= 15; i++) {
               responseMimeType: 'application/json',
               temperature: 0.1,
               maxOutputTokens: 8192,
+              thinkingConfig: { thinkingBudget: 0 },
             },
           }),
         },
