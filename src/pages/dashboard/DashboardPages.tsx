@@ -432,12 +432,9 @@ export function PredictorPage() {
     // If API finishes with error, or if API finishes with response AND video is done
     const isApiDone = !loading && (aiResponse || error);
     if (isApiDone && showOverlay && videoFinished) {
-      // Data is ready & video finished — start fade-out after short moment
-      overlayHideTimerRef.current = setTimeout(() => {
-        setOverlayFading(true);
-        // Remove overlay from DOM after fade transition completes
-        setTimeout(() => setShowOverlay(false), 500);
-      }, 700);
+      // Instantly hide overlay with NO GAP
+      setShowOverlay(false);
+      setOverlayFading(false);
     }
     
     // Fallback: If video somehow fails to fire onEnded, close it anyway after 8 seconds
@@ -447,7 +444,6 @@ export function PredictorPage() {
     }
 
     return () => {
-      if (overlayHideTimerRef.current) clearTimeout(overlayHideTimerRef.current);
       if (fallbackTimer) clearTimeout(fallbackTimer);
     };
   }, [loading, aiResponse, error, showOverlay, videoFinished]);
