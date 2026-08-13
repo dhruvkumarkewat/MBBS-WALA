@@ -323,7 +323,7 @@ const PROVIDER_CONFIGS = {
           body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
             temperature: 0.1,
-            max_tokens: 8000,
+            max_tokens: 4000,
             response_format: { type: 'json_object' },
             messages: [
               { role: 'system', content: payload.system_prompt || SYSTEM_PROMPT },
