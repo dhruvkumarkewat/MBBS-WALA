@@ -43,7 +43,6 @@ import { usePremium, UpgradePrompt, PremiumGate } from '../../lib/premium';
 import { INDIAN_STATES, COUNSELLING_ROUNDS } from '../../lib/courses';
 import { PredictorResults } from './PredictorResults';
 import Cutoffs from '../../pages/Cutoffs';
-import { PredictorLoaderUI } from '../../components/ui/PredictorLoaderUI';
 
 export { ProfilePage } from './ProfilePage';
 export { SubscriptionPage } from './SubscriptionPage';
@@ -350,6 +349,7 @@ export function PredictorPage() {
   const [loadingMessage, setLoadingMessage] = useState('Initializing MBBS WALA AI...');
   const [showOverlay, setShowOverlay] = useState(false);
   const [overlayFading, setOverlayFading] = useState(false);
+  const [videoFinished, setVideoFinished] = useState(false);
   const overlayHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'colleges' | 'scholarships'>('colleges');
@@ -399,45 +399,50 @@ export function PredictorPage() {
 
   // ── Animated Loading Progress ──
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
     if (loading) {
       setShowOverlay(true);
       setOverlayFading(false);
+      setVideoFinished(false);
       setProgress(0);
       setLoadingMessage('Fetching latest MCC/State cutoffs...');
-      interval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 98) return 98; // Asymptotic approach
-          const increment = prev < 50 ? Math.random() * 5 + 2 : prev < 80 ? Math.random() * 3 + 1 : Math.random() * 1 + 0.1;
-          const next = prev + increment;
-          
-          if (next > 20 && prev <= 20) setLoadingMessage('Analyzing your NEET rank & category...');
-          if (next > 50 && prev <= 50) setLoadingMessage('Running deep AI prediction models...');
-          if (next > 80 && prev <= 80) setLoadingMessage('Finalizing list of safe & reach colleges...');
-          
-          return next > 99 ? 99 : next;
-        });
-      }, 600);
     } else {
-      if (interval!) clearInterval(interval);
       setProgress(100);
       setLoadingMessage('✅ Results Ready! Loading your colleges...');
     }
-    return () => clearInterval(interval);
   }, [loading]);
+
+  const handleVideoTimeUpdate = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const currentTime = e.currentTarget.currentTime;
+    // The visual progress bar fills up over ~7.5 seconds in the 8-second trimmed video
+    const maxTime = 7.5; 
+    const calculated = Math.min((currentTime / maxTime) * 100, 100);
+    setProgress(calculated);
+    
+    if (calculated > 20 && calculated <= 50) setLoadingMessage('Analyzing your NEET rank & category...');
+    if (calculated > 50 && calculated <= 80) setLoadingMessage('Running deep AI prediction models...');
+    if (calculated > 80 && calculated <= 99) setLoadingMessage('Finalizing list of safe & reach colleges...');
+  }, []);
 
   // Only hide overlay AFTER API is done AND video has played once
   useEffect(() => {
-    // If API finishes with error, or if API finishes with response
+    // If API finishes with error, or if API finishes with response AND video is done
     const isApiDone = !loading && (aiResponse || error);
-    if (isApiDone && showOverlay) {
+    if (isApiDone && showOverlay && videoFinished) {
       // Instantly hide overlay with NO GAP
       setShowOverlay(false);
       setOverlayFading(false);
     }
     
-    // We removed the video, so we don't need a fallback timer for the video ending anymore
-  }, [loading, aiResponse, error, showOverlay]);
+    // Fallback: If video somehow fails to fire onEnded, close it anyway after 8 seconds
+    let fallbackTimer: ReturnType<typeof setTimeout>;
+    if (loading) {
+      fallbackTimer = setTimeout(() => setVideoFinished(true), 8000);
+    }
+
+    return () => {
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+    };
+  }, [loading, aiResponse, error, showOverlay, videoFinished]);
 
   // ── Run prediction ──
   const run = async (e: FormEvent) => {
@@ -542,8 +547,18 @@ export function PredictorPage() {
           style={{ opacity: overlayFading ? 0 : 1, pointerEvents: overlayFading ? 'none' : 'auto' }}
         >
           <div className="w-full max-w-xl mx-4 rounded-2xl overflow-hidden bg-[#0d1b2a] border border-white/10 shadow-2xl">
-            {/* Code-driven Animation */}
-            <PredictorLoaderUI progress={progress} loadingMessage={loadingMessage} />
+            {/* Video */}
+            <div className="relative w-full" style={{ aspectRatio: '16/5', background: '#0d1b2a' }}>
+              <video
+                src="/Character_runs_across_progress_bar_no_audio.mp4"
+                autoPlay
+                muted
+                playsInline
+                onTimeUpdate={handleVideoTimeUpdate}
+                onEnded={() => setVideoFinished(true)}
+                className="w-full h-full object-cover"
+              />
+            </div>
 
             {/* Status row */}
             <div className="px-5 py-4 flex items-center justify-between gap-3 border-t border-white/8">
