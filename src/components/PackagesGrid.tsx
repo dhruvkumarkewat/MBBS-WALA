@@ -108,7 +108,7 @@ export default function PackagesGrid({ limit }: { limit?: number }) {
                 <h3 className="text-xl md:text-2xl font-bold tracking-tight mb-2 pr-16 force-white drop-shadow-sm">{pkg.name}</h3>
                 <p className="stat-value text-4xl md:text-5xl tracking-tight mb-auto font-medium force-white">
                   {pkg.price === 0 ? (
-                    <span className="italic text-transparent bg-clip-text bg-gradient-to-r from-white to-[#FDBA74]">Free</span>
+                    <span className="italic pr-1 text-transparent bg-clip-text bg-gradient-to-r from-white to-[#FDBA74]">Free</span>
                   ) : (
                     <>
                       <span className="text-lg align-top opacity-70 mr-0.5">₹</span>

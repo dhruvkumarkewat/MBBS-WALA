@@ -40,7 +40,7 @@ export default function FinalCTA() {
 
         <h2 className="font-display text-3xl sm:text-4xl md:text-6xl lg:text-[4.25rem] tracking-tight mb-8 sm:mb-10 leading-[1.08] text-white">
           Medical admission help{' '}
-          <span className="italic font-medium text-transparent bg-clip-text bg-gradient-to-r from-[#FDBA74] via-[#F97316] to-[#FB923C]">
+          <span className="italic pr-1 font-medium text-transparent bg-clip-text bg-gradient-to-r from-[#FDBA74] via-[#F97316] to-[#FB923C]">
             families trust
           </span>
         </h2>
