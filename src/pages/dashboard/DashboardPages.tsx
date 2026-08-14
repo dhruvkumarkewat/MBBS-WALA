@@ -44,6 +44,7 @@ import { usePremium, UpgradePrompt, PremiumGate } from '../../lib/premium';
 import { INDIAN_STATES, COUNSELLING_ROUNDS } from '../../lib/courses';
 import { PredictorResults } from './PredictorResults';
 import Cutoffs from '../../pages/Cutoffs';
+import { PredictionLoader } from '../../components/ui/PredictionLoader';
 
 export { ProfilePage } from './ProfilePage';
 export { SubscriptionPage } from './SubscriptionPage';
@@ -400,7 +401,20 @@ export function PredictorPage() {
   // Select a single quota
   const toggleQuota = (v: string) => setQuotas([v]);
 
+  // ── Animated Loading Progress ──
+  const handleAnimationComplete = useCallback(() => {
+    setShowOverlay(false);
+  }, []);
 
+  const handleRetry = useCallback(() => {
+    setShowOverlay(false);
+  }, []);
+
+  useEffect(() => {
+    if (loading) {
+      setShowOverlay(true);
+    }
+  }, [loading]);
 
   // ── Run prediction ──
   const run = async (e: FormEvent) => {
@@ -509,6 +523,16 @@ export function PredictorPage() {
         sub="Grounded in real MCC/state counselling data — AI explains, never invents"
       />
 
+      {/* ── Custom Loader ── */}
+      {showOverlay && (
+        <PredictionLoader
+          isLoading={loading}
+          error={error}
+          onAnimationComplete={handleAnimationComplete}
+          onRetry={handleRetry}
+          dark={s.dark}
+        />
+      )}
 
       {/* ── Form or Recalculate State ── */}
       {!aiResponse ? (
