@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 /* ═══════════════════════════════════════════════════════════
    MBBSWala — premium monochrome + orange
    White #FFFFFF · Surface #F8FAFC · Dark #0E1117

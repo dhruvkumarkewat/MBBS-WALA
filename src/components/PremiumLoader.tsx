@@ -105,6 +105,7 @@ export default function PremiumLoader() {
                 alt="MBBS WAALA"
                 className="h-28 w-auto object-contain"
                 draggable={false}
+                fetchPriority="high"
               />
             </motion.div>
 

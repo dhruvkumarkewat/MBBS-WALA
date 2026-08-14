@@ -74,14 +74,17 @@ export default function Contact() {
               <p className="font-extrabold text-lg">7880119983</p>
             </div>
           </a>
-          <div className="zn-card p-5 flex items-center gap-4">
+          <div 
+            onClick={() => window.location.href = 'mailto:mbbswala023@gmail.com'}
+            className="zn-card p-5 flex items-center gap-4 cursor-pointer"
+          >
             <span className="w-12 h-12 rounded-full bg-yellow-bg border-2 border-black grid place-items-center">
               <Mail className="w-5 h-5" />
             </span>
             <div className="flex flex-col items-start">
               <p className="text-xs font-bold uppercase text-text-grey">Email</p>
-              <a href="mailto:info@mbbswala.in" className="font-extrabold hover:underline hover:text-[#F97316] transition-colors">info@mbbswala.in</a>
-              <a href="mailto:mbbswala023@gmail.com" className="text-sm font-medium text-text-grey hover:underline hover:text-[#F97316] transition-colors">mbbswala023@gmail.com</a>
+              <a href="mailto:info@mbbswala.in" onClick={(e) => e.stopPropagation()} className="font-extrabold hover:underline hover:text-[#F97316] transition-colors">info@mbbswala.in</a>
+              <a href="mailto:mbbswala023@gmail.com" onClick={(e) => e.stopPropagation()} className="text-sm font-medium text-text-grey hover:underline hover:text-[#F97316] transition-colors">mbbswala023@gmail.com</a>
             </div>
           </div>
           <div className="zn-card p-5 flex items-center gap-4">
