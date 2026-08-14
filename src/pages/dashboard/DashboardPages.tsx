@@ -355,6 +355,7 @@ export function PredictorPage() {
   // ── Result state ──
   const [aiResponse, setAiResponse] = useState<PredictorResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'colleges' | 'scholarships'>('colleges');
   const [tierFilter, setTierFilter] = useState<'ALL' | 'High' | 'Moderate' | 'Reach'>('ALL');
