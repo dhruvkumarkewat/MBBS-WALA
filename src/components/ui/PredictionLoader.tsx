@@ -97,22 +97,31 @@ export function PredictionLoader({ isLoading, error, onAnimationComplete, onRetr
 
   // When API is done, move to the final step (after reaching step 5)
   useEffect(() => {
-    let completeTimerId: ReturnType<typeof setTimeout>;
+    let timerId: ReturnType<typeof setTimeout>;
 
     if (isApiDone && currentStep === 5 && !error) {
       setFadeContent(true);
-      setTimeout(() => {
+      timerId = setTimeout(() => {
         setCurrentStep(6);
         setFadeContent(false);
-        
-        completeTimerId = setTimeout(() => {
-          onAnimationComplete();
-        }, 700);
       }, 180);
     }
 
-    return () => clearTimeout(completeTimerId);
-  }, [isApiDone, currentStep, error, onAnimationComplete]);
+    return () => clearTimeout(timerId);
+  }, [isApiDone, currentStep, error]);
+
+  // When we reach the final step (6), wait a bit then complete
+  useEffect(() => {
+    let timerId: ReturnType<typeof setTimeout>;
+
+    if (currentStep === 6 && !error) {
+      timerId = setTimeout(() => {
+        onAnimationComplete();
+      }, 700);
+    }
+
+    return () => clearTimeout(timerId);
+  }, [currentStep, error, onAnimationComplete]);
 
   // If component mounts/remounts due to starting loading again
   useEffect(() => {
