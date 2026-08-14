@@ -490,7 +490,7 @@ export function PredictorPage() {
   };
 
   const floorMet = aiResponse?.meta?.qualifying_floor_met !== false;
-  const colleges = aiResponse?.colleges || [];
+  const colleges: CollegePrediction[] = aiResponse?.colleges || [];
   const scholarships = aiResponse?.scholarships || [];
   const highCount = colleges.filter((c) => c.chance_tier === 'High').length;
   const modCount  = colleges.filter((c) => c.chance_tier === 'Moderate').length;
@@ -741,7 +741,7 @@ export function PredictorPage() {
               </p>
               {aiResponse.fallback?.alternative_courses && (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {(aiResponse.fallback.alternative_courses || []).map((c) => (
+                  {(aiResponse.fallback.alternative_courses || []).map((c: string) => (
                     <span key={c} className="text-xs px-3 py-1 rounded-full bg-white/10 text-white/70 font-semibold">{c}</span>
                   ))}
                 </div>
