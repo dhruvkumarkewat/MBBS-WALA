@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { usePredictorStore } from '../../store/usePredictorStore';
 
 const ICONS: Record<string, React.ReactNode> = {
   stethoscope: (
@@ -74,7 +75,7 @@ export interface PredictionLoaderProps {
 }
 
 export function PredictionLoader({ isLoading, error, onAnimationComplete, onRetry, dark = true }: PredictionLoaderProps) {
-  const [currentStep, setCurrentStep] = useState(0);
+  const { currentStep, setCurrentStep } = usePredictorStore();
   const [fadeContent, setFadeContent] = useState(false);
   const isApiDone = !isLoading && !error;
 

@@ -702,15 +702,9 @@ export function PredictorPage() {
           </p>
         )}
 
-        {loading ? (
-          <div className="w-full relative z-20">
-            <NeetLoader isPredicting={loading} />
-          </div>
-        ) : (
-          <button type="submit" disabled={loading} className="zn-cta zn-cta-primary w-full justify-center text-sm">
-            🔮 Predict Colleges{mode === 'rank' && rank ? ` for Rank #${Number(rank).toLocaleString()}` : mode === 'score' && score ? ` for Score ${score}/720` : ''}
+          <button type="submit" disabled={loading} className={`zn-cta zn-cta-primary w-full justify-center text-sm ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}>
+            {loading ? '🔮 Predicting...' : `🔮 Predict Colleges${mode === 'rank' && rank ? ` for Rank #${Number(rank).toLocaleString()}` : mode === 'score' && score ? ` for Score ${score}/720` : ''}`}
           </button>
-        )}
       </form>
       </div>
       ) : (
