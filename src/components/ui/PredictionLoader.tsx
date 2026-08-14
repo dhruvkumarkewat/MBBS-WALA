@@ -144,7 +144,7 @@ export function PredictionLoader({ isLoading, error, onAnimationComplete, onRetr
     : CIRC - (step.percent / 100) * CIRC;
 
   return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+    <div className="absolute inset-0 z-[50] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 rounded-2xl">
       <div className={`w-full max-w-[360px] rounded-[28px] p-[44px_32px_34px] text-center relative ${cardBg}`}>
         
         {!error ? (

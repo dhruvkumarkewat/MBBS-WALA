@@ -45,6 +45,7 @@ import { INDIAN_STATES, COUNSELLING_ROUNDS } from '../../lib/courses';
 import { PredictorResults } from './PredictorResults';
 import Cutoffs from '../../pages/Cutoffs';
 import { PredictionLoader } from '../../components/ui/PredictionLoader';
+import { usePredictorStore } from '../../store/usePredictorStore';
 
 export { ProfilePage } from './ProfilePage';
 export { SubscriptionPage } from './SubscriptionPage';
@@ -353,17 +354,15 @@ export function PredictorPage() {
   const [neetYear, setNeetYear] = useState(new Date().getFullYear());
 
   // ── Result state ──
-  const [aiResponse, setAiResponse] = useState<PredictorResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [showOverlay, setShowOverlay] = useState(false);
-  const [error, setError] = useState('');
+  const { aiResponse, setAiResponse, loading, setLoading, showOverlay, setShowOverlay, error, setError } = usePredictorStore();
+  
   const [activeTab, setActiveTab] = useState<'colleges' | 'scholarships'>('colleges');
   const [tierFilter, setTierFilter] = useState<'ALL' | 'High' | 'Moderate' | 'Reach'>('ALL');
   const [quotaFilter, setQuotaFilter] = useState<string>('ALL');
 
   // ── Persistence ──
   useEffect(() => {
-    if (profile?.id) {
+    if (profile?.id && !aiResponse && !loading) {
       const saved = localStorage.getItem(`mbbswala_prediction_${profile.id}`);
       if (saved) {
         try {
@@ -373,7 +372,7 @@ export function PredictorPage() {
         }
       }
     }
-  }, [profile?.id]);
+  }, [profile?.id]); // Note: intentional missing dependencies so it only loads on mount or profile change
 
   useEffect(() => {
     if (profile?.id && aiResponse) {
@@ -524,22 +523,23 @@ export function PredictorPage() {
         sub="Grounded in real MCC/state counselling data — AI explains, never invents"
       />
 
-      {/* ── Custom Loader ── */}
-      {showOverlay && (
-        <PredictionLoader
-          isLoading={loading}
-          error={error}
-          onAnimationComplete={handleAnimationComplete}
-          onRetry={handleRetry}
-          dark={s.dark}
-        />
-      )}
+
 
       {/* ── Form or Recalculate State ── */}
       {!aiResponse ? (
-        <form onSubmit={run} className={`rounded-2xl border p-5 space-y-4 mb-5 ${s.card}`}>
+        <div className="relative">
+          {showOverlay && (
+            <PredictionLoader
+              isLoading={loading}
+              error={error}
+              onAnimationComplete={handleAnimationComplete}
+              onRetry={handleRetry}
+              dark={s.dark}
+            />
+          )}
+          <form onSubmit={run} className={`rounded-2xl border p-5 space-y-4 mb-5 ${s.card}`}>
 
-        {/* Exam Track */}
+          {/* Exam Track */}
         <div>
           <span className={`text-xs font-bold uppercase ${s.muted}`}>Exam Track</span>
           <div className="flex gap-2 mt-1.5">
@@ -712,6 +712,7 @@ export function PredictorPage() {
           </button>
         )}
       </form>
+      </div>
       ) : (
         <div className={`rounded-2xl border p-5 mb-5 flex flex-col sm:flex-row items-center justify-between gap-4 ${s.card}`}>
           <div>
