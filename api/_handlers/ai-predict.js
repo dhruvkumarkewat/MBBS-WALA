@@ -38,41 +38,52 @@ function getCategoryClosing(cutoff, category) {
 
 export function scoreToEstimatedAIR(score) {
   if (score >= 720) return 1;
-  if (score >= 715) return 250;
-  if (score >= 710) return 600;
-  if (score >= 705) return 1025;
-  if (score >= 700) return 1800;
-  if (score >= 690) return 4000;
-  if (score >= 680) return 7500;
-  if (score >= 670) return 12500;
-  if (score >= 660) return 19500;
-  if (score >= 650) return 28000;
-  if (score >= 640) return 38000;
-  if (score >= 630) return 48500;
-  if (score >= 620) return 59000;
-  if (score >= 610) return 71000;
-  if (score >= 600) return 82000;
-  if (score >= 590) return 94000;
-  if (score >= 580) return 106000;
-  if (score >= 570) return 120000;
-  if (score >= 560) return 136000;
-  if (score >= 550) return 152000;
-  if (score >= 540) return 169000;
-  if (score >= 530) return 187000;
-  if (score >= 520) return 206000;
-  if (score >= 510) return 225000;
-  if (score >= 500) return 245000;
-  if (score >= 450) return 333500;
-  if (score >= 400) return 436000;
-  if (score >= 350) return 555000;
-  if (score >= 300) return 696000;
-  if (score >= 250) return 866000;
-  if (score >= 200) return 1070000;
-  if (score >= 150) return 1318000;
-  if (score >= 130) return 1435000;
-  if (score >= 100) return 1630000;
-  if (score >= 50) return 2050000;
-  return 2400000; // default for very low
+  if (score < 50) return 2400000;
+
+  // Rank inflation table based on NEET 2024
+  const table = [
+    [720, 1],
+    [715, 225],
+    [710, 800],
+    [705, 1300],
+    [700, 2250],
+    [690, 4800],
+    [680, 9500],
+    [670, 15500],
+    [660, 22500],
+    [650, 30500],
+    [640, 40000],
+    [630, 50500],
+    [620, 61500],
+    [610, 73500],
+    [600, 85500],
+    [590, 98500],
+    [580, 112000],
+    [570, 126500],
+    [560, 142000],
+    [550, 158500],
+    [500, 255000],
+    [450, 370000],
+    [400, 500000],
+    [300, 800000],
+    [200, 1150000],
+    [100, 1650000],
+    [50,  2050000]
+  ];
+
+  for (let i = 0; i < table.length - 1; i++) {
+    const [highScore, highRank] = table[i];
+    const [lowScore, lowRank] = table[i + 1];
+
+    if (score === highScore) return highRank;
+    if (score > lowScore && score < highScore) {
+      const scoreFraction = (highScore - score) / (highScore - lowScore);
+      const rankDiff = lowRank - highRank;
+      return Math.round(highRank + (scoreFraction * rankDiff));
+    }
+  }
+  
+  return table[table.length - 1][1];
 }
 
 export async function retrieveContext(query) {

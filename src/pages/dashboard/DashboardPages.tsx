@@ -561,9 +561,16 @@ export function PredictorPage() {
             <input
               type="number"
               value={mode === 'rank' ? rank : score}
-              onChange={(e) => mode === 'rank' ? setRank(e.target.value) : setScore(e.target.value)}
+              onChange={(e) => {
+                if (mode === 'rank') {
+                  setRank(e.target.value);
+                } else {
+                  const val = Number(e.target.value);
+                  if (val <= 720) setScore(e.target.value);
+                }
+              }}
               min={mode === 'rank' ? 1 : 0}
-              max={mode === 'rank' ? 2000000 : 720}
+              max={mode === 'rank' ? 2500000 : 720}
               placeholder={mode === 'rank' ? 'e.g. 15400' : 'e.g. 612'}
               className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
               required
