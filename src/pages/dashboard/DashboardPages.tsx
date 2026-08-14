@@ -354,14 +354,6 @@ export function PredictorPage() {
   // ── Result state ──
   const [aiResponse, setAiResponse] = useState<PredictorResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [loadingMessage, setLoadingMessage] = useState('Initializing MBBS WALA AI...');
-  const [showOverlay, setShowOverlay] = useState(false);
-  const [overlayFading, setOverlayFading] = useState(false);
-  const [minimumTimePassed, setMinimumTimePassed] = useState(false);
-  const apiDoneRef = useRef(false);       // tracks if API finished (avoids stale closure)
-  const timerDoneRef = useRef(false);     // tracks if 7.5s timer fired
-  const overlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'colleges' | 'scholarships'>('colleges');
   const [tierFilter, setTierFilter] = useState<'ALL' | 'High' | 'Moderate' | 'Reach'>('ALL');
@@ -408,56 +400,7 @@ export function PredictorPage() {
   // Select a single quota
   const toggleQuota = (v: string) => setQuotas([v]);
 
-  // ── Animated Loading Progress ──
-  // Central dismiss: called whenever either condition changes
-  const tryDismissOverlay = useCallback(() => {
-    if (apiDoneRef.current && timerDoneRef.current) {
-      setProgress(100);
-      // Use a tiny rAF to let the 100% render first, then hide
-      requestAnimationFrame(() => {
-        setShowOverlay(false);
-      });
-    }
-  }, []);
 
-  useEffect(() => {
-    if (loading) {
-      // Reset everything when a new request starts
-      apiDoneRef.current = false;
-      timerDoneRef.current = false;
-      if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
-      setShowOverlay(true);
-      setOverlayFading(false);
-      setMinimumTimePassed(false);
-      setProgress(0);
-      setLoadingMessage('Fetching latest MCC/State cutoffs...');
-
-      // 7.5s timer — fires when video animation completes
-      overlayTimerRef.current = setTimeout(() => {
-        timerDoneRef.current = true;
-        setMinimumTimePassed(true); // keep state in sync for debugging
-        tryDismissOverlay();
-      }, 7500);
-    } else {
-      // API finished — mark done and try to dismiss
-      apiDoneRef.current = true;
-      tryDismissOverlay();
-    }
-    return () => {
-      if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
-    };
-  }, [loading, tryDismissOverlay]);
-
-  const handleVideoTimeUpdate = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
-    const currentTime = e.currentTarget.currentTime;
-    const maxTime = 7.5;
-    const calculated = Math.min((currentTime / maxTime) * 100, 100);
-    setProgress(calculated);
-
-    if (calculated > 20 && calculated <= 50) setLoadingMessage('Analyzing your NEET rank & category...');
-    if (calculated > 50 && calculated <= 80) setLoadingMessage('Running deep AI prediction models...');
-    if (calculated > 80 && calculated <= 99) setLoadingMessage('Finalizing list of safe & reach colleges...');
-  }, []);
 
   // ── Run prediction ──
   const run = async (e: FormEvent) => {
@@ -566,47 +509,6 @@ export function PredictorPage() {
         sub="Grounded in real MCC/state counselling data — AI explains, never invents"
       />
 
-      {/* ── Video Loading Overlay ── */}
-      {showOverlay && (
-        <div
-          className="fixed inset-0 z-[999] flex items-center justify-center bg-black/70 backdrop-blur-sm transition-opacity duration-500"
-          style={{ opacity: overlayFading ? 0 : 1, pointerEvents: overlayFading ? 'none' : 'auto' }}
-        >
-          <div className="w-full max-w-xl mx-4 rounded-2xl overflow-hidden bg-[#0d1b2a] border border-white/10 shadow-2xl">
-            {/* Video */}
-            <div className="relative w-full" style={{ aspectRatio: '16/5', background: '#0d1b2a' }}>
-              <video
-                src="/Character_runs_across_progress_bar_no_audio.mp4"
-                autoPlay
-                muted
-                playsInline
-                onTimeUpdate={handleVideoTimeUpdate}
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            {/* Status row */}
-            <div className="px-5 py-4 flex items-center justify-between gap-3 border-t border-white/8">
-              <div className="flex items-center gap-2.5 min-w-0">
-                {progress < 100 ? (
-                  <span className="inline-block w-3.5 h-3.5 rounded-full border-2 border-orange-400 border-t-transparent animate-spin shrink-0" />
-                ) : (
-                  <span className="inline-block w-3.5 h-3.5 text-emerald-400 shrink-0 font-black text-base leading-none">✓</span>
-                )}
-                <p className="text-sm font-semibold text-white/90 truncate transition-all duration-500">
-                  {loadingMessage}
-                </p>
-              </div>
-              <span
-                className="shrink-0 text-xs font-black text-white px-2.5 py-1 rounded-lg tabular-nums transition-colors duration-300"
-                style={{ background: progress === 100 ? '#22c55e' : '#f97316' }}
-              >
-                {Math.floor(progress)}%
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── Form or Recalculate State ── */}
       {!aiResponse ? (
