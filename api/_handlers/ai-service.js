@@ -42,6 +42,11 @@ STEP 3 — CATEGORY-SPECIFIC ANALYSIS (CRITICAL):
 • PwD: Use respective PwD closing ranks.
 NEVER compare a reserved category student against General closing ranks — that gives wrong predictions.
 
+STEP 4 — PRIORITIZE THE BEST COLLEGES:
+• Do NOT just pick random low-tier colleges if the student qualifies for top-tier ones.
+• Always sort and prioritize returning the highest quality, most prestigious, and highest-ranked institutions the student is eligible for (e.g., AIIMS, JIPMER, Top Central/State Govt Colleges, Top Private/Deemed).
+• Ensure the final list represents the absolute BEST possible options for their rank and score.
+
 ═══════════════════════════════════════════════
  QUOTA-SPECIFIC PREDICTION RULES
 ═══════════════════════════════════════════════

@@ -26,7 +26,7 @@ const getQuotaStyle = (quota: string) => {
   return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
 };
 
-const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borderClass, isReach, onCollegeClick, candidateRank }: any) => {
+const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borderClass, isReach, onCollegeClick, candidateRank, candidateScore }: any) => {
   const safeColleges = Array.isArray(colleges) ? colleges : (colleges ? [colleges] : []);
   if (safeColleges.length === 0) return null;
   const displayColleges = [...safeColleges].sort((a, b) => {
@@ -108,16 +108,27 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                         <div className="grid grid-cols-2 text-[11px] gap-4 mt-4 p-3 rounded-lg bg-white/5 border border-white/10">
                           <div className="col-span-2 flex justify-between items-center bg-black/20 p-2 rounded">
                             <div className="text-center">
-                              <div className={s.muted}>Your Rank</div>
-                              <div className="font-bold text-white">{candidateRank > 0 ? candidateRank : 'N/A'}</div>
+                              <div className={s.muted}>{candidateScore ? 'Your Score (AIR)' : 'Your Rank'}</div>
+                              <div className="font-bold text-white">
+                                {candidateScore 
+                                  ? `${candidateScore} (AIR ${candidateRank > 0 ? candidateRank.toLocaleString('en-IN') : 'N/A'})` 
+                                  : (candidateRank > 0 ? `AIR ${candidateRank.toLocaleString('en-IN')}` : 'N/A')
+                                }
+                              </div>
                             </div>
                             <div className="text-center">
                               <div className={s.muted}>Expected Closing</div>
-                              <div className="font-bold text-orange-400">{c.predicted_closing_rank || c.closing_rank}</div>
+                              <div className="font-bold text-orange-400">
+                                {typeof (c.predicted_closing_rank || c.closing_rank) === 'number' 
+                                  ? `AIR ${(c.predicted_closing_rank || c.closing_rank).toLocaleString('en-IN')}` 
+                                  : (c.predicted_closing_rank || c.closing_rank)}
+                              </div>
                             </div>
                             <div className="text-center">
                               <div className={s.muted}>Safety Margin</div>
-                              <div className={`font-bold ${c.margin && c.margin.includes('+') ? 'text-emerald-400' : 'text-rose-400'}`}>{c.margin || 'N/A'}</div>
+                              <div className={`font-bold ${c.margin && String(c.margin).includes('+') ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {c.margin || 'N/A'}
+                              </div>
                             </div>
                           </div>
                           
@@ -170,7 +181,7 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                                    {candidateRank > 0 && (
                                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300">
                                        <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]"></span>
-                                       <span>Your Rank ({candidateRank})</span>
+                                       <span>{candidateScore ? `Score ${candidateScore} (AIR ${candidateRank.toLocaleString('en-IN')})` : `Your Rank (${candidateRank.toLocaleString('en-IN')})`}</span>
                                      </div>
                                    )}
                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300">
@@ -224,7 +235,7 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                                                 <div className="relative flex flex-col justify-end items-center group/cand w-full max-w-[34px] h-full">
                                                   {/* Badge Value */}
                                                   <div className="absolute -top-7 text-[10px] font-black text-amber-300 bg-amber-950/80 px-1.5 py-0.5 rounded-md border border-amber-500/40 shadow-sm opacity-90 group-hover/cand:opacity-100 group-hover/cand:scale-110 transition-all whitespace-nowrap">
-                                                    {candidateRank}
+                                                    {candidateScore ? `AIR ${candidateRank.toLocaleString('en-IN')}` : candidateRank.toLocaleString('en-IN')}
                                                   </div>
                                                   {/* Bar Pillar */}
                                                   <div 
@@ -336,6 +347,9 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
 
   if (!aiResponse) return null;
 
+  const candidateRank = aiResponse.query?.score_or_rank?.value || 0;
+  const candidateScore = aiResponse.query?.score_or_rank?.original_score || null;
+
   // Map legacy/fallback colleges format to college_predictions if missing
   const preds = aiResponse.college_predictions || (() => {
     if (!aiResponse.colleges || !Array.isArray(aiResponse.colleges)) return null;
@@ -420,7 +434,8 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
             borderClass="border-emerald-500/30" 
             isReach={false}
             onCollegeClick={setSelectedCollegeInfo}
-            candidateRank={aiResponse.query?.score_or_rank?.value || 0}
+            candidateRank={candidateRank}
+            candidateScore={candidateScore}
           />
           
           {!isPremium && (preds?.safe?.length || 0) > 15 && (
@@ -433,22 +448,72 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
         </div>
       )}
 
-      {(!preds?.safe || preds.safe.length === 0) && (
+      {/* ── Moderate Colleges ── */}
+      {preds?.moderate && preds.moderate.length > 0 && (
+        <div className={`rounded-2xl border p-5 ${s.card} border-l-4 border-l-amber-500/60`}>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-lg">⚡</span>
+            <h3 className="font-black text-sm uppercase tracking-wider">Moderate Chance Colleges (Round 2 / 3 Options)</h3>
+          </div>
+          <CollegeGroupList 
+            colleges={preds?.moderate || []} 
+            s={s} isPremium={isPremium} maxFreeCount={10}
+            bgClass={s.dark ? 'bg-amber-900/10' : 'bg-amber-50'} 
+            borderClass="border-amber-500/30" 
+            isReach={false}
+            onCollegeClick={setSelectedCollegeInfo}
+            candidateRank={candidateRank}
+            candidateScore={candidateScore}
+          />
+          
+          {!isPremium && (preds?.moderate?.length || 0) > 10 && (
+             <div className="mt-4 p-4 rounded-xl border border-primary/20 bg-primary/5 text-center">
+               <Crown className="w-5 h-5 text-primary mx-auto mb-2" />
+               <p className="text-xs font-bold mb-2">Upgrade to Premium to view {(preds?.moderate?.length || 0) - 10} more Moderate colleges.</p>
+               <Link to="/dashboard/subscription" className="text-[10px] bg-primary text-white px-3 py-1.5 rounded-full font-bold inline-block">Upgrade Now</Link>
+             </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Reach Colleges ── */}
+      {preds?.reach && preds.reach.length > 0 && (
+        <div className={`rounded-2xl border p-5 ${s.card} border-l-4 border-l-purple-500/60`}>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-lg">🎯</span>
+            <h3 className="font-black text-sm uppercase tracking-wider">Reach Colleges (Aspirational / Dream Options)</h3>
+          </div>
+          <CollegeGroupList 
+            colleges={preds?.reach || []} 
+            s={s} isPremium={isPremium} maxFreeCount={8}
+            bgClass={s.dark ? 'bg-purple-900/10' : 'bg-purple-50'} 
+            borderClass="border-purple-500/30" 
+            isReach={false}
+            onCollegeClick={setSelectedCollegeInfo}
+            candidateRank={candidateRank}
+            candidateScore={candidateScore}
+          />
+          
+          {!isPremium && (preds?.reach?.length || 0) > 8 && (
+             <div className="mt-4 p-4 rounded-xl border border-primary/20 bg-primary/5 text-center">
+               <Crown className="w-5 h-5 text-primary mx-auto mb-2" />
+               <p className="text-xs font-bold mb-2">Upgrade to Premium to view {(preds?.reach?.length || 0) - 8} more Reach colleges.</p>
+               <Link to="/dashboard/subscription" className="text-[10px] bg-primary text-white px-3 py-1.5 rounded-full font-bold inline-block">Upgrade Now</Link>
+             </div>
+          )}
+        </div>
+      )}
+
+      {(!preds?.safe || preds.safe.length === 0) && (!preds?.moderate || preds.moderate.length === 0) && (!preds?.reach || preds.reach.length === 0) && (
         <div className={`rounded-2xl border p-5 ${s.card} border-l-4 border-l-rose-500/60`}>
           <div className="flex items-center gap-2 mb-3">
             <span className="text-lg">⚠️</span>
             <h3 className="font-black text-sm uppercase tracking-wider text-rose-400">
-              {(preds?.moderate?.length > 0 || preds?.reach?.length > 0) 
-                ? 'No Safe Colleges — But Options Exist Below'
-                : 'No Matching Colleges Found'
-              }
+              No Matching Colleges Found
             </h3>
           </div>
           <p className={`text-sm ${s.muted} leading-relaxed`}>
-            {(preds?.moderate?.length > 0 || preds?.reach?.length > 0) 
-              ? `No 'safe' (high-chance) colleges match your exact filters, but we found ${preds?.moderate?.length || 0} moderate-chance and ${preds?.reach?.length || 0} reach colleges below. Scroll down to review them.`
-              : 'Based on your selected filters (quota, state, category, round), we could not find any matching colleges in our database. Try changing your target state, selecting a different quota, or broadening your search.'
-            }
+            Based on your selected filters (quota, state, category, round), we could not find any matching colleges in our database. Try changing your target state, selecting a different quota, or broadening your search.
           </p>
         </div>
       )}

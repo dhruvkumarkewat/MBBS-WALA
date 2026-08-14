@@ -36,6 +36,45 @@ function getCategoryClosing(cutoff, category) {
   return cutoff.GEN_closing || cutoff.GEN || cutoff.closing_rank || cutoff.closing;
 }
 
+export function scoreToEstimatedAIR(score) {
+  if (score >= 720) return 1;
+  if (score >= 715) return 250;
+  if (score >= 710) return 600;
+  if (score >= 705) return 1025;
+  if (score >= 700) return 1800;
+  if (score >= 690) return 4000;
+  if (score >= 680) return 7500;
+  if (score >= 670) return 12500;
+  if (score >= 660) return 19500;
+  if (score >= 650) return 28000;
+  if (score >= 640) return 38000;
+  if (score >= 630) return 48500;
+  if (score >= 620) return 59000;
+  if (score >= 610) return 71000;
+  if (score >= 600) return 82000;
+  if (score >= 590) return 94000;
+  if (score >= 580) return 106000;
+  if (score >= 570) return 120000;
+  if (score >= 560) return 136000;
+  if (score >= 550) return 152000;
+  if (score >= 540) return 169000;
+  if (score >= 530) return 187000;
+  if (score >= 520) return 206000;
+  if (score >= 510) return 225000;
+  if (score >= 500) return 245000;
+  if (score >= 450) return 333500;
+  if (score >= 400) return 436000;
+  if (score >= 350) return 555000;
+  if (score >= 300) return 696000;
+  if (score >= 250) return 866000;
+  if (score >= 200) return 1070000;
+  if (score >= 150) return 1318000;
+  if (score >= 130) return 1435000;
+  if (score >= 100) return 1630000;
+  if (score >= 50) return 2050000;
+  return 2400000; // default for very low
+}
+
 export async function retrieveContext(query) {
   const year = query.score_or_rank?.neet_year || new Date().getFullYear();
   const category = query.category || 'General';
@@ -65,7 +104,7 @@ export async function retrieveContext(query) {
     .from('cutoffs')
     .select('*')
     .eq('category', category)
-    .gte('closing_rank', Math.max(1, candidateRank - 15000))
+    .gte('closing_rank', Math.max(1, candidateRank - 35000))
     .order('closing_rank', { ascending: true })
     .limit(3000);
 
@@ -522,6 +561,19 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Valid rank or score is required' });
     }
 
+    let originalScore = null;
+    let isScoreMode = false;
+    let resolvedRank = query.score_or_rank.value;
+
+    if (!body.rank && body.score) {
+      isScoreMode = true;
+      originalScore = query.score_or_rank.value;
+      resolvedRank = scoreToEstimatedAIR(originalScore);
+      query.score_or_rank.value = resolvedRank;
+      query.score_or_rank.original_score = originalScore;
+      query.score_or_rank.kind = 'air'; // System expects AIR
+    }
+
     // Step 1: Retrieve context from database
     const context = await retrieveContext(query);
 
@@ -617,6 +669,14 @@ ${selectedQuotas.map(q => {
   return `${q}: Show relevant colleges if available.`;
 }).join('\n')}
 
+${isScoreMode ? `
+🚨 CRITICAL INSTRUCTION FOR SCORE-BASED SEARCH:
+- The student provided a NEET Score of ${originalScore}/720. This corresponds to an estimated All India Rank of AIR ~${resolvedRank.toLocaleString('en-IN')}.
+- DO NOT treat ${originalScore} as an AIR! Their AIR is ~${resolvedRank.toLocaleString('en-IN')}.
+- In "admission_summary", state clearly: "With a NEET score of ${originalScore}/720 (Estimated All India Rank: AIR ~${resolvedRank.toLocaleString('en-IN')}) in the ${query.category} category..."
+- Compare their estimated AIR (${resolvedRank}) against the category closing ranks (AIR) for ${query.category} category.
+` : ''}
+
 For each college you show:
 1. Use the EXACT official college name (real NMC-recognized college)
 2. Compare student AIR ${query.score_or_rank.value} (${query.category}) against actual historical closing ranks
@@ -625,6 +685,7 @@ For each college you show:
 5. Set margin to: closing_rank - student_rank (positive = safe, negative = harder)
 6. Government college fees: ₹10,000-₹50,000/year. Private fees: ₹8L-₹25L/year. Deemed: ₹15L-₹30L/year. Management: ₹15L-₹35L/year.
 7. Set the "state" field to the EXACT state the college is physically located in.
+8. 🏅 PRIORITIZE THE BEST COLLEGES: Out of all eligible colleges, return the highest quality, most prestigious, and highest-ranked institutions first (e.g., AIIMS, JIPMER, Top Central/State Govt Colleges, Top Private). Do NOT just return random low-tier colleges if they qualify for top-tier ones! Ensure the returned list represents the absolute BEST options available for their rank/score.
 
 🚨🚨🚨 ABSOLUTE RULE — TARGET STATE FILTER 🚨🚨🚨
 The student selected TARGET STATE: "${targetStateName}".

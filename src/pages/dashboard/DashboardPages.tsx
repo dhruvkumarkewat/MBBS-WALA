@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, useRef, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { NeetLoader } from './NeetLoader';
 import { motion } from 'framer-motion';
 import {
   Bot,
@@ -299,6 +300,14 @@ interface PredictorResponse {
   _provider_used?: string;
   _response_time_ms?: number;
   _data_summary?: { colleges_in_context: number; scholarships_matched: number };
+  query?: any;
+  college_predictions?: any;
+  admission_summary?: any;
+  quota_wise_analysis?: any;
+  unlikely_mbbs_guidance?: any;
+  management_quota_opportunities?: any;
+  scholarships_analysis?: any;
+  quota_availability?: any;
 }
 
 /* ── Chance tier styling ── */
@@ -493,11 +502,22 @@ export function PredictorPage() {
         });
         setAiResponse(data);
 
-        // Save rank to profile (non-blocking)
+        // Save rank/score to profile (non-blocking)
         if (mode === 'rank' && rankNum) {
           apiJson('/api/profile', {
             method: 'PUT',
             body: JSON.stringify({ neet_rank: rankNum, category }),
+          }, true).catch(() => {});
+        } else if (mode === 'score' && scoreNum) {
+          // Save score and the estimated rank from the API response
+          const estimatedRank = data?.query?.score_or_rank?.value;
+          apiJson('/api/profile', {
+            method: 'PUT',
+            body: JSON.stringify({ 
+              neet_score: scoreNum, 
+              ...(estimatedRank ? { neet_rank: estimatedRank } : {}),
+              category 
+            }),
           }, true).catch(() => {});
         }
       } catch (aiErr: any) {
@@ -748,16 +768,22 @@ export function PredictorPage() {
           </p>
         )}
 
-        <button type="submit" disabled={loading} className="zn-cta zn-cta-primary w-full justify-center text-sm">
-          🔮 Predict Colleges{mode === 'rank' && rank ? ` for Rank #${Number(rank).toLocaleString()}` : ''}
-        </button>
+        {loading ? (
+          <div className="w-full relative z-20">
+            <NeetLoader isPredicting={loading} />
+          </div>
+        ) : (
+          <button type="submit" disabled={loading} className="zn-cta zn-cta-primary w-full justify-center text-sm">
+            🔮 Predict Colleges{mode === 'rank' && rank ? ` for Rank #${Number(rank).toLocaleString()}` : mode === 'score' && score ? ` for Score ${score}/720` : ''}
+          </button>
+        )}
       </form>
       ) : (
         <div className={`rounded-2xl border p-5 mb-5 flex flex-col sm:flex-row items-center justify-between gap-4 ${s.card}`}>
           <div>
             <h3 className="text-sm font-bold">Prediction Active</h3>
             <p className={`text-xs mt-1 ${s.muted}`}>
-              Showing results for {examTrack === 'MBBS_BDS' ? 'MBBS/BDS' : 'AYUSH'} · {mode === 'rank' ? `AIR ${rank}` : `Score ${score}`} · {category} · {quotas.join(', ')}
+              Showing results for {examTrack === 'MBBS_BDS' ? 'MBBS/BDS' : 'AYUSH'} · {mode === 'score' && aiResponse?.query?.score_or_rank?.original_score ? `Score ${aiResponse.query.score_or_rank.original_score} (Est. AIR ${aiResponse.query.score_or_rank.value?.toLocaleString()})` : `AIR ${rank}`} · {category} · {quotas.join(', ')}
             </p>
           </div>
           <button onClick={handleRecalculate} className="zn-cta border border-white/10 text-sm whitespace-nowrap hover:bg-white/5">
