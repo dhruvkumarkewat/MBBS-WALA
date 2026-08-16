@@ -115,8 +115,7 @@ export async function retrieveContext(query) {
     .from('cutoffs')
     .select('*')
     .eq('category', category)
-    .gte('closing_rank', Math.max(1, candidateRank - 200000))
-    .lte('closing_rank', candidateRank + 80000)
+    .gte('closing_rank', Math.max(1, candidateRank - 35000))
     .order('closing_rank', { ascending: true })
     .limit(3000);
 
@@ -673,7 +672,7 @@ ${selectedQuotas.map(q => {
     : quotaEligibility.management.eligible
       ? `MANAGEMENT QUOTA: ✅ Show real private ${targetStateName} medical colleges with management quota seats. Non-domicile allowed. Show 8-12 real colleges.`
       : `MANAGEMENT QUOTA: ⚠️ Not eligible (domicile mismatch). Show message and suggest alternatives.`;
-  if (qL === 'aiq' || qL.includes('all india')) return `AIQ: ✅ Show real government and private MBBS colleges from ALL STATES ACROSS INDIA under AIQ (15% All India Quota). Use Google Search to look up live 2024/2025 AIQ cutoffs. AIQ is NOT state-restricted — show colleges from Karnataka, Tamil Nadu, Maharashtra, Delhi, UP, Gujarat, etc. NOT just ${targetStateName}. Show 10-15 safe colleges.`;
+  if (qL === 'aiq' || qL.includes('all india')) return `AIQ: ✅ Show real government MBBS colleges in ${targetStateName} under AIQ. Use actual 2023-2025 closing ranks for ${query.category} category, Round 1 AIQ. Show 10-15 real colleges.`;
   if (qL.includes('state')) return domicileMatchesTarget
     ? `STATE QUOTA: ✅ Show real government colleges in ${targetStateName} under 85% state quota for ${query.category} category. Show 8-12 real colleges.`
     : `STATE QUOTA: ⚠️ Not eligible — domicile mismatch. Tell student they need ${targetStateName} domicile for state quota.`;
@@ -692,19 +691,21 @@ ${isScoreMode ? `
 For each college you show:
 1. Use the EXACT official college name (real NMC-recognized college)
 2. Compare student AIR ${query.score_or_rank.value} (${query.category}) against actual historical closing ranks
-3. Only show colleges where the student has a realistic chance (student_rank <= closing_rank = safe, within 25% worse = moderate)
-4. Show historical_trend as an ARRAY: [{year: 2025, closing_rank: XXXX, is_ai_estimated: false}, ...]. If you are NOT 100% certain of a number, set is_ai_estimated: true.
-5. Set margin to: closing_rank - student_rank (positive = student rank better than cutoff = safe; negative = harder)
+3. Only show colleges where the student has a realistic chance (rank ≤ closing rank = safe, within 20% = moderate, 20-40% = reach)
+4. Show historical_trend as an ARRAY: [{year: 2025, closing_rank: XXXX}, {year: 2024, closing_rank: XXXX}, {year: 2023, closing_rank: XXXX}]
+5. Set margin to: closing_rank - student_rank (positive = safe, negative = harder)
 6. Government college fees: ₹10,000-₹50,000/year. Private fees: ₹8L-₹25L/year. Deemed: ₹15L-₹30L/year. Management: ₹15L-₹35L/year.
 7. Set the "state" field to the EXACT state the college is physically located in.
-8. 🏅 PRIORITIZE THE BEST COLLEGES the student can realistically get based on live data and search results.
+8. 🏅 PRIORITIZE THE BEST COLLEGES: Out of all eligible colleges, return the highest quality, most prestigious, and highest-ranked institutions first (e.g., AIIMS, JIPMER, Top Central/State Govt Colleges, Top Private). Do NOT just return random low-tier colleges if they qualify for top-tier ones! Ensure the returned list represents the absolute BEST options available for their rank/score.
 
 🚨🚨🚨 ABSOLUTE RULE — TARGET STATE FILTER 🚨🚨🚨
 The student selected TARGET STATE: "${targetStateName}".
-→ For STATE QUOTA: EVERY college MUST be physically located in ${targetStateName}.
-→ For AIQ and DEEMED: Show colleges from ANY state in India. AIQ is not state-restricted.
-→ For MANAGEMENT QUOTA: Check state rules — may be restricted to domicile state.
-
+→ EVERY SINGLE college in your response MUST be physically located in ${targetStateName}.
+→ Do NOT include ANY college from any other state. Not even one.
+→ If a college is in Uttar Pradesh, Maharashtra, Tamil Nadu or any other state — DO NOT include it.
+→ Double-check the city of each college: it MUST be a city in ${targetStateName}.
+→ Set the "state" field to "${targetStateName}" for every college.
+→ VIOLATION OF THIS RULE = COMPLETE FAILURE.
 
 CRITICAL: LOWER AIR NUMBER = BETTER. AIR ${query.score_or_rank.value} is ${query.score_or_rank.value < 5000 ? 'an EXCELLENT top-tier rank' : query.score_or_rank.value < 25000 ? 'a GOOD rank with many options' : query.score_or_rank.value < 75000 ? 'a MODERATE rank' : query.score_or_rank.value < 150000 ? 'a rank with limited government options but good private options' : 'a rank where private/management/AYUSH options are recommended'}.
 
@@ -874,9 +875,6 @@ ${(context.scholarships || []).slice(0, 5).map(s => `- Name: ${s.name}\n  Provid
         let removedCount = 0;
         ['safe', 'moderate', 'reach'].forEach(tier => {
           cp[tier] = cp[tier].filter(c => {
-            // AIQ colleges are nationwide — never filter by state for AIQ
-            const quotaUpper = (c.quota || '').toUpperCase();
-            if (quotaUpper === 'AIQ' || quotaUpper.includes('DEEMED') || quotaUpper.includes('CENTRAL')) return true;
             if (matchesTargetState(c.state)) return true;
             // College is from the WRONG state — remove it
             console.log(`[AI-Predict] REMOVED wrong-state college: "${c.name}" (state: "${c.state}") — target is "${targetStateForFilter}"`);
@@ -887,40 +885,6 @@ ${(context.scholarships || []).slice(0, 5).map(s => `- Name: ${s.name}\n  Provid
         if (removedCount > 0) {
           console.log(`[AI-Predict] Removed ${removedCount} college(s) from wrong states. Target: ${targetStateForFilter}`);
         }
-      }
-
-      // 2d. HARD ACCURACY VALIDATOR — Remove physically impossible predictions.
-      //     Government AIQ General closing ranks are NEVER above 250,000.
-      //     If AI predicts a government college under AIQ with closing > 250,000, it’s fabricated data.
-      const studentRankForValidation = query.score_or_rank?.value || 0;
-      const GOVT_AIQ_MAX_CLOSING = 250000; // Government colleges never close above this for AIQ
-      let impossibleCount = 0;
-      ['safe', 'moderate', 'reach'].forEach(tier => {
-        cp[tier] = cp[tier].filter(c => {
-          const quotaUpper = (c.quota || '').toUpperCase();
-          const isAIQ = quotaUpper === 'AIQ';
-          const closing = Number(c.predicted_closing_rank) || 0;
-          const nameL = (c.name || '').toLowerCase();
-          // Detect government colleges by name patterns
-          const isGovtCollege = /medical college|government|govt|aiims|jipmer|gandhi medical|nscb|mgm medical|shyam shah|mahatma gandhi memorial|rajiv gandhi|osmania|kgmu|grant medical|kem hospital|vmmc|mamc|ucms|lady hardinge|bj medical|sms medical|scb medical/i.test(nameL)
-            && !/patil|manipal|srm|saveetha|amrita|jss|hamdard|bharati vidyapeeth|deemed|mgims wardha|private/i.test(nameL);
-          if (isAIQ && isGovtCollege && closing > GOVT_AIQ_MAX_CLOSING) {
-            console.log(`[AI-Predict] REMOVED impossible AIQ prediction: "${c.name}" closing ${closing} (max for govt AIQ = ${GOVT_AIQ_MAX_CLOSING})`);
-            impossibleCount++;
-            return false;
-          }
-          // Also remove AIQ colleges where counselling_authority is a state body (not MCC)
-          const auth = (c.counselling_authority || '').toUpperCase();
-          if (isAIQ && auth && !auth.includes('MCC') && (auth.includes('DMET') || auth.includes('DME') || auth.includes('KEA') || auth.includes('DMER') || auth.includes('KNRUHS'))) {
-            console.log(`[AI-Predict] REMOVED state-authority college mislabelled as AIQ: "${c.name}" auth:${auth}`);
-            impossibleCount++;
-            return false;
-          }
-          return true;
-        });
-      });
-      if (impossibleCount > 0) {
-        console.log(`[AI-Predict] Removed ${impossibleCount} impossible/mislabelled AIQ prediction(s).`);
       }
 
       // 3. Normalize quota_wise_analysis — AI sometimes returns a flat array

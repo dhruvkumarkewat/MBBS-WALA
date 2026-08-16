@@ -44,8 +44,6 @@ import { usePremium, UpgradePrompt, PremiumGate } from '../../lib/premium';
 import { INDIAN_STATES, COUNSELLING_ROUNDS } from '../../lib/courses';
 import { PredictorResults } from './PredictorResults';
 import Cutoffs from '../../pages/Cutoffs';
-import { PredictionLoader } from '../../components/ui/PredictionLoader';
-import { usePredictorStore } from '../../store/usePredictorStore';
 
 export { ProfilePage } from './ProfilePage';
 export { SubscriptionPage } from './SubscriptionPage';
@@ -310,15 +308,6 @@ interface PredictorResponse {
   management_quota_opportunities?: any;
   scholarships_analysis?: any;
   quota_availability?: any;
-  _submitted?: {
-    rank: number | null;
-    score: number | null;
-    mode: string;
-    category: string;
-    quotas: string[];
-    examTrack: string;
-    domicileState: string;
-  };
 }
 
 /* ── Chance tier styling ── */
@@ -363,15 +352,16 @@ export function PredictorPage() {
   const [neetYear, setNeetYear] = useState(new Date().getFullYear());
 
   // ── Result state ──
-  const { aiResponse, setAiResponse, loading, setLoading, showOverlay, setShowOverlay, error, setError } = usePredictorStore();
-  
+  const [aiResponse, setAiResponse] = useState<PredictorResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'colleges' | 'scholarships'>('colleges');
   const [tierFilter, setTierFilter] = useState<'ALL' | 'High' | 'Moderate' | 'Reach'>('ALL');
   const [quotaFilter, setQuotaFilter] = useState<string>('ALL');
 
   // ── Persistence ──
   useEffect(() => {
-    if (profile?.id && !aiResponse && !loading) {
+    if (profile?.id) {
       const saved = localStorage.getItem(`mbbswala_prediction_${profile.id}`);
       if (saved) {
         try {
@@ -381,7 +371,7 @@ export function PredictorPage() {
         }
       }
     }
-  }, [profile?.id]); // Note: intentional missing dependencies so it only loads on mount or profile change
+  }, [profile?.id]);
 
   useEffect(() => {
     if (profile?.id && aiResponse) {
@@ -410,20 +400,7 @@ export function PredictorPage() {
   // Select a single quota
   const toggleQuota = (v: string) => setQuotas([v]);
 
-  // ── Animated Loading Progress ──
-  const handleAnimationComplete = useCallback(() => {
-    setShowOverlay(false);
-  }, []);
 
-  const handleRetry = useCallback(() => {
-    setShowOverlay(false);
-  }, []);
-
-  useEffect(() => {
-    if (loading) {
-      setShowOverlay(true);
-    }
-  }, [loading]);
 
   // ── Run prediction ──
   const run = async (e: FormEvent) => {
@@ -466,17 +443,6 @@ export function PredictorPage() {
           method: 'POST',
           body: JSON.stringify(payload),
         });
-        // Attach the submitted inputs to the response so the results banner
-        // always shows what was actually used (not the live form state)
-        data._submitted = {
-          rank: mode === 'rank' ? rankNum : null,
-          score: mode === 'score' ? scoreNum : null,
-          mode,
-          category,
-          quotas: [...quotas],
-          examTrack,
-          domicileState,
-        };
         setAiResponse(data);
 
         // Save rank/score to profile (non-blocking)
@@ -510,7 +476,7 @@ export function PredictorPage() {
   };
 
   const floorMet = aiResponse?.meta?.qualifying_floor_met !== false;
-  const colleges: CollegePrediction[] = aiResponse?.colleges || [];
+  const colleges = aiResponse?.colleges || [];
   const scholarships = aiResponse?.scholarships || [];
   const highCount = colleges.filter((c) => c.chance_tier === 'High').length;
   const modCount  = colleges.filter((c) => c.chance_tier === 'Moderate').length;
@@ -544,22 +510,11 @@ export function PredictorPage() {
       />
 
 
-
       {/* ── Form or Recalculate State ── */}
       {!aiResponse ? (
-        <div className="relative">
-          {showOverlay && (
-            <PredictionLoader
-              isLoading={loading}
-              error={error}
-              onAnimationComplete={handleAnimationComplete}
-              onRetry={handleRetry}
-              dark={s.dark}
-            />
-          )}
-          <form onSubmit={run} className={`rounded-2xl border p-5 space-y-4 mb-5 ${s.card}`}>
+        <form onSubmit={run} className={`rounded-2xl border p-5 space-y-4 mb-5 ${s.card}`}>
 
-          {/* Exam Track */}
+        {/* Exam Track */}
         <div>
           <span className={`text-xs font-bold uppercase ${s.muted}`}>Exam Track</span>
           <div className="flex gap-2 mt-1.5">
@@ -722,17 +677,22 @@ export function PredictorPage() {
           </p>
         )}
 
-          <button type="submit" disabled={loading} className={`zn-cta zn-cta-primary w-full justify-center text-sm ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}>
-            {loading ? '🔮 Predicting...' : `🔮 Predict Colleges${mode === 'rank' && rank ? ` for Rank #${Number(rank).toLocaleString()}` : mode === 'score' && score ? ` for Score ${score}/720` : ''}`}
+        {loading ? (
+          <div className="w-full relative z-20">
+            <NeetLoader isPredicting={loading} />
+          </div>
+        ) : (
+          <button type="submit" disabled={loading} className="zn-cta zn-cta-primary w-full justify-center text-sm">
+            🔮 Predict Colleges{mode === 'rank' && rank ? ` for Rank #${Number(rank).toLocaleString()}` : mode === 'score' && score ? ` for Score ${score}/720` : ''}
           </button>
+        )}
       </form>
-      </div>
       ) : (
         <div className={`rounded-2xl border p-5 mb-5 flex flex-col sm:flex-row items-center justify-between gap-4 ${s.card}`}>
           <div>
             <h3 className="text-sm font-bold">Prediction Active</h3>
             <p className={`text-xs mt-1 ${s.muted}`}>
-              Showing results for {(aiResponse?._submitted?.examTrack ?? examTrack) === 'MBBS_BDS' ? 'MBBS/BDS' : 'AYUSH'} · {(aiResponse?._submitted?.mode ?? mode) === 'score' && aiResponse?._submitted?.score ? `Score ${aiResponse._submitted.score}/720` : `AIR ${(aiResponse?._submitted?.rank ?? rank)?.toLocaleString()}`} · {aiResponse?._submitted?.category ?? category} · {(aiResponse?._submitted?.quotas ?? quotas).join(', ')}
+              Showing results for {examTrack === 'MBBS_BDS' ? 'MBBS/BDS' : 'AYUSH'} · {mode === 'score' && aiResponse?.query?.score_or_rank?.original_score ? `Score ${aiResponse.query.score_or_rank.original_score} (Est. AIR ${aiResponse.query.score_or_rank.value?.toLocaleString()})` : `AIR ${rank}`} · {category} · {quotas.join(', ')}
             </p>
           </div>
           <button onClick={handleRecalculate} className="zn-cta border border-white/10 text-sm whitespace-nowrap hover:bg-white/5">
@@ -755,7 +715,7 @@ export function PredictorPage() {
               </p>
               {aiResponse.fallback?.alternative_courses && (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {(aiResponse.fallback.alternative_courses || []).map((c: string) => (
+                  {(aiResponse.fallback.alternative_courses || []).map((c) => (
                     <span key={c} className="text-xs px-3 py-1 rounded-full bg-white/10 text-white/70 font-semibold">{c}</span>
                   ))}
                 </div>

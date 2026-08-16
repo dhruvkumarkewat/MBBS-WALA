@@ -125,26 +125,11 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                               </div>
                             </div>
                             <div className="text-center">
-                               <div className={s.muted}>Rank Gap vs Cutoff</div>
-                               {(() => {
-                                 const closingNum = c.predicted_closing_rank ||
-                                   parseInt(String(c.closing_rank || '0').replace(/\D/g, '')) || 0;
-                                 const gap = (closingNum > 0 && candidateRank > 0)
-                                   ? closingNum - candidateRank   // positive = student better (lower rank = better)
-                                   : null;
-                                 const isGood = gap !== null && gap >= 0;
-                                 return (
-                                   <div className={`font-bold text-xs ${isGood ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                     {gap === null
-                                       ? (c.margin || 'N/A')
-                                       : isGood
-                                         ? `+${gap.toLocaleString('en-IN')} better ✅`
-                                         : `-${Math.abs(gap).toLocaleString('en-IN')} worse ⚠️`
-                                     }
-                                   </div>
-                                 );
-                               })()}
-                             </div>
+                              <div className={s.muted}>Safety Margin</div>
+                              <div className={`font-bold ${c.margin && String(c.margin).includes('+') ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {c.margin || 'N/A'}
+                              </div>
+                            </div>
                           </div>
                           
                           <div className="col-span-2 md:col-span-1">
@@ -196,7 +181,7 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                                    {candidateRank > 0 && (
                                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300">
                                        <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]"></span>
-                                       <span>Your Rank</span>
+                                       <span>{candidateScore ? `Score ${candidateScore} (AIR ${candidateRank.toLocaleString('en-IN')})` : `Your Rank (${candidateRank.toLocaleString('en-IN')})`}</span>
                                      </div>
                                    )}
                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300">
@@ -207,83 +192,90 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                                </div>
 
                                {(() => {
-                                  const trendData = [...c.historical_trend].sort((a, b) => parseInt(a.year) - parseInt(b.year));
-                                  const allRanks = [
-                                    candidateRank,
-                                    ...trendData.map(x => parseInt(String(x.closing_rank).replace(/\D/g, '')) || 0)
-                                  ].filter(v => v > 0);
+                                 const trendData = [...c.historical_trend].sort((a, b) => parseInt(a.year) - parseInt(b.year));
+                                 const allRanks = [
+                                   candidateRank,
+                                   ...trendData.map(x => parseInt(String(x.closing_rank).replace(/\D/g, '')) || 0)
+                                 ].filter(v => v > 0);
+                                 
+                                 const minR = Math.min(...allRanks, 1);
+                                 const maxR = Math.max(...allRanks, 100);
+                                 const spread = (maxR - minR) + (maxR * 0.25) || 1;
 
-                                  const minR = Math.min(...allRanks, 1);
-                                  const maxR = Math.max(...allRanks, 100);
-                                  const spread = (maxR - minR) + (maxR * 0.25) || 1;
+                                 // Lower rank number = Taller bar
+                                 const getBarHeight = (r: number) => {
+                                   if (!r || r <= 0) return 0;
+                                   const normalized = (r - minR) / spread;
+                                   return Math.max(18, Math.min(95, 92 - (normalized * 68)));
+                                 };
 
-                                  // Lower rank number = Taller bar (closer to AIR 1 = better)
-                                  const getBarHeight = (r: number) => {
-                                    if (!r || r <= 0) return 0;
-                                    const normalized = (r - minR) / spread;
-                                    return Math.max(18, Math.min(95, 92 - (normalized * 68)));
-                                  };
+                                 return (
+                                   <div className="relative h-56 w-full pt-4 pb-8 flex items-end justify-around gap-2">
+                                     {/* Background Grid Lines */}
+                                     <div className="absolute inset-x-0 top-6 bottom-10 flex flex-col justify-between pointer-events-none opacity-15">
+                                       <div className="w-full border-b border-dashed border-white"></div>
+                                       <div className="w-full border-b border-dashed border-white"></div>
+                                       <div className="w-full border-b border-dashed border-white"></div>
+                                     </div>
 
-                                  // Compute student height ONCE outside the map
-                                  const candHeight = getBarHeight(candidateRank);
-
-                                  return (
-                                    <div className="relative h-56 w-full pt-4 pb-8 flex items-end justify-around gap-2">
-                                      {/* Background Grid Lines */}
-                                      <div className="absolute inset-x-0 top-6 bottom-10 flex flex-col justify-between pointer-events-none opacity-15">
-                                        <div className="w-full border-b border-dashed border-white"></div>
-                                        <div className="w-full border-b border-dashed border-white"></div>
-                                        <div className="w-full border-b border-dashed border-white"></div>
-                                      </div>
-
-                                      {/* Student Rank — Single Horizontal Dashed Reference Line */}
-                                      {candidateRank > 0 && (
-                                        <div
-                                          className="absolute left-0 right-0 z-20 pointer-events-none"
-                                          style={{ bottom: `${candHeight}%` }}
-                                        >
-                                          <div className="w-full border-t-2 border-dashed border-amber-400/80 shadow-[0_0_8px_rgba(245,158,11,0.4)]"></div>
-                                          <span className="absolute -top-5 right-1 text-[9px] font-black text-amber-300 bg-amber-950/95 px-2 py-0.5 rounded border border-amber-500/50 whitespace-nowrap shadow-sm">
-                                            Your Rank: {candidateRank.toLocaleString('en-IN')}
-                                          </span>
-                                        </div>
-                                      )}
-
-                                      {/* One Bar Per Year — Closing Cutoff Only */}
-                                      {trendData.map((t, idx) => {
+                                     {/* Bars Grouped by Year */}
+                                     {trendData.map((t, idx) => {
                                         const closeVal = parseInt(String(t.closing_rank).replace(/\D/g, '')) || 0;
+                                        const candHeight = getBarHeight(candidateRank);
                                         const closeHeight = getBarHeight(closeVal);
-                                        const isFabricated = (closeVal > 0 && closeVal === candidateRank) || t.is_ai_estimated || !closeVal;
 
                                         return (
                                           <div key={idx} className="relative flex flex-col justify-end items-center group w-full max-w-[110px] h-full z-10">
-                                            <div className="flex items-end justify-center w-full h-full px-3">
-                                              <div className="relative flex flex-col justify-end items-center group/close w-full h-full">
+                                            
+                                            {/* Side by Side Bars */}
+                                            <div className="flex items-end justify-center w-full h-full gap-2 sm:gap-3 px-1">
+                                              
+                                              {/* Candidate Rank Bar */}
+                                              {candidateRank > 0 && (
+                                                <div className="relative flex flex-col justify-end items-center group/cand w-full max-w-[34px] h-full">
+                                                  {/* Badge Value */}
+                                                  <div className="absolute -top-7 text-[10px] font-black text-amber-300 bg-amber-950/80 px-1.5 py-0.5 rounded-md border border-amber-500/40 shadow-sm opacity-90 group-hover/cand:opacity-100 group-hover/cand:scale-110 transition-all whitespace-nowrap">
+                                                    {candidateScore ? `AIR ${candidateRank.toLocaleString('en-IN')}` : candidateRank.toLocaleString('en-IN')}
+                                                  </div>
+                                                  {/* Bar Pillar */}
+                                                  <div 
+                                                    className="w-full bg-gradient-to-t from-amber-600 via-amber-500 to-amber-300 rounded-t-lg shadow-[0_0_15px_rgba(245,158,11,0.35)] group-hover/cand:shadow-[0_0_25px_rgba(245,158,11,0.7)] transition-all duration-500 relative overflow-hidden"
+                                                    style={{ height: `${candHeight}%` }}
+                                                  >
+                                                    <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/cand:opacity-100 transition-opacity"></div>
+                                                  </div>
+                                                  <span className="absolute -bottom-4 text-[9px] font-bold text-amber-400/90 uppercase tracking-tighter">You</span>
+                                                </div>
+                                              )}
+
+                                              {/* Closing Cutoff Bar */}
+                                              <div className="relative flex flex-col justify-end items-center group/close w-full max-w-[34px] h-full">
                                                 {/* Badge Value */}
                                                 <div className="absolute -top-7 text-[10px] font-black text-cyan-300 bg-cyan-950/80 px-1.5 py-0.5 rounded-md border border-cyan-500/40 shadow-sm opacity-90 group-hover/close:opacity-100 group-hover/close:scale-110 transition-all whitespace-nowrap">
-                                                  {isFabricated ? '⚠️ Est.' : closeVal.toLocaleString('en-IN')}
+                                                  {t.closing_rank}
                                                 </div>
                                                 {/* Bar Pillar */}
-                                                <div
-                                                  className={`w-full rounded-t-lg transition-all duration-500 relative overflow-hidden ${
-                                                    isFabricated
-                                                      ? 'bg-gradient-to-t from-slate-600 via-slate-500 to-slate-400 opacity-50'
-                                                      : 'bg-gradient-to-t from-blue-600 via-cyan-500 to-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.35)] group-hover/close:shadow-[0_0_25px_rgba(6,182,212,0.7)]'
-                                                  }`}
-                                                  style={{ height: `${closeHeight || 20}%` }}
+                                                <div 
+                                                  className="w-full bg-gradient-to-t from-blue-600 via-cyan-500 to-cyan-300 rounded-t-lg shadow-[0_0_15px_rgba(6,182,212,0.35)] group-hover/close:shadow-[0_0_25px_rgba(6,182,212,0.7)] transition-all duration-500 relative overflow-hidden"
+                                                  style={{ height: `${closeHeight}%` }}
                                                 >
                                                   <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/close:opacity-100 transition-opacity"></div>
                                                 </div>
-                                                {/* Year Label */}
-                                                <span className="absolute -bottom-5 text-[9px] font-bold text-slate-300 uppercase tracking-tighter">{t.year}</span>
+                                                <span className="absolute -bottom-4 text-[9px] font-bold text-cyan-400/90 uppercase tracking-tighter">Cutoff</span>
                                               </div>
+
+                                            </div>
+                                            
+                                            {/* Year Label */}
+                                            <div className="absolute -bottom-10 px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[10px] font-bold text-slate-300 group-hover:text-white group-hover:bg-white/10 transition-all">
+                                              {t.year}
                                             </div>
                                           </div>
                                         );
-                                      })}
-                                    </div>
-                                  );
-                                })()}
+                                     })}
+                                   </div>
+                                 );
+                               })()}
                              </div>
                             
                             <div className="overflow-x-auto rounded border border-white/10 hidden md:block">
@@ -300,12 +292,7 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                                     <tr key={idx} className={`border-b last:border-0 ${s.dark ? 'border-white/5' : 'border-black/5'}`}>
                                       <td className="px-3 py-1">{t.year}</td>
                                       <td className="px-3 py-1 text-right opacity-80">{t.opening_rank || '-'}</td>
-                                      <td className="px-3 py-1 text-right font-bold text-primary">
-                                        {(parseInt(String(t.closing_rank).replace(/\D/g, '')) === candidateRank || t.is_ai_estimated)
-                                          ? <span className="text-yellow-500 font-semibold">⚠️ AI Estimated</span>
-                                          : t.closing_rank
-                                        }
-                                      </td>
+                                      <td className="px-3 py-1 text-right font-bold text-primary">{t.closing_rank}</td>
                                     </tr>
                                   ))}
                                 </tbody>
@@ -360,8 +347,8 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
 
   if (!aiResponse) return null;
 
-  const candidateRank = (aiResponse._submitted?.rank ?? aiResponse.query?.score_or_rank?.value) || 0;
-  const candidateScore = aiResponse._submitted?.score || aiResponse.query?.score_or_rank?.original_score || null;
+  const candidateRank = aiResponse.query?.score_or_rank?.value || 0;
+  const candidateScore = aiResponse.query?.score_or_rank?.original_score || null;
 
   // Map legacy/fallback colleges format to college_predictions if missing
   const preds = aiResponse.college_predictions || (() => {
@@ -461,7 +448,63 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
         </div>
       )}
 
-      {(!preds?.safe || preds.safe.length === 0) && (
+      {/* ── Moderate Colleges ── */}
+      {preds?.moderate && preds.moderate.length > 0 && (
+        <div className={`rounded-2xl border p-5 ${s.card} border-l-4 border-l-amber-500/60`}>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-lg">⚡</span>
+            <h3 className="font-black text-sm uppercase tracking-wider">Moderate Chance Colleges (Round 2 / 3 Options)</h3>
+          </div>
+          <CollegeGroupList 
+            colleges={preds?.moderate || []} 
+            s={s} isPremium={isPremium} maxFreeCount={10}
+            bgClass={s.dark ? 'bg-amber-900/10' : 'bg-amber-50'} 
+            borderClass="border-amber-500/30" 
+            isReach={false}
+            onCollegeClick={setSelectedCollegeInfo}
+            candidateRank={candidateRank}
+            candidateScore={candidateScore}
+          />
+          
+          {!isPremium && (preds?.moderate?.length || 0) > 10 && (
+             <div className="mt-4 p-4 rounded-xl border border-primary/20 bg-primary/5 text-center">
+               <Crown className="w-5 h-5 text-primary mx-auto mb-2" />
+               <p className="text-xs font-bold mb-2">Upgrade to Premium to view {(preds?.moderate?.length || 0) - 10} more Moderate colleges.</p>
+               <Link to="/dashboard/subscription" className="text-[10px] bg-primary text-white px-3 py-1.5 rounded-full font-bold inline-block">Upgrade Now</Link>
+             </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Reach Colleges ── */}
+      {preds?.reach && preds.reach.length > 0 && (
+        <div className={`rounded-2xl border p-5 ${s.card} border-l-4 border-l-purple-500/60`}>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-lg">🎯</span>
+            <h3 className="font-black text-sm uppercase tracking-wider">Reach Colleges (Aspirational / Dream Options)</h3>
+          </div>
+          <CollegeGroupList 
+            colleges={preds?.reach || []} 
+            s={s} isPremium={isPremium} maxFreeCount={8}
+            bgClass={s.dark ? 'bg-purple-900/10' : 'bg-purple-50'} 
+            borderClass="border-purple-500/30" 
+            isReach={false}
+            onCollegeClick={setSelectedCollegeInfo}
+            candidateRank={candidateRank}
+            candidateScore={candidateScore}
+          />
+          
+          {!isPremium && (preds?.reach?.length || 0) > 8 && (
+             <div className="mt-4 p-4 rounded-xl border border-primary/20 bg-primary/5 text-center">
+               <Crown className="w-5 h-5 text-primary mx-auto mb-2" />
+               <p className="text-xs font-bold mb-2">Upgrade to Premium to view {(preds?.reach?.length || 0) - 8} more Reach colleges.</p>
+               <Link to="/dashboard/subscription" className="text-[10px] bg-primary text-white px-3 py-1.5 rounded-full font-bold inline-block">Upgrade Now</Link>
+             </div>
+          )}
+        </div>
+      )}
+
+      {(!preds?.safe || preds.safe.length === 0) && (!preds?.moderate || preds.moderate.length === 0) && (!preds?.reach || preds.reach.length === 0) && (
         <div className={`rounded-2xl border p-5 ${s.card} border-l-4 border-l-rose-500/60`}>
           <div className="flex items-center gap-2 mb-3">
             <span className="text-lg">⚠️</span>
