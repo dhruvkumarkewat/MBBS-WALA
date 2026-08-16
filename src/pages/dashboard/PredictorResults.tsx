@@ -125,9 +125,16 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                               </div>
                             </div>
                             <div className="text-center">
-                              <div className={s.muted}>Safety Margin</div>
-                              <div className={`font-bold ${c.margin && String(c.margin).includes('+') ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                {c.margin || 'N/A'}
+                              <div className={s.muted}>Rank Gap vs Cutoff</div>
+                              <div className={`font-bold ${c.margin && !String(c.margin).startsWith('-') ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {(() => {
+                                  const m = String(c.margin || '');
+                                  const isPositive = m.startsWith('+') || (!m.startsWith('-') && m.length > 0);
+                                  if (!m || m === 'N/A') return 'N/A';
+                                  return isPositive
+                                    ? `${m} better than cutoff ✅`
+                                    : `${m} worse than cutoff ⚠️`;
+                                })()}
                               </div>
                             </div>
                           </div>
@@ -252,7 +259,10 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                                               <div className="relative flex flex-col justify-end items-center group/close w-full max-w-[34px] h-full">
                                                 {/* Badge Value */}
                                                 <div className="absolute -top-7 text-[10px] font-black text-cyan-300 bg-cyan-950/80 px-1.5 py-0.5 rounded-md border border-cyan-500/40 shadow-sm opacity-90 group-hover/close:opacity-100 group-hover/close:scale-110 transition-all whitespace-nowrap">
-                                                  {t.closing_rank}
+                                                  {(closeVal > 0 && closeVal === candidateRank)
+                                                     ? '⚠️ AI Est.'
+                                                     : (t.is_ai_estimated ? '⚠️ AI Est.' : t.closing_rank)
+                                                   }
                                                 </div>
                                                 {/* Bar Pillar */}
                                                 <div 
@@ -292,7 +302,12 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                                     <tr key={idx} className={`border-b last:border-0 ${s.dark ? 'border-white/5' : 'border-black/5'}`}>
                                       <td className="px-3 py-1">{t.year}</td>
                                       <td className="px-3 py-1 text-right opacity-80">{t.opening_rank || '-'}</td>
-                                      <td className="px-3 py-1 text-right font-bold text-primary">{t.closing_rank}</td>
+                                      <td className="px-3 py-1 text-right font-bold text-primary">
+                                        {(parseInt(String(t.closing_rank).replace(/\D/g, '')) === candidateRank || t.is_ai_estimated)
+                                          ? <span className="text-yellow-500 font-semibold">⚠️ AI Estimated</span>
+                                          : t.closing_rank
+                                        }
+                                      </td>
                                     </tr>
                                   ))}
                                 </tbody>
