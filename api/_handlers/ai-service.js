@@ -263,7 +263,7 @@ for (let i = 1; i <= 15; i++) {
       if (!key) return null;
 
       return {
-        url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`,
+        url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${key}`,
         options: {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
