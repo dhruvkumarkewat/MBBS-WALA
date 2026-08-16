@@ -104,7 +104,7 @@ export default async function (req, res) {
     let lastError = null;
 
     for (const key of keys) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${key}`;
       try {
         const response = await fetch(url, {
           method: 'POST',
