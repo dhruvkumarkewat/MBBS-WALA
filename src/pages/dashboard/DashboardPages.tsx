@@ -310,6 +310,15 @@ interface PredictorResponse {
   management_quota_opportunities?: any;
   scholarships_analysis?: any;
   quota_availability?: any;
+  _submitted?: {
+    rank: number | null;
+    score: number | null;
+    mode: string;
+    category: string;
+    quotas: string[];
+    examTrack: string;
+    domicileState: string;
+  };
 }
 
 /* ── Chance tier styling ── */
