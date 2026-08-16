@@ -673,7 +673,7 @@ ${selectedQuotas.map(q => {
     : quotaEligibility.management.eligible
       ? `MANAGEMENT QUOTA: ✅ Show real private ${targetStateName} medical colleges with management quota seats. Non-domicile allowed. Show 8-12 real colleges.`
       : `MANAGEMENT QUOTA: ⚠️ Not eligible (domicile mismatch). Show message and suggest alternatives.`;
-  if (qL === 'aiq' || qL.includes('all india')) return `AIQ: ✅ Show real government and private MBBS colleges from ALL STATES ACROSS INDIA under AIQ (15% All India Quota). Use the VERIFIED_CUTOFF_REFERENCE table provided. AIQ is NOT state-restricted — show colleges from Karnataka, Tamil Nadu, Maharashtra, Delhi, UP, Gujarat, etc. NOT just ${targetStateName}. Show 10-15 safe colleges.`;
+  if (qL === 'aiq' || qL.includes('all india')) return `AIQ: ✅ Show real government and private MBBS colleges from ALL STATES ACROSS INDIA under AIQ (15% All India Quota). Use Google Search to look up live 2024/2025 AIQ cutoffs. AIQ is NOT state-restricted — show colleges from Karnataka, Tamil Nadu, Maharashtra, Delhi, UP, Gujarat, etc. NOT just ${targetStateName}. Show 10-15 safe colleges.`;
   if (qL.includes('state')) return domicileMatchesTarget
     ? `STATE QUOTA: ✅ Show real government colleges in ${targetStateName} under 85% state quota for ${query.category} category. Show 8-12 real colleges.`
     : `STATE QUOTA: ⚠️ Not eligible — domicile mismatch. Tell student they need ${targetStateName} domicile for state quota.`;
@@ -697,58 +697,7 @@ For each college you show:
 5. Set margin to: closing_rank - student_rank (positive = student rank better than cutoff = safe; negative = harder)
 6. Government college fees: ₹10,000-₹50,000/year. Private fees: ₹8L-₹25L/year. Deemed: ₹15L-₹30L/year. Management: ₹15L-₹35L/year.
 7. Set the "state" field to the EXACT state the college is physically located in.
-8. 🏅 PRIORITIZE THE BEST COLLEGES the student can realistically get. Use the VERIFIED_CUTOFF_REFERENCE below.
-
-=== VERIFIED MCC AIQ 2024 CLOSING RANKS (General/UR, Round 3) ===
-USE THESE EXACT NUMBERS. Do NOT invent your own. These are from official MCC data.
-
-Government Colleges (AIQ, General/UR, 2024 Round 3 approximate):
-- AIIMS New Delhi: ~50
-- Maulana Azad Medical College (MAMC) Delhi: ~400
-- VMMC & Safdarjung Delhi: ~850
-- UCMS Delhi: ~1,800
-- Lady Hardinge Medical College Delhi: ~3,200
-- Grant Medical College Mumbai: ~4,500
-- KEM Hospital Mumbai: ~6,200
-- Seth GS Medical College Mumbai: ~7,000
-- Gandhi Medical College Bhopal: ~8,500
-- BJ Medical College Ahmedabad: ~10,000
-- SMS Medical College Jaipur: ~13,500
-- Govt Medical College Thiruvananthapuram: ~17,000
-- Medical College Kolkata: ~22,000
-- Osmania Medical College Hyderabad: ~30,000
-- Rajiv Gandhi Institute of Medical Sciences Bangalore: ~42,000
-- Bangalore Medical College: ~48,000
-- Patna Medical College: ~55,000
-- SCB Medical College Cuttack: ~65,000
-- Govt Medical College Amritsar: ~80,000
-- Kakatiya Medical College Warangal: ~95,000
-- Chengalpattu Medical College TN: ~120,000
-- Govt Medical College Thrissur Kerala: ~140,000
-- NSCB Medical College Jabalpur: ~160,000 (AIQ)
-- Mahatma Gandhi Memorial Medical College Indore: ~180,000 (AIQ)
-- Shyam Shah Medical College Rewa: ~220,000 (AIQ)
-
-Private/Deemed (AIQ/MCC Deemed counselling, General, 2024):
-- JIPMER Puducherry (government-like): ~500
-- Kasturba Medical College Manipal: ~30,000-80,000
-- MGIMS Wardha: ~200,000-280,000
-- Saveetha Medical College Chennai: ~280,000-400,000
-- SRM Medical College Chennai: ~250,000-380,000
-- DY Patil Medical College Navi Mumbai: ~350,000-500,000
-- DY Patil Medical College Pune: ~320,000-480,000
-- KIMSDU Karad: ~300,000-450,000
-- Bharati Vidyapeeth Pune: ~250,000-380,000
-- Sri Ramachandra Chennai: ~180,000-320,000
-- SRIHER Chennai: ~200,000-350,000
-- Amrita School of Medicine Kochi: ~100,000-200,000
-
-CRITICAL RULES FOR USING THIS DATA:
-- Gandhi Medical College Bhopal AIQ General closes at ~8,500. A student with AIR 300,000+ has ZERO chance under AIQ.
-- Government AIQ General closing ranks are ALWAYS < 250,000. If you predict a government college for AIQ General with closing > 250,000, you are wrong.
-- For a student with AIR > 200,000 General AIQ: Only private/deemed colleges are realistic options.
-- For AIR 300,000-400,000 General AIQ: Only the lowest-tier private/deemed colleges (DY Patil, Saveetha, SRM etc.) are realistic.
-- For MP State Quota (DMET MP), closing ranks are HIGHER (more relaxed) than AIQ: Gandhi MC ~80,000-120,000, NSCB ~150,000-220,000, Shyam Shah ~300,000-420,000.
+8. 🏅 PRIORITIZE THE BEST COLLEGES the student can realistically get based on live data and search results.
 
 🚨🚨🚨 ABSOLUTE RULE — TARGET STATE FILTER 🚨🚨🚨
 The student selected TARGET STATE: "${targetStateName}".
