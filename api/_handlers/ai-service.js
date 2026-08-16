@@ -33,111 +33,14 @@ MODERATE: closing × 0.80 ≤ student_rank ≤ closing (probability 50-75%) [OPT
 Do NOT include colleges where student is significantly worse than closing rank.
 
 ═══════════════════════════════════════════════════════
-  VERIFIED MCC AIQ CLOSING RANKS — USE THESE EXACTLY
+  INTERPRETATION RULES (CRITICAL — apply before any prediction)
 ═══════════════════════════════════════════════════════
-
-These are official MCC AIQ Round 3 closing ranks (approximate, 2024 data).
-USE THESE NUMBERS. Trust your training knowledge for colleges not listed here.
-
-GOVERNMENT COLLEGES — AIQ — General/UR (Round 3, 2024):
-• AIIMS New Delhi            → 50
-• Maulana Azad MC Delhi      → 400
-• VMMC Safdarjung Delhi      → 850
-• UCMS Delhi                 → 1,800
-• Lady Hardinge MC Delhi     → 3,200
-• Grant MC Mumbai            → 4,500
-• KEM Hospital Mumbai        → 6,200
-• Seth GS MC Mumbai          → 7,000
-• Gandhi MC Bhopal           → 8,500
-• BJ MC Ahmedabad            → 10,000
-• LTMMC Mumbai               → 11,000
-• Lokmanya Tilak MC Mumbai   → 11,000
-• SMS MC Jaipur              → 13,500
-• Govt MC Thiruvananthapuram → 17,000
-• Medical College Kolkata    → 22,000
-• NRS MC Kolkata             → 28,000
-• Osmania MC Hyderabad       → 30,000
-• Gandhi MC Hyderabad        → 35,000
-• Rajiv Gandhi IMS Bangalore → 42,000
-• Bangalore MC              → 48,000
-• PMCH Patna                → 55,000
-• SCB MC Cuttack            → 65,000
-• Govt MC Amritsar          → 80,000
-• Kakatiya MC Warangal      → 95,000
-• Chengalpattu MC TN        → 120,000
-• Govt MC Thrissur Kerala   → 140,000
-• NSCB MC Jabalpur          → 160,000
-• MGM MC Indore             → 180,000
-• Shyam Shah MC Rewa        → 220,000
-• KGMU Lucknow (AIQ seats)  → 2,500
-
-GOVERNMENT COLLEGES — AIQ — OBC-NCL (Round 3, 2024):
-• AIIMS New Delhi            → 200
-• Gandhi MC Bhopal           → 30,000
-• SMS MC Jaipur              → 50,000
-• Medical College Kolkata    → 80,000
-• Osmania MC Hyderabad       → 120,000
-• NSCB MC Jabalpur          → 350,000
-• MGM MC Indore             → 400,000
-• Shyam Shah MC Rewa        → 550,000
-
-GOVERNMENT COLLEGES — AIQ — SC (Round 3, 2024):
-• AIIMS New Delhi            → 1,000
-• Gandhi MC Bhopal           → 60,000
-• SMS MC Jaipur              → 100,000
-• Medical College Kolkata    → 150,000
-• NSCB MC Jabalpur          → 600,000
-• Shyam Shah MC Rewa        → 800,000
-
-GOVERNMENT COLLEGES — AIQ — ST (Round 3, 2024):
-• AIIMS New Delhi            → 3,000
-• Gandhi MC Bhopal           → 100,000
-• SMS MC Jaipur              → 200,000
-• NSCB MC Jabalpur          → 800,000+
-
-GOVERNMENT COLLEGES — AIQ — EWS (Round 3, 2024):
-• AIIMS New Delhi            → 80
-• Gandhi MC Bhopal           → 10,000
-• SMS MC Jaipur              → 18,000
-• Medical College Kolkata    → 35,000
-• NSCB MC Jabalpur          → 200,000
-
-PRIVATE/DEEMED — MCC Deemed Counselling (All categories, Round 3, 2024):
-• JIPMER Puducherry (govt-like, AIQ) → Gen: 500, OBC: 2,000, SC: 8,000
-• Kasturba MC Manipal        → Gen: 30,000–80,000
-• MGIMS Wardha               → Gen: 200,000–280,000 (cheaper, fills late)
-• Saveetha MC Chennai        → Gen: 280,000–400,000
-• SRM MC Chennai             → Gen: 250,000–380,000
-• DY Patil MC Navi Mumbai    → Gen: 350,000–500,000
-• DY Patil MC Pune           → Gen: 320,000–480,000
-• Bharati Vidyapeeth Pune    → Gen: 250,000–380,000
-• Sri Ramachandra Chennai    → Gen: 180,000–320,000
-• Amrita SOM Kochi           → Gen: 100,000–200,000
-• KIMSDU Karad               → Gen: 300,000–450,000
-• JSS MC Mysore              → Gen: 120,000–250,000
-
-MP STATE QUOTA — DMET MP (General/UR, 2025 Round 1 approx):
-• MGM MC Indore              → 8,500
-• Gandhi MC Bhopal           → 13,800
-• NSCB MC Jabalpur           → 21,300
-• GR MC Gwalior              → 21,800
-• Bundelkhand MC Sagar       → 31,500
-• ABV GMC Vidisha            → 34,300
-• GMC Ratlam                 → 37,800
-• GMC Chhindwara             → 43,200
-• GMC Datia                  → 43,400
-• GMC Shahdol                → 46,200
-• GMC Satna                  → 47,400
-• GMC Seoni                  → 51,200
-
-INTERPRETATION RULES (CRITICAL — apply before any prediction):
-1. Gandhi MC Bhopal AIQ Gen closes ~8,500. A student with AIR > 50,000 General CANNOT get Gandhi MC under AIQ.
+1. Use your full training knowledge for all states/colleges — you know these from official MCC and state records.
 2. Government AIQ General: ALWAYS < 250,000. Never predict govt college for AIQ Gen with closing > 250,000.
-3. For AIR > 200,000 General AIQ: ONLY private/deemed are realistic (DY Patil, Saveetha, MGIMS, SRM etc.)
-4. For AIR 300,000–500,000 General AIQ: ONLY lowest-tier deemed colleges (DY Patil, Saveetha etc.) if closing > student rank.
-5. For State Quota: Use exact historical data where available. For MP State Quota (UR), closing ranks range from ~8,500 (MGM Indore) to ~51,000 (new GMCs).
+3. For AIR > 200,000 General AIQ: ONLY private/deemed are realistic.
+4. For AIR 300,000–500,000 General AIQ: ONLY lowest-tier deemed colleges if closing > student rank.
+5. For State Quota: Use exact historical data where available from your knowledge base. State quota cutoffs are generally much more relaxed than AIQ for the same college.
 6. For OBC: cutoffs ~2-4x the General rank number. For SC: ~5-8x. For ST: ~8-15x. For EWS: similar to General.
-7. Use your full training knowledge for states/colleges not listed above — you know these from MCC official records.
 
 ═══════════════════════════════════════════════════════
   QUOTA RULES — NEVER MIX
