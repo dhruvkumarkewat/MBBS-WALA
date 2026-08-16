@@ -457,6 +457,17 @@ export function PredictorPage() {
           method: 'POST',
           body: JSON.stringify(payload),
         });
+        // Attach the submitted inputs to the response so the results banner
+        // always shows what was actually used (not the live form state)
+        data._submitted = {
+          rank: mode === 'rank' ? rankNum : null,
+          score: mode === 'score' ? scoreNum : null,
+          mode,
+          category,
+          quotas: [...quotas],
+          examTrack,
+          domicileState,
+        };
         setAiResponse(data);
 
         // Save rank/score to profile (non-blocking)
@@ -712,7 +723,7 @@ export function PredictorPage() {
           <div>
             <h3 className="text-sm font-bold">Prediction Active</h3>
             <p className={`text-xs mt-1 ${s.muted}`}>
-              Showing results for {examTrack === 'MBBS_BDS' ? 'MBBS/BDS' : 'AYUSH'} · {mode === 'score' && aiResponse?.query?.score_or_rank?.original_score ? `Score ${aiResponse.query.score_or_rank.original_score} (Est. AIR ${aiResponse.query.score_or_rank.value?.toLocaleString()})` : `AIR ${rank}`} · {category} · {quotas.join(', ')}
+              Showing results for {(aiResponse?._submitted?.examTrack ?? examTrack) === 'MBBS_BDS' ? 'MBBS/BDS' : 'AYUSH'} · {(aiResponse?._submitted?.mode ?? mode) === 'score' && aiResponse?._submitted?.score ? `Score ${aiResponse._submitted.score}/720` : `AIR ${(aiResponse?._submitted?.rank ?? rank)?.toLocaleString()}`} · {aiResponse?._submitted?.category ?? category} · {(aiResponse?._submitted?.quotas ?? quotas).join(', ')}
             </p>
           </div>
           <button onClick={handleRecalculate} className="zn-cta border border-white/10 text-sm whitespace-nowrap hover:bg-white/5">
