@@ -158,6 +158,7 @@ const PROVIDER_CONFIGS = {
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: payload.system_prompt || SYSTEM_PROMPT }] },
             contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload.user_prompt || payload) }] }],
+            tools: [{ googleSearch: {} }],
             generationConfig: {
               responseMimeType: 'application/json',
               temperature: 0.15,
@@ -197,6 +198,7 @@ const PROVIDER_CONFIGS = {
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: payload.system_prompt || SYSTEM_PROMPT }] },
             contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload.user_prompt || payload) }] }],
+            tools: [{ googleSearch: {} }],
             generationConfig: {
               responseMimeType: 'application/json',
               temperature: 0.15,
@@ -271,6 +273,7 @@ for (let i = 1; i <= 15; i++) {
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: payload.system_prompt || SYSTEM_PROMPT }] },
             contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload.user_prompt || payload) }] }],
+            tools: [{ googleSearch: {} }],
             generationConfig: {
               responseMimeType: 'application/json',
               temperature: 0.15,
