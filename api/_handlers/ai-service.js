@@ -160,7 +160,6 @@ const PROVIDER_CONFIGS = {
             contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload.user_prompt || payload) }] }],
             tools: [{ googleSearch: {} }],
             generationConfig: {
-              responseMimeType: 'application/json',
               temperature: 0.15,
               maxOutputTokens: 16384,
             },
@@ -200,7 +199,6 @@ const PROVIDER_CONFIGS = {
             contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload.user_prompt || payload) }] }],
             tools: [{ googleSearch: {} }],
             generationConfig: {
-              responseMimeType: 'application/json',
               temperature: 0.15,
               maxOutputTokens: 16384,
             },
@@ -275,7 +273,6 @@ for (let i = 1; i <= 15; i++) {
             contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload.user_prompt || payload) }] }],
             tools: [{ googleSearch: {} }],
             generationConfig: {
-              responseMimeType: 'application/json',
               temperature: 0.15,
               maxOutputTokens: 16384,
             },
