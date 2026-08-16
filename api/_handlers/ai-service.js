@@ -81,6 +81,7 @@ AIQ (All India Quota — 15%):
 • Gandhi Medical College Bhopal AIQ General UR closing rank is approximately 7,000-9,000.
 • Do NOT show AIQ colleges where closing_rank is far higher than realistic AIQ data.
 • Available to all candidates regardless of domicile.
+• AIQ IS NATIONWIDE: Show colleges from ALL states across India. If student selects AIQ, show government medical colleges from Karnataka, Tamil Nadu, Maharashtra, UP, Gujarat, Rajasthan, West Bengal, etc. — NOT just from the student's home state. AIQ is NOT state-limited.
 
 STATE QUOTA (85%):
 • Counselling authority MUST be the state body: DMET MP / KEA / DME TN / DMER / etc.
@@ -260,7 +261,18 @@ Return ONLY valid JSON. No markdown, no explanation outside JSON. Match this str
 
 10. ROUND AWARENESS: Later rounds have MORE relaxed cutoffs. Factor this in.
 
-11. PURE JSON OUTPUT: Return ONLY valid JSON. No markdown, no text before or after.`;
+12. AIQ IS NATIONWIDE: For AIQ quota, list colleges from MULTIPLE states across ALL of India (Karnataka, Tamil Nadu, Maharashtra, UP, Gujarat, Rajasthan, WB, etc.). NEVER suggest only home-state colleges under AIQ. That defeats the purpose of All India Quota.
+
+13. PROBABILITY MUST BE CONSISTENT WITH HISTORICAL DATA (CRITICAL):
+    • Look at every college's historical_trend closing ranks.
+    • If student_rank is WORSE than ALL historical closing ranks (student has a higher rank number) → probability MUST be ≤25%. Cannot be 70%, 80%.
+    • If student_rank is BETTER than ALL historical closing ranks → probability 85–99%.
+    • If student_rank is between historical min and max → probability 40–70%.
+    • If a college is in 'moderate' tier, its probability must be 35–74%. NOT 80%.
+    • If a college is in 'reach' tier, its probability must be 15–34%.
+    • Probability and tier MUST be consistent: High = 75–99%, Moderate = 35–74%, Reach = 15–34%.
+
+14. PURE JSON OUTPUT: Return ONLY valid JSON. No markdown, no text before or after.`;
 
 
 // ── Provider Calling ────────────────────────────────────────────────────────
