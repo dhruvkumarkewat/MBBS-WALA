@@ -240,7 +240,7 @@ const PROVIDER_CONFIGS = {
       const key = process.env.GEMINI_API_KEY;
       if (!key) return null;
       return {
-        url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+        url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${key}`,
         options: {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -252,7 +252,6 @@ const PROVIDER_CONFIGS = {
               responseMimeType: 'application/json',
               temperature: 0.15,
               maxOutputTokens: 16384,
-              thinkingConfig: { thinkingBudget: 4096 },
             },
           }),
         },
@@ -280,7 +279,7 @@ const PROVIDER_CONFIGS = {
       const key = process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY_2 || process.env.GEMINI_API_KEY_FALLBACK;
       if (!key) return null;
       return {
-        url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+        url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
         options: {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -292,7 +291,6 @@ const PROVIDER_CONFIGS = {
               responseMimeType: 'application/json',
               temperature: 0.15,
               maxOutputTokens: 16384,
-              thinkingConfig: { thinkingBudget: 4096 },
             },
           }),
         },
@@ -353,33 +351,21 @@ for (let i = 1; i <= 15; i++) {
     buildRequest: (payload) => {
       const key = process.env[`GEMINI_API_KEY_${i}`];
       if (!key) return null;
-      
-      const isWorking25 = [1, 2, 5].includes(i);
-      const model = isWorking25 ? 'gemini-2.5-flash' : 'gemini-1.5-flash';
-      
-      const generationConfig = isWorking25 
-        ? {
-            responseMimeType: 'application/json',
-            temperature: 0.15,
-            maxOutputTokens: 16384,
-            thinkingConfig: { thinkingBudget: 4096 },
-          }
-        : {
-            responseMimeType: 'application/json',
-            temperature: 0.1,
-            maxOutputTokens: 8192,
-          };
-          
+
       return {
-        url: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+        url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`,
         options: {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          signal: AbortSignal.timeout(isWorking25 ? 120000 : 45000),
+          signal: AbortSignal.timeout(60000),
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: payload.system_prompt || SYSTEM_PROMPT }] },
             contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload.user_prompt || payload) }] }],
-            generationConfig,
+            generationConfig: {
+              responseMimeType: 'application/json',
+              temperature: 0.15,
+              maxOutputTokens: 16384,
+            },
           }),
         },
         parseResponse: async (res) => {
