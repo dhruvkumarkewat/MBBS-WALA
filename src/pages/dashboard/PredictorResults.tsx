@@ -461,63 +461,7 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
         </div>
       )}
 
-      {/* ── Moderate Colleges ── */}
-      {preds?.moderate && preds.moderate.length > 0 && (
-        <div className={`rounded-2xl border p-5 ${s.card} border-l-4 border-l-amber-500/60`}>
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-lg">⚡</span>
-            <h3 className="font-black text-sm uppercase tracking-wider">Moderate Chance Colleges (Round 2 / 3 Options)</h3>
-          </div>
-          <CollegeGroupList 
-            colleges={preds?.moderate || []} 
-            s={s} isPremium={isPremium} maxFreeCount={10}
-            bgClass={s.dark ? 'bg-amber-900/10' : 'bg-amber-50'} 
-            borderClass="border-amber-500/30" 
-            isReach={false}
-            onCollegeClick={setSelectedCollegeInfo}
-            candidateRank={candidateRank}
-            candidateScore={candidateScore}
-          />
-          
-          {!isPremium && (preds?.moderate?.length || 0) > 10 && (
-             <div className="mt-4 p-4 rounded-xl border border-primary/20 bg-primary/5 text-center">
-               <Crown className="w-5 h-5 text-primary mx-auto mb-2" />
-               <p className="text-xs font-bold mb-2">Upgrade to Premium to view {(preds?.moderate?.length || 0) - 10} more Moderate colleges.</p>
-               <Link to="/dashboard/subscription" className="text-[10px] bg-primary text-white px-3 py-1.5 rounded-full font-bold inline-block">Upgrade Now</Link>
-             </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Reach Colleges ── */}
-      {preds?.reach && preds.reach.length > 0 && (
-        <div className={`rounded-2xl border p-5 ${s.card} border-l-4 border-l-purple-500/60`}>
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-lg">🎯</span>
-            <h3 className="font-black text-sm uppercase tracking-wider">Reach Colleges (Aspirational / Dream Options)</h3>
-          </div>
-          <CollegeGroupList 
-            colleges={preds?.reach || []} 
-            s={s} isPremium={isPremium} maxFreeCount={8}
-            bgClass={s.dark ? 'bg-purple-900/10' : 'bg-purple-50'} 
-            borderClass="border-purple-500/30" 
-            isReach={false}
-            onCollegeClick={setSelectedCollegeInfo}
-            candidateRank={candidateRank}
-            candidateScore={candidateScore}
-          />
-          
-          {!isPremium && (preds?.reach?.length || 0) > 8 && (
-             <div className="mt-4 p-4 rounded-xl border border-primary/20 bg-primary/5 text-center">
-               <Crown className="w-5 h-5 text-primary mx-auto mb-2" />
-               <p className="text-xs font-bold mb-2">Upgrade to Premium to view {(preds?.reach?.length || 0) - 8} more Reach colleges.</p>
-               <Link to="/dashboard/subscription" className="text-[10px] bg-primary text-white px-3 py-1.5 rounded-full font-bold inline-block">Upgrade Now</Link>
-             </div>
-          )}
-        </div>
-      )}
-
-      {(!preds?.safe || preds.safe.length === 0) && (!preds?.moderate || preds.moderate.length === 0) && (!preds?.reach || preds.reach.length === 0) && (
+      {(!preds?.safe || preds.safe.length === 0) && (
         <div className={`rounded-2xl border p-5 ${s.card} border-l-4 border-l-rose-500/60`}>
           <div className="flex items-center gap-2 mb-3">
             <span className="text-lg">⚠️</span>
