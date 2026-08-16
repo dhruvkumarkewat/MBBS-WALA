@@ -116,20 +116,26 @@ PRIVATE/DEEMED — MCC Deemed Counselling (All categories, Round 3, 2024):
 • KIMSDU Karad               → Gen: 300,000–450,000
 • JSS MC Mysore              → Gen: 120,000–250,000
 
-MP STATE QUOTA — DMET MP (General/UR, 2024):
-• Gandhi MC Bhopal           → 80,000–120,000
-• MGM MC Indore              → 100,000–150,000
-• GR MC Gwalior              → 130,000–200,000
-• NSCB MC Jabalpur           → 150,000–220,000
-• Bundelkhand MC Sagar       → 200,000–300,000
-• Shyam Shah MC Rewa         → 300,000–420,000
+MP STATE QUOTA — DMET MP (General/UR, 2025 Round 1 approx):
+• MGM MC Indore              → 8,500
+• Gandhi MC Bhopal           → 13,800
+• NSCB MC Jabalpur           → 21,300
+• GR MC Gwalior              → 21,800
+• Bundelkhand MC Sagar       → 31,500
+• ABV GMC Vidisha            → 34,300
+• GMC Ratlam                 → 37,800
+• GMC Chhindwara             → 43,200
+• GMC Datia                  → 43,400
+• GMC Shahdol                → 46,200
+• GMC Satna                  → 47,400
+• GMC Seoni                  → 51,200
 
 INTERPRETATION RULES (CRITICAL — apply before any prediction):
 1. Gandhi MC Bhopal AIQ Gen closes ~8,500. A student with AIR > 50,000 General CANNOT get Gandhi MC under AIQ.
 2. Government AIQ General: ALWAYS < 250,000. Never predict govt college for AIQ Gen with closing > 250,000.
 3. For AIR > 200,000 General AIQ: ONLY private/deemed are realistic (DY Patil, Saveetha, MGIMS, SRM etc.)
 4. For AIR 300,000–500,000 General AIQ: ONLY lowest-tier deemed colleges (DY Patil, Saveetha etc.) if closing > student rank.
-5. For MP State Quota (DMET): cutoffs are MUCH higher numbers (relaxed) vs AIQ same college.
+5. For State Quota: Use exact historical data where available. For MP State Quota (UR), closing ranks range from ~8,500 (MGM Indore) to ~51,000 (new GMCs).
 6. For OBC: cutoffs ~2-4x the General rank number. For SC: ~5-8x. For ST: ~8-15x. For EWS: similar to General.
 7. Use your full training knowledge for states/colleges not listed above — you know these from MCC official records.
 
