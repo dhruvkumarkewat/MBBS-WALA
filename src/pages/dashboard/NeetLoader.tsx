@@ -39,7 +39,7 @@ export function NeetLoader({ isPredicting = true }: { isPredicting?: boolean }) 
     };
 
     const c = containerRef.current;
-    const el = (id: string) => c.querySelector(\`#\${id}\`) as HTMLElement;
+    const el = (id: string) => c.querySelector(`#${id}`) as HTMLElement;
     const badge=el('nl-badge'), header=el('nl-header'), title=el('nl-title'), subtitle=el('nl-subtitle'),
           iconAnchor=el('nl-iconAnchor'), iconSlot=el('nl-iconSlot'), connector=el('nl-connector'),
           connectorDot=el('nl-connectorDot'), runnerWrap=el('nl-runnerWrap'), runnerFigure=el('nl-runnerFigure'),
@@ -65,7 +65,7 @@ export function NeetLoader({ isPredicting = true }: { isPredicting?: boolean }) 
       else if(stage.icon==='checklist'){ iconSlot.innerHTML=CHECKLIST; }
       else {
         const glow = stage.icon==='building' ? 'glow-gold' : '';
-        iconSlot.innerHTML = \`<div class="icon-tile \${glow}">\${ICONS[stage.icon as keyof typeof ICONS]}</div>\`;
+        iconSlot.innerHTML = `<div class="icon-tile ${glow}">${ICONS[stage.icon as keyof typeof ICONS]}</div>`;
       }
     }
 
@@ -101,7 +101,7 @@ export function NeetLoader({ isPredicting = true }: { isPredicting?: boolean }) 
 
       badge.textContent = stage.done ? '' : String(i+1);
       if(stage.done){
-        badge.innerHTML = \`<svg viewBox="0 0 20 20" width="16" height="16"><path d="M4 10.5L8 14.5L16 5" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>\`;
+        badge.innerHTML = `<svg viewBox="0 0 20 20" width="16" height="16"><path d="M4 10.5L8 14.5L16 5" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
         badge.style.background = 'linear-gradient(150deg,#2fbf6a,#159a52)';
       } else {
         badge.style.background = 'linear-gradient(150deg,var(--badge-a),var(--badge-b))';
@@ -110,7 +110,7 @@ export function NeetLoader({ isPredicting = true }: { isPredicting?: boolean }) 
 
       header.classList.add('fade');
       setTimeout(()=>{
-        title.innerHTML = stage.done ? \`<svg class="check-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#22c55e"/><path d="M7 12.5l3.2 3.2L17 8.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>\${stage.title}\` : stage.title;
+        title.innerHTML = stage.done ? `<svg class="check-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#22c55e"/><path d="M7 12.5l3.2 3.2L17 8.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>${stage.title}` : stage.title;
         subtitle.textContent = stage.subtitle;
         header.classList.remove('fade');
       }, 180);
@@ -124,7 +124,7 @@ export function NeetLoader({ isPredicting = true }: { isPredicting?: boolean }) 
         runnerFigure.classList.add('standing');
         runnerWrap.style.setProperty('--dur', stage.duration+'ms');
         const standX = measureStandX();
-        runnerWrap.style.transform = \`translateX(\${standX}px)\`;
+        runnerWrap.style.transform = `translateX(${standX}px)`;
       } else {
         iconAnchor.classList.remove('hide');
         pedestal.classList.remove('show');
@@ -140,7 +140,7 @@ export function NeetLoader({ isPredicting = true }: { isPredicting?: boolean }) 
         const travel = measureRunTravel();
         runnerWrap.style.setProperty('--dur', stage.duration+'ms');
         requestAnimationFrame(()=>{
-          runnerWrap.style.transform = \`translateX(\${travel}px)\`;
+          runnerWrap.style.transform = `translateX(${travel}px)`;
         });
       }
 
@@ -187,7 +187,7 @@ export function NeetLoader({ isPredicting = true }: { isPredicting?: boolean }) 
       if(stageIdx<0) return;
       const stage=STAGES[stageIdx];
       runnerWrap.style.setProperty('--dur','0ms');
-      if(stage.done){ runnerWrap.style.transform = \`translateX(\${measureStandX()}px)\`; }
+      if(stage.done){ runnerWrap.style.transform = `translateX(${measureStandX()}px)`; }
     };
     window.addEventListener('resize', resizeHandler);
 
@@ -213,7 +213,7 @@ export function NeetLoader({ isPredicting = true }: { isPredicting?: boolean }) 
 
   return (
     <div className="neet-loader-wrapper" ref={containerRef}>
-      <style dangerouslySetInnerHTML={{__html: \`
+      <style dangerouslySetInnerHTML={{__html: `
         .neet-loader-wrapper {
           --black:#000000;
           --card-bg:#040814;
@@ -590,7 +590,7 @@ export function NeetLoader({ isPredicting = true }: { isPredicting?: boolean }) 
           .glass-box{width:90px;height:82px;}
           .glass-box svg{width:50px;height:50px;}
         }
-      \`}}/>
+      `}}/>
       <div className="stage-bg">
         <svg className="skyline" viewBox="0 0 760 340" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
           <g fill="#0e1730">
