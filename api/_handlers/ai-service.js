@@ -30,8 +30,8 @@ STEP 2 — COMPARE AGAINST CUTOFFS:
 For EACH college, compare student's AIR against that college's CATEGORY-SPECIFIC closing rank:
 • If student's AIR <= closing rank → SAFE (90-99% chance). Show margin as positive.
 • If student's AIR is within 15% above closing rank → MODERATE (50-80% chance).
-• If student's AIR is 15-35% above closing rank → REACH (20-45% chance).
-• If student's AIR is >35% above → DO NOT show (unrealistic).
+• If student's AIR is 15-25% above closing rank → REACH. Do NOT show reach colleges unless no safe options exist.
+• If student's AIR is >25% above → DO NOT show (unrealistic).
 
 STEP 3 — CATEGORY-SPECIFIC ANALYSIS (CRITICAL):
 • General: Use General/UR closing ranks (tightest cutoffs).
@@ -56,7 +56,7 @@ STEP 4 — PRIORITIZE THE BEST COLLEGES:
 • Counselling by MCC (Medical Counselling Committee).
 • Use MCC AIQ closing ranks (year-wise, category-wise, round-wise).
 • 15% seats in all government colleges reserved for AIQ.
-• Show 10-15 safe + 5-8 moderate + 3-5 reach colleges.
+• Show 15-20 BEST SAFE colleges + 3-5 moderate colleges. DO NOT show reach colleges unless safe options are completely unavailable.
 • Include AIIMS, JIPMER, central institutes (separate counselling).
 
 [STATE QUOTA (85%)]
@@ -64,7 +64,7 @@ STEP 4 — PRIORITIZE THE BEST COLLEGES:
 • Use STATE counselling closing ranks (NOT AIQ ranks — they are different!).
 • State quota cutoffs are typically MORE relaxed (higher closing rank numbers) than AIQ.
 • Counselling by respective state authority (DMET MP, KEA Karnataka, DME Gujarat, etc.).
-• Show 8-12 safe + 5-8 moderate + 3-5 reach colleges.
+• Show 12-15 BEST SAFE colleges + 3-5 moderate colleges. DO NOT show reach colleges unless safe options are unavailable.
 • Include both government AND government-aided colleges.
 
 [MANAGEMENT QUOTA]

@@ -691,7 +691,7 @@ ${isScoreMode ? `
 For each college you show:
 1. Use the EXACT official college name (real NMC-recognized college)
 2. Compare student AIR ${query.score_or_rank.value} (${query.category}) against actual historical closing ranks
-3. Only show colleges where the student has a realistic chance (rank ≤ closing rank = safe, within 20% = moderate, 20-40% = reach)
+3. Only show the BEST colleges where the student has a realistic chance (rank ≤ closing rank = safe). DO NOT show reach colleges unless absolutely no safe options exist.
 4. Show historical_trend as an ARRAY: [{year: 2025, closing_rank: XXXX}, {year: 2024, closing_rank: XXXX}, {year: 2023, closing_rank: XXXX}]
 5. Set margin to: closing_rank - student_rank (positive = safe, negative = harder)
 6. Government college fees: ₹10,000-₹50,000/year. Private fees: ₹8L-₹25L/year. Deemed: ₹15L-₹30L/year. Management: ₹15L-₹35L/year.
