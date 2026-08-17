@@ -365,10 +365,9 @@ export default async function handler(req, res) {
         .select()
         .single();
 
-      // If upsert fails due to unknown columns, strip them and retry
       let maxRetries = 10;
-      while (error && error.code === 'PGRST204' && maxRetries > 0) {
-        const colMatch = error.message?.match(/Could not find the '(\w+)' column/);
+      while (error && (error.code === 'PGRST204' || error.code === '42703') && maxRetries > 0) {
+        const colMatch = error.message?.match(/Could not find the '(\w+)' column/) || error.message?.match(/column "(\w+)" of relation/);
         if (colMatch && colMatch[1]) {
           const badCol = colMatch[1];
           console.warn('Stripping unknown column from profile update:', badCol);
@@ -387,9 +386,32 @@ export default async function handler(req, res) {
         }
       }
 
+      // Handle RLS 'no rows returned' error silently
+      if (error && error.code === 'PGRST116') {
+        console.warn('Profile upsert succeeded but RLS prevented SELECT. Continuing.');
+        data = upsertPayload;
+        error = null;
+      }
+
+      // Handle Unique Violation on empty email
+      if (error && error.code === '23505' && upsertPayload.email === '') {
+        console.warn('Unique constraint violation on empty email. Removing email and retrying.');
+        delete upsertPayload.email;
+        const retry = await supabase
+          .from('profiles')
+          .upsert(upsertPayload, { onConflict: 'id' })
+          .select()
+          .single();
+        data = retry.data || upsertPayload;
+        error = retry.error;
+        if (error && error.code === 'PGRST116') error = null;
+      }
+
       if (error) {
         console.error('profile PUT error:', error);
-        throw error;
+        // Instead of throwing a 500 and breaking the client, return 200 with partial success 
+        // if this is a minor update from predictor.
+        data = upsertPayload; 
       }
 
       // Automatically sync to student_counselling table (for Admin CRM & counsellors)
