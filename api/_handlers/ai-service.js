@@ -240,7 +240,7 @@ const PROVIDER_CONFIGS = {
       const key = process.env.GEMINI_API_KEY;
       if (!key) return null;
       return {
-        url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${key}`,
+        url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${key}`,
         options: {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -280,7 +280,7 @@ const PROVIDER_CONFIGS = {
       const key = process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY_2 || process.env.GEMINI_API_KEY_FALLBACK;
       if (!key) return null;
       return {
-        url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${key}`,
+        url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${key}`,
         options: {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -355,7 +355,7 @@ for (let i = 1; i <= 15; i++) {
       if (!key) return null;
       
       const isWorking25 = [1, 2, 5].includes(i);
-      const model = isWorking25 ? 'gemini-2.5-flash' : 'gemini-1.5-flash';
+      const model = 'gemini-3.6-flash';
       
       const generationConfig = isWorking25 
         ? {
