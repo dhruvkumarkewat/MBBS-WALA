@@ -611,7 +611,7 @@ export default async function handler(req, res) {
     quotaEligibility.aiq = {
       available: true,
       eligible: true,
-      note: `AIQ (15% All India Quota) — Open to all candidates regardless of domicile. Counselling by MCC. Available in all government colleges in ${targetStateName}.`,
+      note: `AIQ (15% All India Quota) — Open to all candidates regardless of domicile. Counselling by MCC. Available in all government colleges ${query.target_state ? `in ${query.target_state}` : 'across All India'}.`,
     };
     quotaEligibility.state_quota = {
       available: stateGovtRules?.available !== false,
@@ -672,7 +672,7 @@ ${selectedQuotas.map(q => {
     : quotaEligibility.management.eligible
       ? `MANAGEMENT QUOTA: ✅ Show real private ${targetStateName} medical colleges with management quota seats. Non-domicile allowed. Show 8-12 real colleges.`
       : `MANAGEMENT QUOTA: ⚠️ Not eligible (domicile mismatch). Show message and suggest alternatives.`;
-  if (qL === 'aiq' || qL.includes('all india')) return `AIQ: ✅ Show real government MBBS colleges in ${targetStateName} under AIQ. Use actual 2023-2025 closing ranks for ${query.category} category, Round 1 AIQ. Show 10-15 real colleges.`;
+  if (qL === 'aiq' || qL.includes('all india')) return `AIQ: ✅ Show real government MBBS colleges ${query.target_state ? `in ${query.target_state}` : 'across All India'} under AIQ. Use actual 2023-2025 closing ranks for ${query.category} category, Round 1 AIQ. Show 10-15 real colleges.`;
   if (qL.includes('state')) return domicileMatchesTarget
     ? `STATE QUOTA: ✅ Show real government colleges in ${targetStateName} under 85% state quota for ${query.category} category. Show 8-12 real colleges.`
     : `STATE QUOTA: ⚠️ Not eligible — domicile mismatch. Tell student they need ${targetStateName} domicile for state quota.`;
@@ -698,14 +698,16 @@ For each college you show:
 7. Set the "state" field to the EXACT state the college is physically located in.
 8. 🏅 PRIORITIZE THE BEST COLLEGES: Out of all eligible colleges, return the highest quality, most prestigious, and highest-ranked institutions first (e.g., AIIMS, JIPMER, Top Central/State Govt Colleges, Top Private). Do NOT just return random low-tier colleges if they qualify for top-tier ones! Ensure the returned list represents the absolute BEST options available for their rank/score.
 
+${query.target_state ? `
 🚨🚨🚨 ABSOLUTE RULE — TARGET STATE FILTER 🚨🚨🚨
-The student selected TARGET STATE: "${targetStateName}".
-→ EVERY SINGLE college in your response MUST be physically located in ${targetStateName}.
+The student selected TARGET STATE: "${query.target_state}".
+→ EVERY SINGLE college in your response MUST be physically located in ${query.target_state}.
 → Do NOT include ANY college from any other state. Not even one.
-→ If a college is in Uttar Pradesh, Maharashtra, Tamil Nadu or any other state — DO NOT include it.
-→ Double-check the city of each college: it MUST be a city in ${targetStateName}.
-→ Set the "state" field to "${targetStateName}" for every college.
+→ If a college is in Uttar Pradesh, Maharashtra, Tamil Nadu or any other state — DO NOT include it unless it is ${query.target_state}.
+→ Double-check the city of each college: it MUST be a city in ${query.target_state}.
+→ Set the "state" field to "${query.target_state}" for every college.
 → VIOLATION OF THIS RULE = COMPLETE FAILURE.
+` : ''}
 
 CRITICAL: LOWER AIR NUMBER = BETTER. AIR ${query.score_or_rank.value} is ${query.score_or_rank.value < 5000 ? 'an EXCELLENT top-tier rank' : query.score_or_rank.value < 25000 ? 'a GOOD rank with many options' : query.score_or_rank.value < 75000 ? 'a MODERATE rank' : query.score_or_rank.value < 150000 ? 'a rank with limited government options but good private options' : 'a rank where private/management/AYUSH options are recommended'}.
 
