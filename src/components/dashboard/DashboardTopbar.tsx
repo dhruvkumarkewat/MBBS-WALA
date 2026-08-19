@@ -7,6 +7,7 @@ import {
   Sun,
   Search,
   Share2,
+  Check,
   Crown,
   Crosshair,
   Map,
@@ -22,10 +23,34 @@ export default function DashboardTopbar({ title }: { title?: string }) {
   const { isPremium } = usePremium();
   const [q, setQ] = useState('');
   const [notifOpen, setNotifOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [notifs, setNotifs] = useState<Array<{ id: number; title: string; read: boolean }>>([]);
   const [displayName, setDisplayName] = useState(() => {
     return user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '';
   });
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    const shareTitle = document.title || 'MBBSWala';
+    const text = 'Check out MBBSWala for NEET Counselling and Predictions!';
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: shareTitle, text, url });
+        return; // Success natively
+      } catch (err) {
+        // Fallthrough to clipboard if aborted or failed
+      }
+    }
+    
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy', err);
+    }
+  };
 
   useEffect(() => {
     if (!user) {
@@ -177,8 +202,13 @@ export default function DashboardTopbar({ title }: { title?: string }) {
             )}
           </div>
 
-          <button type="button" className={`w-10 h-10 rounded-full grid place-items-center ${dark ? 'hover:bg-white/8 text-white/60' : 'hover:bg-[#f3f4f6] text-[#6b7280]'}`} aria-label="Share">
-            <Share2 className="w-[18px] h-[18px]" />
+          <button 
+            type="button" 
+            onClick={handleShare}
+            className={`w-10 h-10 rounded-full grid place-items-center transition-colors ${dark ? 'hover:bg-white/8 text-white/60' : 'hover:bg-[#f3f4f6] text-[#6b7280]'}`} 
+            aria-label="Share"
+          >
+            {copied ? <Check className="w-[18px] h-[18px] text-green-500" /> : <Share2 className="w-[18px] h-[18px]" />}
           </button>
 
           <Link
