@@ -70,7 +70,10 @@ export function NeetLoader({ isPredicting = true }: { isPredicting?: boolean }) 
       }
     };
 
-    const onTimeUpdate = () => {
+    let rafId: number;
+    const monitorVideo = () => {
+      const video = videoRef.current;
+      if (!video) return;
       const t = video.currentTime;
 
       if (phase.current === 'playing' && t >= LOOP_START) {
@@ -86,10 +89,10 @@ export function NeetLoader({ isPredicting = true }: { isPredicting?: boolean }) 
 
       if (phase.current === 'holding') {
         if (t >= LOOP_END) {
-          // Loop back to start of hold section
+          // Loop back to start of hold section instantly
           video.currentTime = LOOP_START;
         }
-        // Also check here in case the isPredicting effect fired during timeupdate
+        // Check if data became ready
         if (dataReady.current) {
           phase.current = 'finishing';
           setHoldLabel(false);
@@ -97,7 +100,8 @@ export function NeetLoader({ isPredicting = true }: { isPredicting?: boolean }) 
           video.play().catch(() => {});
         }
       }
-      // 'finishing': do nothing — video plays freely to end
+      
+      rafId = requestAnimationFrame(monitorVideo);
     };
 
     const onEnded = () => {
@@ -110,14 +114,16 @@ export function NeetLoader({ isPredicting = true }: { isPredicting?: boolean }) 
 
     video.addEventListener('canplay', onCanPlay);
     video.addEventListener('seeked', onSeeked);
-    video.addEventListener('timeupdate', onTimeUpdate);
     video.addEventListener('ended', onEnded);
+    
+    // Start 60fps monitor loop
+    rafId = requestAnimationFrame(monitorVideo);
     video.load();
 
     return () => {
+      cancelAnimationFrame(rafId);
       video.removeEventListener('canplay', onCanPlay);
       video.removeEventListener('seeked', onSeeked);
-      video.removeEventListener('timeupdate', onTimeUpdate);
       video.removeEventListener('ended', onEnded);
       video.pause();
     };
