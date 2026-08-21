@@ -367,7 +367,7 @@ export default async function handler(req, res) {
 
       let maxRetries = 10;
       while (error && (error.code === 'PGRST204' || error.code === '42703') && maxRetries > 0) {
-        const colMatch = error.message?.match(/Could not find the '(\w+)' column/) || error.message?.match(/column "(\w+)" of relation/);
+        const colMatch = error.message?.match(/Could not find the '(\w+)' column/) || error.message?.match(/column ["'](\w+)["'] of relation/);
         if (colMatch && colMatch[1]) {
           const badCol = colMatch[1];
           console.warn('Stripping unknown column from profile update:', badCol);
@@ -409,9 +409,7 @@ export default async function handler(req, res) {
 
       if (error) {
         console.error('profile PUT error:', error);
-        // Instead of throwing a 500 and breaking the client, return 200 with partial success 
-        // if this is a minor update from predictor.
-        data = upsertPayload; 
+        return res.status(400).json({ error: error.message || 'Failed to update profile database record.' });
       }
 
       // Automatically sync to student_counselling table (for Admin CRM & counsellors)

@@ -271,28 +271,31 @@ export function ProfilePage() {
       } catch (apiErr: any) {
         console.warn('API profile save warning, falling back to direct client update:', apiErr.message);
         if (user) {
-          try {
-            await supabase.from('profiles').upsert(
-              {
-                id: user.id,
-                email: user.email,
-                ...payload,
-                updated_at: new Date().toISOString(),
-              },
-              { onConflict: 'id' }
-            );
-          } catch {}
-
-          try {
-            await supabase.auth.updateUser({
-              data: {
-                full_name: payload.full_name,
-                name: payload.full_name,
-                phone: payload.phone,
-                profile_completed: true,
-              },
-            });
-          } catch {}
+          const clientUpsert = await supabase.from('profiles').upsert(
+            {
+              id: user.id,
+              email: user.email,
+              ...payload,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'id' }
+          );
+          if (clientUpsert.error) {
+            throw new Error(clientUpsert.error.message);
+          }
+          const authUpdate = await supabase.auth.updateUser({
+            data: {
+              full_name: payload.full_name,
+              name: payload.full_name,
+              phone: payload.phone,
+              profile_completed: true,
+            },
+          });
+          if (authUpdate.error) {
+            console.warn('Auth user metadata update failed:', authUpdate.error.message);
+          }
+        } else {
+          throw apiErr;
         }
         updated = { ...payload, id: user?.id || 'uid', email: user?.email || '', completion_percentage: 100 };
       }
