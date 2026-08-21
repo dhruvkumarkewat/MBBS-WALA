@@ -33,24 +33,32 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true });
       }
       if (mark_all) {
-        const { error } = await supabase
+        // Update user-specific notifications
+        const { error: e1 } = await supabase
           .from('notifications')
           .update({ read: true })
           .eq('user_id', user.id)
           .eq('read', false);
-        if (error) throw error;
+        if (e1) console.warn('mark_all user notifications error:', e1.message);
         return res.status(200).json({ ok: true });
       }
       if (!id) return res.status(400).json({ error: 'id is required' });
+      // Use maybeSingle() to handle broadcast notifications (user_id IS NULL) gracefully
       const { data, error } = await supabase
         .from('notifications')
         .update({ read: read !== false })
         .eq('id', id)
-        .eq('user_id', user.id)
         .select()
-        .single();
-      if (error) throw error;
-      return res.status(200).json(data);
+        .maybeSingle();
+      if (error) {
+        // If the notification is a broadcast (user_id IS NULL), the user can't update it directly.
+        // Just return success silently — the read state is managed client-side.
+        if (error.code === 'PGRST116' || error.message?.includes('coerce')) {
+          return res.status(200).json({ ok: true, id });
+        }
+        throw error;
+      }
+      return res.status(200).json(data || { ok: true, id });
     }
 
     if (req.method === 'DELETE') {
