@@ -359,12 +359,49 @@ export default async function handler(req, res) {
 
       let upsertPayload = { id: user.id, email: user.email || '', ...patch };
 
+      // ── Pre-emptively sync student_counselling to prevent duplicate key trigger errors ──
+      // The DB trigger fires on profiles upsert and can fail if there's a user_id unique
+      // constraint violation. We handle this sync here in code first so the trigger is a no-op.
+      try {
+        const { data: existingSc } = await supabase
+          .from('student_counselling')
+          .select('id')
+          .or(`user_id.eq.${user.id},email.eq.${user.email || 'nonexistent@mbbswala.in'}`)
+          .order('id', { ascending: true })
+          .limit(1);
+
+        if (existingSc && existingSc.length > 0) {
+          // Update existing row — this will NOT cause a duplicate key
+          await supabase
+            .from('student_counselling')
+            .update({
+              user_id: user.id, // ensure user_id is set on the canonical row
+              full_name: patch.full_name || undefined,
+              email: user.email || undefined,
+              phone: patch.phone || undefined,
+              neet_rank: patch.neet_rank || undefined,
+              score: patch.neet_score || undefined,
+              state: patch.domicile || patch.domicile_state || patch.state || undefined,
+              category: patch.category || undefined,
+              exam: patch.exam || undefined,
+              purchased_course: patch.preferred_course || undefined,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', existingSc[0].id);
+        }
+        // If no row exists, the trigger will create one — that's fine
+      } catch (scPreErr) {
+        console.warn('Pre-sync student_counselling warning:', scPreErr?.message);
+      }
+
+      // ── Perform profile upsert ──
       let { data, error } = await supabase
         .from('profiles')
         .upsert(upsertPayload, { onConflict: 'id' })
         .select()
         .single();
 
+      // ── Retry loop: strip unknown columns ──
       let maxRetries = 10;
       while (error && (error.code === 'PGRST204' || error.code === '42703') && maxRetries > 0) {
         const colMatch = error.message?.match(/Could not find the '(\w+)' column/) || error.message?.match(/column ["'](\w+)["'] of relation/);
@@ -386,25 +423,29 @@ export default async function handler(req, res) {
         }
       }
 
-      // Handle RLS 'no rows returned' error silently
+      // ── Handle RLS 'no rows returned' error silently ──
       if (error && error.code === 'PGRST116') {
         console.warn('Profile upsert succeeded but RLS prevented SELECT. Continuing.');
         data = upsertPayload;
         error = null;
       }
 
-      // Handle Unique Violation on empty email
-      if (error && error.code === '23505' && upsertPayload.email === '') {
-        console.warn('Unique constraint violation on empty email. Removing email and retrying.');
-        delete upsertPayload.email;
-        const retry = await supabase
+      // ── Handle Unique Violation: duplicate key (likely from trigger) ──
+      // Fallback: retry using plain UPDATE instead of UPSERT to avoid INSERT path in trigger
+      if (error && error.code === '23505') {
+        console.warn('Duplicate key on upsert (trigger conflict). Retrying with plain UPDATE:', error.message);
+        const updatePayload = { ...upsertPayload };
+        delete updatePayload.id;
+        if (!updatePayload.email) delete updatePayload.email;
+        const updateRetry = await supabase
           .from('profiles')
-          .upsert(upsertPayload, { onConflict: 'id' })
+          .update(updatePayload)
+          .eq('id', user.id)
           .select()
           .single();
-        data = retry.data || upsertPayload;
-        error = retry.error;
-        if (error && error.code === 'PGRST116') error = null;
+        data = updateRetry.data || upsertPayload;
+        error = updateRetry.error;
+        if (error && error.code === 'PGRST116') { data = upsertPayload; error = null; }
       }
 
       if (error) {
