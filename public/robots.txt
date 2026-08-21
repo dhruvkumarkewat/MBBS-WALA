@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://mbbswaala.io/sitemap.xml
+Sitemap: https://mbbs-waala.dhruvkamar2005.workers.dev/sitemap.xml
