@@ -106,11 +106,17 @@ export default async function (req, res) {
     for (const key of keys) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${key}`;
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
         const response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
 
         if (response.ok) {
           data = await response.json();
@@ -121,7 +127,11 @@ export default async function (req, res) {
           console.warn(`Gemini API Error with a key (Status ${response.status}): ${lastError}`);
         }
       } catch (fetchErr) {
-        lastError = fetchErr.message;
+        if (fetchErr.name === 'AbortError') {
+          lastError = "Request timed out after 60 seconds.";
+        } else {
+          lastError = fetchErr.message;
+        }
         console.warn(`Fetch error with a Gemini key: ${lastError}`);
       }
     }
@@ -130,7 +140,7 @@ export default async function (req, res) {
       console.error('All Gemini API keys failed. Last error:', lastError);
       res.writeHead(400, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ 
-        reply: "My AI brain isn't connected! Please go to your Vercel Dashboard and add your real Gemini API key (it should start with 'AIza...') as 'GEMINI_API_KEY' in the Environment Variables." 
+        reply: `My AI brain is currently overloaded or timed out. Please try again in a few moments. (Error: ${lastError})` 
       }));
     }
 

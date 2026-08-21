@@ -244,7 +244,7 @@ const PROVIDER_CONFIGS = {
         options: {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          signal: AbortSignal.timeout(120000),
+          signal: AbortSignal.timeout(120000), // 2 minutes timeout
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: payload.system_prompt || SYSTEM_PROMPT }] },
             contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload.user_prompt || payload) }] }],
@@ -284,7 +284,7 @@ const PROVIDER_CONFIGS = {
         options: {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          signal: AbortSignal.timeout(120000),
+          signal: AbortSignal.timeout(120000), // 2 minutes timeout
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: payload.system_prompt || SYSTEM_PROMPT }] },
             contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload.user_prompt || payload) }] }],
@@ -324,7 +324,7 @@ const PROVIDER_CONFIGS = {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${key}`,
           },
-          signal: AbortSignal.timeout(12000),
+          signal: AbortSignal.timeout(60000), // Increased from 12s to 60s
           body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
             temperature: 0.1,
@@ -375,7 +375,7 @@ for (let i = 1; i <= 15; i++) {
         options: {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          signal: AbortSignal.timeout(isWorking25 ? 120000 : 45000),
+          signal: AbortSignal.timeout(120000), // Uniform 120s timeout
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: payload.system_prompt || SYSTEM_PROMPT }] },
             contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload.user_prompt || payload) }] }],
