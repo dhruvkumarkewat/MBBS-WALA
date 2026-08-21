@@ -19,6 +19,7 @@ import {
   Sun,
   GraduationCap,
   HelpCircle,
+  IndianRupee,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiJson } from '../../lib/api';
@@ -74,6 +75,7 @@ type NavItem = {
 const superLinks: NavItem[] = [
   { to: '/admin', end: true, label: 'Command center', hint: 'Stats & today', icon: LayoutDashboard },
   { to: '/admin/purchases', label: 'Packages sold', hint: 'Assign counsellor', icon: ShoppingCart },
+  { to: '/admin/payment-requests', label: 'UPI Payments', hint: 'Approve manual payments', icon: IndianRupee },
   { to: '/admin/students', label: 'All students', hint: 'Pipeline & assign', icon: Users },
   { to: '/admin/staff', label: 'Counsellors', hint: 'Create sub-admins', icon: UserCog },
   { to: '/admin/activity', label: 'Activity log', hint: 'Who did what', icon: Activity },

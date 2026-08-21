@@ -163,124 +163,14 @@ export function SubscriptionPage() {
       return;
     }
 
-    try {
-      setUpgradingPlan(plan.id);
-      setError('');
-
-      // 1. Create order
-      const orderRes = await apiJson<any>('/api/payment?action=create-order', {
-        method: 'POST',
-        body: JSON.stringify({
-          plan_slug: plan.id,
-          plan_name: plan.name,
-          amount: plan.price,
-          referral_code: referralCode.trim()
-        }),
-      }, true);
-
-      if (orderRes?.already_subscribed) {
-        success('Plan Active', 'You already have an active subscription. Redirecting to Dashboard...');
-        await refetchPremium();
-        navigate('/dashboard', { replace: true });
-        return;
-      }
-
-      // Load Razorpay SDK dynamically
-      const loadRazorpay = () => {
-        return new Promise((resolve) => {
-          if ((window as any).Razorpay) {
-            resolve(true);
-            return;
-          }
-          const script = document.createElement('script');
-          script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-          script.onload = () => resolve(true);
-          script.onerror = () => resolve(false);
-          document.body.appendChild(script);
-        });
-      };
-
-      const isLoaded = await loadRazorpay();
-      if (!isLoaded) {
-        throw new Error('Razorpay SDK failed to load. Please check your connection.');
-      }
-
-      const options = {
-        key: orderRes.keyId,
-        amount: orderRes.amount,
-        currency: orderRes.currency,
-        name: 'MBBSWala Premium',
-        description: plan.name,
-        order_id: orderRes.orderId,
-        handler: async function (response: any) {
-          try {
-            setUpgradingPlan(plan.id);
-            const verifyRes = await apiJson<any>('/api/payment?action=verify', {
-              method: 'POST',
-              body: JSON.stringify({
-                order_id: response.razorpay_order_id || orderRes.orderId,
-                payment_id: response.razorpay_payment_id || `pay_${Date.now()}_mock`,
-                signature: response.razorpay_signature,
-                plan_slug: plan.id,
-                plan_name: plan.name,
-                amount: plan.price,
-              }),
-            }, true);
-
-            success('🎉 Payment Successful!', `Welcome to ${plan.name}! All predictor tools and cutoffs are unlocked.`);
-            await refetchPremium();
-            await loadData();
-            // Direct redirect to Dashboard
-            navigate('/dashboard', { replace: true });
-          } catch (err: any) {
-            toastError('Verification Failed', err.message || 'Could not verify payment');
-          } finally {
-            setUpgradingPlan(null);
-          }
-        },
-        prefill: {
-          name: user?.user_metadata?.full_name || '',
-          email: user?.email || '',
-        },
-        theme: {
-          color: '#f97316',
-        },
-        modal: {
-          ondismiss: function () {
-            setUpgradingPlan(null);
-          },
-        },
-      };
-
-      const rzp = new (window as any).Razorpay(options);
-      rzp.on('payment.failed', async function (response: any) {
-        toastError('Payment Failed', response.error.description);
-        setUpgradingPlan(null);
-        try {
-          await apiJson('/api/payment?action=fail', {
-            method: 'POST',
-            body: JSON.stringify({
-              order_id: response.error.metadata.order_id || orderRes.orderId,
-              error_description: response.error.description
-            })
-          }, true);
-        } catch (e) {
-          console.error('Failed to record payment failure', e);
-        }
-      });
-      rzp.open();
-
-    } catch (err: any) {
-      if (err.message?.includes('already have an active subscription') || err.message?.includes('already_subscribed')) {
-        success('Already Subscribed', 'You already have an active plan. Redirecting to Dashboard...');
-        await refetchPremium();
-        navigate('/dashboard', { replace: true });
-      } else {
-        setError(err.message || 'Payment failed. Please try again.');
-        toastError('Upgrade Failed', err.message || 'Could not complete transaction');
-      }
-      setUpgradingPlan(null);
+    if (isPremium && subscriptionPlan === plan.name) {
+      success('Plan Active', 'You already have this plan active! Redirecting to Dashboard...');
+      navigate('/dashboard', { replace: true });
+      return;
     }
+
+    // Redirect to UPI QR payment page
+    navigate(`/dashboard/pay?plan=${plan.id}`);
   };
 
   return (

@@ -47,6 +47,8 @@ import stats from './_handlers/stats.js';
 import testimonials from './_handlers/testimonials.js';
 import wallet from './_handlers/wallet.js';
 import withdrawals from './_handlers/withdrawals.js';
+import upiPayment from './_handlers/upi-payment.js';
+import upload from './_handlers/upload.js';
 
 const routes = {
   'ai-predict': aiPredict,
@@ -100,6 +102,8 @@ const routes = {
   'testimonials': testimonials,
   'wallet': wallet,
   'withdrawals': withdrawals,
+  'upi-payment': upiPayment,
+  'upload': upload,
   'debug-db': async (req, res) => {
     const { default: supabase } = await import('./_handlers/db-client.js');
     const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'FALLBACK';

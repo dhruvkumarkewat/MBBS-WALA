@@ -2568,3 +2568,375 @@ export function AdminAlertsPage() {
     </div>
   );
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   AdminPaymentRequestsPage — UPI Payment Requests Management
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const PLAN_OPTIONS = [
+  { slug: 'basic', name: 'BASIC Plan', price: 99 },
+  { slug: 'neet-ug-pro', name: 'NEET UG Counselling Pro', price: 4999 },
+  { slug: 'ultimate', name: 'Ultimate Medical Master Bundle', price: 9999 },
+];
+
+export function AdminPaymentRequestsPage() {
+  const [requests, setRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [processingId, setProcessingId] = useState<number | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<Record<number, string>>({});
+  const [adminNote, setAdminNote] = useState<Record<number, string>>({});
+  const [screenshotModal, setScreenshotModal] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
+  const [newRequestAlert, setNewRequestAlert] = useState(false);
+
+  const loadRequests = async () => {
+    try {
+      const data = await apiJson<any[]>('/api/upi-payment', {}, true);
+      setRequests(data || []);
+    } catch (err: any) {
+      console.error('Failed to load payment requests:', err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Supabase Realtime subscription for new payment requests
+  useEffect(() => {
+    loadRequests();
+
+    // Subscribe to real-time inserts on upi_payment_requests
+    let realtimeChannel: any = null;
+    const setupRealtime = async () => {
+      try {
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabase = createClient(
+          import.meta.env.VITE_SUPABASE_URL || 'https://hbzzamezfhzsdupdhcin.supabase.co',
+          import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_5D517PLNdF92v3Q1s6Dp_w_WaZtsrPo'
+        );
+
+        realtimeChannel = supabase
+          .channel('upi-payment-requests-admin')
+          .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'upi_payment_requests',
+          }, (payload) => {
+            console.log('[Admin] New payment request received:', payload.new);
+            setNewRequestAlert(true);
+            loadRequests();
+            // Play notification sound
+            playAdminSound();
+            // Show browser notification
+            if (Notification.permission === 'granted') {
+              new Notification('💰 New Payment Request — MBBSWala', {
+                body: `₹${payload.new.amount} for ${payload.new.plan_name}. UTR: ${payload.new.utr_number}`,
+                icon: '/images/mbbswala/logo.png',
+                requireInteraction: true,
+              });
+            }
+          })
+          .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'upi_payment_requests',
+          }, () => {
+            loadRequests();
+          })
+          .subscribe();
+      } catch (err) {
+        console.warn('Realtime setup failed:', err);
+      }
+    };
+
+    setupRealtime();
+
+    // Request notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
+    return () => {
+      realtimeChannel?.unsubscribe?.();
+    };
+  }, []);
+
+  function playAdminSound() {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      // Play a distinctive 3-tone alert
+      const times = [0, 0.2, 0.4];
+      const freqs = [880, 1100, 880];
+      times.forEach((t, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freqs[i];
+        gain.gain.setValueAtTime(0.5, ctx.currentTime + t);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.18);
+        osc.start(ctx.currentTime + t);
+        osc.stop(ctx.currentTime + t + 0.18);
+      });
+    } catch (e) {}
+  }
+
+  const handleApprove = async (req: any) => {
+    const planSlug = selectedPlan[req.id] || req.plan_slug;
+    const planObj = PLAN_OPTIONS.find(p => p.slug === planSlug) || PLAN_OPTIONS[0];
+
+    if (!confirm(`Approve ₹${req.amount} payment for ${planObj.name}?\n\nThis will activate premium for: ${req.profile?.email || req.user_id}`)) return;
+
+    setProcessingId(req.id);
+    try {
+      await apiJson('/api/upi-payment', {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'approve',
+          request_id: req.id,
+          plan_slug: planSlug,
+          plan_name: planObj.name,
+          admin_note: adminNote[req.id] || '',
+        }),
+      }, true);
+      await loadRequests();
+    } catch (err: any) {
+      alert('Approval failed: ' + err.message);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleReject = async (req: any) => {
+    const note = adminNote[req.id] || prompt('Reason for rejection (optional):') || 'Payment could not be verified.';
+    if (!confirm(`Reject this payment request from ${req.profile?.email || req.user_id}?`)) return;
+
+    setProcessingId(req.id);
+    try {
+      await apiJson('/api/upi-payment', {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'reject',
+          request_id: req.id,
+          admin_note: note,
+        }),
+      }, true);
+      await loadRequests();
+    } catch (err: any) {
+      alert('Rejection failed: ' + err.message);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const filtered = requests.filter(r => filter === 'all' || r.status === filter);
+  const pendingCount = requests.filter(r => r.status === 'pending').length;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-slate-800 flex items-center gap-2">
+            <IndianRupee className="w-6 h-6 text-orange-500" />
+            UPI Payment Requests
+            {pendingCount > 0 && (
+              <span className="ml-2 px-2.5 py-0.5 rounded-full bg-red-500 text-white text-xs font-black animate-pulse">
+                {pendingCount} pending
+              </span>
+            )}
+          </h1>
+          <p className="text-sm text-slate-500 mt-0.5">Review and approve manual UPI payments from students</p>
+        </div>
+        <button
+          onClick={loadRequests}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-50 text-orange-600 font-bold text-sm hover:bg-orange-100 transition-colors border border-orange-200"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Refresh
+        </button>
+      </div>
+
+      {/* New Request Alert */}
+      {newRequestAlert && (
+        <div className="p-4 rounded-2xl bg-orange-50 border-2 border-orange-300 flex items-center justify-between gap-4 animate-pulse">
+          <div className="flex items-center gap-3">
+            <Bell className="w-5 h-5 text-orange-600 shrink-0" />
+            <span className="text-sm font-bold text-orange-700">New payment request received!</span>
+          </div>
+          <button
+            onClick={() => { setFilter('pending'); setNewRequestAlert(false); }}
+            className="text-xs font-bold text-orange-600 hover:text-orange-800 underline"
+          >
+            View Now
+          </button>
+        </div>
+      )}
+
+      {/* Filter Tabs */}
+      <div className="flex gap-2 flex-wrap">
+        {(['all', 'pending', 'approved', 'rejected'] as const).map(f => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all capitalize border ${
+              filter === f
+                ? f === 'pending' ? 'bg-amber-500 text-white border-amber-500'
+                  : f === 'approved' ? 'bg-emerald-500 text-white border-emerald-500'
+                  : f === 'rejected' ? 'bg-red-500 text-white border-red-500'
+                  : 'bg-slate-800 text-white border-slate-800'
+                : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+            }`}
+          >
+            {f} {f !== 'all' && `(${requests.filter(r => r.status === f).length})`}
+          </button>
+        ))}
+      </div>
+
+      {/* Screenshot Modal */}
+      {screenshotModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setScreenshotModal(null)}
+        >
+          <div className="relative max-w-2xl w-full" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setScreenshotModal(null)}
+              className="absolute -top-10 right-0 text-white font-bold flex items-center gap-1 hover:text-red-400"
+            >
+              <X className="w-5 h-5" /> Close
+            </button>
+            <img src={screenshotModal} alt="Payment screenshot" className="w-full rounded-2xl shadow-2xl" />
+          </div>
+        </div>
+      )}
+
+      {/* Requests Table */}
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-16 text-slate-400">
+          <CheckCircle2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
+          <p className="font-semibold">No {filter === 'all' ? '' : filter} payment requests</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filtered.map(req => (
+            <Card key={req.id} className="p-5">
+              <div className="flex flex-col gap-4">
+                {/* Top Row */}
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-black uppercase ${
+                        req.status === 'pending' ? 'bg-amber-100 text-amber-700'
+                        : req.status === 'approved' ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-red-100 text-red-700'
+                      }`}>
+                        {req.status}
+                      </span>
+                      <span className="text-xs text-slate-400 font-medium">
+                        {new Date(req.created_at).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    <p className="font-black text-slate-800 text-base">
+                      {req.profile?.full_name || 'Unknown Student'}
+                    </p>
+                    <p className="text-xs text-slate-500">{req.profile?.email || req.user_id}</p>
+                    {req.profile?.phone && <p className="text-xs text-slate-500">📱 {req.profile.phone}</p>}
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-black text-slate-800">₹{Number(req.amount).toLocaleString('en-IN')}</p>
+                    <p className="text-xs font-bold text-slate-500">{req.plan_name}</p>
+                  </div>
+                </div>
+
+                {/* UTR & Screenshot */}
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex-1 min-w-0 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                    <p className="text-xs text-slate-400 font-medium mb-0.5">UTR / Reference Number</p>
+                    <p className="font-mono font-black text-slate-800 text-sm">{req.utr_number}</p>
+                  </div>
+                  {req.screenshot_url && (
+                    <button
+                      onClick={() => setScreenshotModal(req.screenshot_url)}
+                      className="flex items-center gap-2 px-4 py-3 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 font-bold text-sm hover:bg-blue-100 transition-colors shrink-0"
+                    >
+                      <FileText className="w-4 h-4" />
+                      View Screenshot
+                    </button>
+                  )}
+                </div>
+
+                {/* Admin note */}
+                {req.status !== 'pending' && req.admin_note && (
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600">
+                    <span className="font-bold">Admin Note:</span> {req.admin_note}
+                  </div>
+                )}
+
+                {/* Approve/Reject Controls (only for pending) */}
+                {req.status === 'pending' && (
+                  <div className="flex flex-col gap-3 pt-2 border-t border-slate-100">
+                    {/* Plan Override */}
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+                        Allot Package
+                      </label>
+                      <select
+                        value={selectedPlan[req.id] || req.plan_slug}
+                        onChange={e => setSelectedPlan(prev => ({ ...prev, [req.id]: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm font-semibold focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                      >
+                        {PLAN_OPTIONS.map(p => (
+                          <option key={p.slug} value={p.slug}>
+                            {p.name} — ₹{p.price}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Admin Note */}
+                    <input
+                      type="text"
+                      placeholder="Admin note (optional)"
+                      value={adminNote[req.id] || ''}
+                      onChange={e => setAdminNote(prev => ({ ...prev, [req.id]: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                    />
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => handleApprove(req)}
+                        disabled={processingId === req.id}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black text-sm hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg shadow-emerald-500/20"
+                      >
+                        {processingId === req.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="w-4 h-4" />
+                        )}
+                        Approve & Activate
+                      </button>
+                      <button
+                        onClick={() => handleReject(req)}
+                        disabled={processingId === req.id}
+                        className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-red-50 text-red-600 border border-red-200 font-bold text-sm hover:bg-red-100 transition-colors disabled:opacity-50"
+                      >
+                        <X className="w-4 h-4" />
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

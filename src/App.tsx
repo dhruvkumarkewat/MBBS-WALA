@@ -122,6 +122,12 @@ const AdminFollowupsPage = lazyNamed(adminPages, 'AdminFollowupsPage');
 const AdminPurchasesPage = lazyNamed(adminPages, 'AdminPurchasesPage');
 const AdminWithdrawalsPage = lazyNamed(adminPages, 'AdminWithdrawalsPage');
 const AdminNotifyPage = lazyNamed(adminPages, 'AdminNotifyPage');
+const AdminPaymentRequestsPage = lazyNamed(adminPages, 'AdminPaymentRequestsPage');
+
+/* UPI Payment Page */
+const UpiPaymentPage = lazyWithRetry(() =>
+  import('./pages/dashboard/UpiPaymentPage').then(m => ({ default: m.UpiPaymentPage }))
+);
 
 export default function App() {
   return (
@@ -198,6 +204,7 @@ export default function App() {
           <Route path="withdrawals" element={<L><AdminWithdrawalsPage /></L>} />
           <Route path="notifications" element={<L><AdminNotifyPage /></L>} />
           <Route path="alerts" element={<L><AdminAlertsPage /></L>} />
+          <Route path="payment-requests" element={<L><AdminPaymentRequestsPage /></L>} />
         </Route>
 
         <Route
@@ -246,6 +253,7 @@ export default function App() {
           <Route path="settings" element={<L><SettingsPage /></L>} />
           <Route path="support" element={<L><SupportPage /></L>} />
           <Route path="chat" element={<L><StudentChatPage /></L>} />
+          <Route path="pay" element={<L><UpiPaymentPage /></L>} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
 
