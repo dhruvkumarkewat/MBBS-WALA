@@ -1,5 +1,11 @@
-# Cloudflare Pages configuration
-name = "mbbswala"
+# Cloudflare Worker + Static Assets configuration
+name = "mbbs-waala"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = "dist"
+main = "_worker.js"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+html_handling = "auto-trailing-slash"
+not_found_handling = "single-page-application"
