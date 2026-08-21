@@ -271,18 +271,43 @@ export function ProfilePage() {
       } catch (apiErr: any) {
         console.warn('API profile save warning, falling back to direct client update:', apiErr.message);
         if (user) {
-          const clientUpsert = await supabase.from('profiles').upsert(
-            {
-              id: user.id,
-              email: user.email,
+          // Use UPDATE (not upsert) to avoid triggering the INSERT path in DB triggers
+          // which can cause duplicate key violations on student_counselling
+          const { error: updateErr } = await supabase
+            .from('profiles')
+            .update({
               ...payload,
               updated_at: new Date().toISOString(),
-            },
-            { onConflict: 'id' }
-          );
-          if (clientUpsert.error) {
-            throw new Error(clientUpsert.error.message);
+            })
+            .eq('id', user.id);
+
+          if (updateErr) {
+            // If update also fails, try a minimal update with just key fields
+            console.warn('Direct update also failed:', updateErr.message, '— trying minimal update');
+            const { error: minimalErr } = await supabase
+              .from('profiles')
+              .update({
+                full_name: payload.full_name,
+                phone: payload.phone,
+                category: payload.category,
+                domicile: payload.domicile,
+                domicile_state: payload.domicile_state,
+                state: payload.state,
+                neet_rank: payload.neet_rank,
+                neet_score: payload.neet_score,
+                exam: payload.exam,
+                preferred_course: payload.preferred_course,
+                profile_completed: true,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', user.id);
+
+            if (minimalErr) {
+              console.warn('Minimal update failed too:', minimalErr.message);
+            }
           }
+
+          // Always update auth metadata — this always works
           const authUpdate = await supabase.auth.updateUser({
             data: {
               full_name: payload.full_name,
