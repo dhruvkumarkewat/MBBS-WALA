@@ -1,5 +1,5 @@
 /* MBBSWala Service Worker — Push Notifications */
-const CACHE_NAME = 'mbbswala-sw-v1';
+const CACHE_NAME = 'mbbswala-sw-v2'; // bumped to invalidate old cached assets
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

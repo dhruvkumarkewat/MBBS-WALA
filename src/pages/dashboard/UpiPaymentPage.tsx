@@ -30,8 +30,10 @@ export function UpiPaymentPage() {
 
   const [qrLoaded, setQrLoaded] = useState(false);
   const [qrError, setQrError] = useState(false);
+  const qrImgRef = useRef<HTMLImageElement>(null);
   const [step, setStep] = useState<Step>('qr');
   const [copied, setCopied] = useState(false);
+  const [upiCopied, setUpiCopied] = useState(false);
   const [utr, setUtr] = useState('');
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
@@ -40,10 +42,27 @@ export function UpiPaymentPage() {
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Fix: if browser has /upi-qr.jpg cached, onLoad fires before React attaches the listener.
+  // Check img.complete immediately after mount to handle that case.
+  useEffect(() => {
+    if (qrImgRef.current?.complete && !qrImgRef.current.naturalWidth) {
+      setQrError(true); // image failed to load
+    } else if (qrImgRef.current?.complete) {
+      setQrLoaded(true); // already cached and loaded
+    }
+  }, []);
+
   const copyUpiId = () => {
     navigator.clipboard.writeText(UPI_ID);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+    setUpiCopied(true);
+    setTimeout(() => { setCopied(false); setUpiCopied(false); }, 2500);
+  };
+
+  // UPI deep link — opens UPI app directly with pre-filled details
+  const openUpiApp = () => {
+    const upiLink = `upi://pay?pa=${UPI_ID}&pn=MBBSWala&am=${plan.price}&cu=INR&tn=${encodeURIComponent(plan.name)}`;
+    window.location.href = upiLink;
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -223,24 +242,40 @@ export function UpiPaymentPage() {
             </div>
 
             <div className="relative">
-            <div className="w-56 h-56 rounded-2xl overflow-hidden border-4 border-primary/20 shadow-lg shadow-primary/10 bg-white flex items-center justify-center">
-                {/* Real QR image — shows when loaded successfully */}
+              <div className="w-64 h-64 rounded-2xl overflow-hidden border-4 border-primary/20 shadow-lg shadow-primary/10 bg-white flex items-center justify-center">
+                {/* Real QR image — always in DOM; shown when loaded */}
                 <img
+                  ref={qrImgRef}
                   src="/upi-qr.jpg"
-                  alt="UPI QR Code — mbbswala060826@aubiz"
-                  className={`w-full h-full object-contain transition-opacity duration-300 ${qrLoaded && !qrError ? 'opacity-100' : 'opacity-0 absolute'}`}
-                  onLoad={() => { setQrLoaded(true); setQrError(false); }}
+                  alt="UPI QR Code"
+                  style={{ display: qrLoaded && !qrError ? 'block' : 'none' }}
+                  className="w-full h-full object-contain"
+                  onLoad={() => setQrLoaded(true)}
                   onError={() => setQrError(true)}
                 />
-                {/* Fallback icon — shown only while loading or on error */}
+                {/* Fallback — shown while loading or on error */}
                 {(!qrLoaded || qrError) && (
-                  <div className="flex flex-col items-center justify-center gap-2">
-                    <QrCode className="w-24 h-24 text-gray-400" />
-                    <p className="text-xs text-gray-400">{qrError ? 'QR unavailable' : 'Loading QR...'}</p>
+                  <div className="flex flex-col items-center justify-center gap-2 p-4 text-center">
+                    <QrCode className="w-20 h-20 text-gray-300" />
+                    <p className="text-xs text-gray-400 font-medium">
+                      {qrError ? 'Could not load QR image' : 'Loading QR code...'}
+                    </p>
+                    {qrError && (
+                      <p className="text-[10px] text-gray-400">Use the UPI ID below to pay manually</p>
+                    )}
                   </div>
                 )}
               </div>
             </div>
+
+            {/* UPI Deep Link — opens UPI app directly */}
+            <button
+              onClick={openUpiApp}
+              className="w-full py-2.5 px-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center justify-center gap-2 hover:bg-emerald-500/25 transition-all"
+            >
+              <Smartphone className="w-4 h-4" />
+              Open UPI App Directly (PhonePe / GPay / Paytm)
+            </button>
 
             {/* UPI ID */}
             <div className="w-full p-3 rounded-2xl bg-muted/50 flex items-center justify-between gap-3">
