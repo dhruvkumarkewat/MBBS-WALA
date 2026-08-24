@@ -491,9 +491,15 @@ export function PredictorPage() {
     if (c.quota === 'State' && domicileState && !(c.state || '').toLowerCase().includes(domicileState.toLowerCase())) {
       return false;
     }
-    // If only state quota was selected in form, only domicile state colleges are valid
+    // If ONLY State quota was selected, only domicile state colleges are valid
     if (isOnlyStateQuota && domicileState && (!(c.state || '').toLowerCase().includes(domicileState.toLowerCase()) || c.quota !== 'State')) {
       return false;
+    }
+    // Target state filter: if user explicitly selected a target state, only show colleges there
+    // NOTE: Do NOT apply this for AIQ + no target state (would wrongly restrict to domicile state)
+    if (targetState && targetState.trim() !== '') {
+      const tStateLower = targetState.toLowerCase();
+      if (!(c.state || '').toLowerCase().includes(tStateLower)) return false;
     }
     return true;
   });
@@ -726,8 +732,11 @@ export function PredictorPage() {
               aiResponse={aiResponse} 
               s={s} 
               isPremium={isPremium} 
-              domicileState={domicileState} 
+              domicileState={domicileState}
+              targetState={targetState || null}
+              selectedQuotas={quotas}
             />
+
           )}
         </div>
       )}

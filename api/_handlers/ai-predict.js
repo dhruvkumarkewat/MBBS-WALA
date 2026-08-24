@@ -125,9 +125,14 @@ export async function retrieveContext(query) {
     cutoffQuery = cutoffQuery.in('course_name', ['BAMS', 'BUMS', 'BHMS', 'BSMS', 'BNYS']);
   }
 
-  // Only forcefully restrict the database query to the domicile state if State Quota is the ONLY quota selected.
-  // If Management or NRI is selected alongside it, we must allow cross-state queries.
-  if (quotas.includes('State') && domicileState && quotas.length === 1) {
+  // Apply state restriction to the DB cutoff query:
+  // - If an explicit target_state is chosen, restrict to that state (regardless of quota)
+  // - If only State quota is selected, restrict to domicile state
+  // - For AIQ with no target state, do NOT restrict — show all-India cutoffs
+  const targetStateDb = query.target_state;
+  if (targetStateDb) {
+    cutoffQuery = cutoffQuery.ilike('state', `%${targetStateDb}%`);
+  } else if (quotas.includes('State') && domicileState && quotas.length === 1) {
     cutoffQuery = cutoffQuery.ilike('state', `%${domicileState}%`);
   }
 
@@ -592,9 +597,15 @@ export default async function handler(req, res) {
     const resolved = buildResolved(query, context);
 
     // Step 3: Build rich human-readable user prompt for AI
-    const targetStateRulesForAI = getStateRules(query.target_state || query.domicile_state);
+    // For AIQ quota, the target is All India — do NOT restrict to domicile state.
+    // Only fall back to domicile_state as target when State quota is selected.
+    const isAiqOnly = (query.quotas || []).length > 0 &&
+      (query.quotas || []).every(q => q === 'AIQ' || q === 'Deemed-Central');
+    const targetStateRulesForAI = getStateRules(query.target_state || (isAiqOnly ? null : query.domicile_state));
     const domicileStateRulesForAI = query.domicile_state ? getStateRules(query.domicile_state) : null;
-    const targetStateName = query.target_state || query.domicile_state || 'All India';
+    // If AIQ only and no explicit target state → show All India (don't restrict to domicile)
+    const targetStateName = query.target_state ||
+      (isAiqOnly ? 'All India' : (query.domicile_state || 'All India'));
     const domicileStateName = query.domicile_state || 'Not specified';
     const domicileMatchesTarget = query.domicile_state && query.target_state &&
       query.domicile_state.toLowerCase() === query.target_state.toLowerCase();
@@ -816,10 +827,9 @@ ${(context.scholarships || []).slice(0, 5).map(s => `- Name: ${s.name}\n  Provid
       }
 
       // 2c. HARD TARGET STATE FILTER — Remove any college NOT in the target state.
-      //     AI sometimes hallucinates colleges from other states even when the prompt
-      //     explicitly says to only show colleges from the target state. This is a
-      //     hard safety net that guarantees 100% state accuracy.
-      const targetStateForFilter = query.target_state || query.domicile_state;
+      //     Only applied when the user EXPLICITLY selected a target state.
+      //     For AIQ with no target state, colleges from all India are valid.
+      const targetStateForFilter = query.target_state; // ← Only use explicit target_state, NOT domicile_state
       if (targetStateForFilter) {
         const targetLower = targetStateForFilter.toLowerCase().trim();
         // Common state name aliases

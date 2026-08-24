@@ -11,6 +11,7 @@ import {
 import type { Session, User } from '@supabase/supabase-js';
 import supabase from '../lib/supabase';
 import { apiJson } from '../lib/api';
+import { initPushNotifications } from '../lib/pushNotifications';
 
 export interface UserProfile {
   id: string;
@@ -118,6 +119,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isStaff, setIsStaff] = useState<boolean>(false);
   const [staffRole, setStaffRole] = useState<string | null>(null);
   const activeFetchRef = useRef<Promise<UserProfile | null> | null>(null);
+  // Track whether we've already initiated push for this session (avoid duplicates)
+  const pushInitiatedRef = useRef<string | null>(null);
+
+  /** Trigger push subscription for a newly logged-in user (idempotent per user) */
+  const tryInitPush = useCallback((uid: string) => {
+    if (pushInitiatedRef.current === uid) return; // already done for this user
+    pushInitiatedRef.current = uid;
+    // Delay slightly so the page finishes loading first
+    setTimeout(() => {
+      initPushNotifications(apiJson).catch(() => {});
+    }, 3000);
+  }, []);
 
   const checkStaffRole = useCallback(async (uid: string) => {
     try {
@@ -258,6 +271,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } as any);
       setProfileLoading(false);
       setLoading(false);
+      tryInitPush('bdcb6828-636a-43e7-99fe-9ccbbc7e6638'); // ← Admin push subscription
       return;
     }
 
@@ -270,6 +284,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (u) {
         checkStaffRole(u.id);
         fetchProfile(u);
+        tryInitPush(u.id); // ← Subscribe to push on initial load
       } else {
         setIsStaff(false);
         setStaffRole(null);
@@ -289,6 +304,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (u) {
         checkStaffRole(u.id);
         fetchProfile(u, true);
+        if (event === 'SIGNED_IN') tryInitPush(u.id); // ← Subscribe to push on login
       } else {
         setIsStaff(false);
         setStaffRole(null);
@@ -301,7 +317,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchProfile, checkStaffRole]);
+  }, [fetchProfile, checkStaffRole, tryInitPush]);
 
   const isProfileComplete = useMemo(() => {
     if (isStaff) return true; // Staff/Admin/Counsellor accounts are exempt from student onboarding

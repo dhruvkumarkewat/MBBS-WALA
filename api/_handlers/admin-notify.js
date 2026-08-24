@@ -1,6 +1,7 @@
 import supabase from './db-client.js';
 import { setCors } from './_auth.js';
 import { requireSuperAdmin, logActivity } from './_admin.js';
+import { sendWebPushToUsers } from './push-helper.js';
 
 export default async function handler(req, res) {
   setCors(res);
@@ -137,6 +138,17 @@ export default async function handler(req, res) {
       if (rows.length) {
         const { error } = await supabase.from('notifications').insert(rows);
         if (error) throw error;
+      }
+
+      // Send web push to all target users (works even when site is closed)
+      const pushUserIds = targets && targets.length > 0 ? targets : [];
+      if (pushUserIds.length > 0) {
+        sendWebPushToUsers(supabase, pushUserIds, {
+          title: title.trim(),
+          body: body.trim(),
+          data: { url: '/dashboard' },
+          tag: 'admin-broadcast',
+        }).catch((e) => console.warn('[admin-notify] push error:', e.message));
       }
 
       await logActivity(ctx.user.id, 'Sent Notification', 'notification', null, {

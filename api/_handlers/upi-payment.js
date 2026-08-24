@@ -1,5 +1,6 @@
 import supabase from './db-client.js';
 import { setCors, requireUser } from './_auth.js';
+import { sendWebPush } from './push-helper.js';
 
 // Admin user IDs — only these can approve/reject payments
 const ADMIN_EMAILS = ['admin@gmail.com', 'admin@mbbswala.in', 'dhruv@mbbswala.in'];
@@ -262,18 +263,19 @@ export default async function handler(req, res) {
 
       // Try to send push to student too
       try {
-        const { data: studentPush } = await supabase
+        const { data: studentPushSubs } = await supabase
           .from('push_subscriptions')
           .select('*')
-          .eq('user_id', request.user_id)
-          .maybeSingle();
+          .eq('user_id', request.user_id);
 
-        if (studentPush) {
-          await sendWebPush(studentPush, {
-            title: '🎉 Package Activated — MBBSWala',
-            body: `Your ${finalPlanName} is now active! Open the app to start using premium features.`,
-            data: { url: '/dashboard' },
-          });
+        if (studentPushSubs && studentPushSubs.length > 0) {
+          await Promise.allSettled(studentPushSubs.map((sub) =>
+            sendWebPush(sub, {
+              title: '🎉 Package Activated — MBBSWala',
+              body: `Your ${finalPlanName} is now active! Open the app to start using premium features.`,
+              data: { url: '/dashboard' },
+            })
+          ));
         }
       } catch (pushErr) {
         console.warn('Student push error:', pushErr.message);
@@ -307,7 +309,7 @@ export default async function handler(req, res) {
         updated_at: new Date().toISOString(),
       }).eq('id', request_id);
 
-      // Notify student
+      // Notify student via DB
       await supabase.from('notifications').insert({
         user_id: request.user_id,
         title: '❌ Payment Verification Failed',
@@ -317,6 +319,26 @@ export default async function handler(req, res) {
         read: false,
         created_at: new Date().toISOString(),
       });
+
+      // Also send web push to student (works even when site is closed)
+      try {
+        const { data: studentPushSubs } = await supabase
+          .from('push_subscriptions')
+          .select('*')
+          .eq('user_id', request.user_id);
+
+        if (studentPushSubs && studentPushSubs.length > 0) {
+          await Promise.allSettled(studentPushSubs.map((sub) =>
+            sendWebPush(sub, {
+              title: '❌ Payment Verification Failed — MBBSWala',
+              body: `We could not verify your payment for ${request.plan_name}. Please contact support or retry.`,
+              data: { url: '/dashboard/payment' },
+            })
+          ));
+        }
+      } catch (pushErr) {
+        console.warn('Student rejection push error:', pushErr.message);
+      }
 
       return res.status(200).json({ ok: true, message: 'Payment request rejected and student notified.' });
     }
@@ -346,30 +368,3 @@ export default async function handler(req, res) {
   }
 }
 
-// ── Web Push sender using web-push library ──
-async function sendWebPush(subscription, payload) {
-  const webpush = await import('web-push').catch(() => null);
-  if (!webpush) {
-    console.warn('web-push not installed, skipping push notification');
-    return;
-  }
-
-  const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
-  const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-  const vapidSubject = process.env.VAPID_SUBJECT || 'mailto:admin@mbbswala.in';
-
-  if (!vapidPublicKey || !vapidPrivateKey) {
-    console.warn('VAPID keys not configured, skipping push notification');
-    return;
-  }
-
-  webpush.default.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
-
-  await webpush.default.sendNotification(
-    {
-      endpoint: subscription.endpoint,
-      keys: { p256dh: subscription.p256dh, auth: subscription.auth },
-    },
-    JSON.stringify(payload)
-  );
-}

@@ -9,7 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { apiJson } from '../../lib/api';
 
-const UPI_ID = 'mbbswala@upi'; // Replace with real UPI ID when available
+const UPI_ID = 'mbbswala060826@aubiz'; // AU Bank UPI ID from official QR code
 
 const PLANS: Record<string, { name: string; price: number }> = {
   basic: { name: 'BASIC Plan', price: 99 },

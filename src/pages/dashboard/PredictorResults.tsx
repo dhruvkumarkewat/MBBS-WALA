@@ -9,6 +9,8 @@ interface PredictorResultsProps {
   s: any;
   isPremium: boolean;
   domicileState: string;
+  targetState?: string | null;
+  selectedQuotas?: string[];
 }
 
 const getQuotaStyle = (quota: string) => {
@@ -341,7 +343,7 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
   );
 };
 
-export function PredictorResults({ aiResponse, s, isPremium, domicileState }: PredictorResultsProps) {
+export function PredictorResults({ aiResponse, s, isPremium, domicileState, targetState, selectedQuotas }: PredictorResultsProps) {
   const [selectedCollegeInfo, setSelectedCollegeInfo] = useState<any | null>(null);
   const [expandedScholarship, setExpandedScholarship] = useState<number | string | null>(null);
 
@@ -390,6 +392,29 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState }: Pr
           )}
         </div>
       </div>
+
+      {/* ── Active Filter Context Banner ── */}
+      {(targetState || (selectedQuotas && selectedQuotas.length > 0)) && (
+        <div className={`rounded-2xl border p-3 flex flex-wrap gap-2 items-center ${s.dark ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
+          <MapPin className="w-4 h-4 text-primary shrink-0" />
+          <span className={`text-xs font-bold ${s.muted}`}>Active Filters:</span>
+          {selectedQuotas && selectedQuotas.map((q) => (
+            <span key={q} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+              {q === 'AIQ' ? '🇮🇳 AIQ — All India' : q === 'State' ? `📍 State Quota (${domicileState || 'Domicile'})` : q}
+            </span>
+          ))}
+          {targetState && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+              🎯 Target: {targetState} only
+            </span>
+          )}
+          {!targetState && selectedQuotas?.includes('AIQ') && !selectedQuotas?.includes('State') && (
+            <span className="text-[10px] font-semibold text-emerald-400">
+              Showing colleges across All India
+            </span>
+          )}
+        </div>
+      )}
 
       {/* ── Admission Summary ── */}
       {aiResponse.admission_summary && (

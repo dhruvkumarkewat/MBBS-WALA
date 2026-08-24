@@ -1,6 +1,7 @@
 // Push Notification Service Worker Registration & Web Push utilities
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
+const SW_PATH = '/sw.js';
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -15,11 +16,11 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (!('serviceWorker' in navigator)) {
-    console.warn('Service workers not supported');
+    console.warn('[SW] Service workers not supported in this browser');
     return null;
   }
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+    const reg = await navigator.serviceWorker.register(SW_PATH, { scope: '/' });
     console.log('[SW] Registered:', reg.scope);
     return reg;
   } catch (err) {
@@ -31,11 +32,12 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
 export async function requestPushPermission(): Promise<NotificationPermission> {
   if (!('Notification' in window)) return 'denied';
   if (Notification.permission === 'granted') return 'granted';
+  if (Notification.permission === 'denied') return 'denied';
   const permission = await Notification.requestPermission();
   return permission;
 }
 
-export async function subscribeToPush(apiJson: Function): Promise<boolean> {
+export async function subscribeToPush(apiJsonFn: Function): Promise<boolean> {
   try {
     const permission = await requestPushPermission();
     if (permission !== 'granted') {
@@ -51,13 +53,21 @@ export async function subscribeToPush(apiJson: Function): Promise<boolean> {
       return false;
     }
 
-    const subscription = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as unknown as BufferSource,
-    });
+    // Check if already subscribed with same endpoint
+    const existing = await reg.pushManager.getSubscription();
+    let subscription = existing;
+
+    if (!existing) {
+      subscription = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as unknown as BufferSource,
+      });
+    }
+
+    if (!subscription) return false;
 
     const subJson = subscription.toJSON();
-    await apiJson('/api/upi-payment', {
+    await apiJsonFn('/api/upi-payment', {
       method: 'POST',
       body: JSON.stringify({
         action: 'save-push-subscription',
@@ -67,7 +77,7 @@ export async function subscribeToPush(apiJson: Function): Promise<boolean> {
       }),
     }, true);
 
-    console.log('[Push] Subscribed successfully');
+    console.log('[Push] Subscribed + saved successfully');
     return true;
   } catch (err) {
     console.warn('[Push] Subscribe error:', err);
@@ -75,7 +85,34 @@ export async function subscribeToPush(apiJson: Function): Promise<boolean> {
   }
 }
 
-// Play notification sound in-app (for Supabase Realtime notifications)
+/**
+ * Call this once after the user logs in.
+ * Registers the SW, asks for notification permission, subscribes, and saves to backend.
+ * Safe to call multiple times — it's idempotent.
+ */
+export async function initPushNotifications(apiJsonFn: Function): Promise<void> {
+  try {
+    // Register SW first (even if no push, needed for offline cache)
+    const reg = await registerServiceWorker();
+    if (!reg) return;
+
+    // Only attempt push if permission not already denied
+    if (Notification.permission === 'denied') {
+      console.warn('[Push] Notifications blocked by user');
+      return;
+    }
+
+    await subscribeToPush(apiJsonFn);
+  } catch (err) {
+    console.warn('[Push] initPushNotifications error:', err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// In-app helpers (when website IS open)
+// ---------------------------------------------------------------------------
+
+/** Play a gentle notification chime (in-app) */
 export function playNotificationSound() {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -91,17 +128,17 @@ export function playNotificationSound() {
     oscillator.start(ctx.currentTime);
     oscillator.stop(ctx.currentTime + 0.5);
   } catch (e) {
-    // Audio not available
+    // Audio context not available
   }
 }
 
-// Show in-app browser notification (when tab is visible)
+/** Show a browser notification when the page is already visible */
 export function showBrowserNotification(title: string, body: string, url?: string) {
   if (Notification.permission !== 'granted') return;
   const n = new Notification(title, {
     body,
-    icon: '/images/mbbswala/logo.png',
-    badge: '/images/mbbswala/logo.png',
+    icon: '/favicon-192.png',
+    badge: '/favicon-32.png',
   });
   if (url) {
     n.onclick = () => {
