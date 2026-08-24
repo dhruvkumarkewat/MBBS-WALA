@@ -1,6 +1,9 @@
 // Push Notification Service Worker Registration & Web Push utilities
 
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
+// VAPID public key — safe to hardcode (it's public by design)
+// Falls back to hardcoded value when env var isn't available in the build
+const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
+  || 'BOGT9aKRMuwAK5WaxDuSnTUNFsytfPlDoWlkyGdLfc4fvlKeMRvrK44mgVlENoXFSOcNnfmtuiwJvBsbbYujMLw';
 const SW_PATH = '/sw.js';
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
