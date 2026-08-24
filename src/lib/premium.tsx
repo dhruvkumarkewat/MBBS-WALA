@@ -56,7 +56,7 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
       let subStatus: 'free' | 'active' | 'expired' | 'cancelled' = (res?.subscription_status as any) || (premium ? 'active' : 'free');
       let subPlan = res?.subscription_plan && res.subscription_plan !== 'Free Plan'
         ? res.subscription_plan
-        : (premium ? 'NEET Counselling Pro' : 'Free Plan');
+        : (premium ? 'BASIC Plan' : 'Free Plan');
       let subEndDate = res?.premium_end_date || null;
 
       // 2. Secondary verification via Payment endpoint if still not recognized
@@ -73,7 +73,7 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
           if (payRes?.is_premium && payRes?.subscription_status === 'active') {
             premium = true;
             subStatus = 'active';
-            subPlan = payRes.subscription_plan || payRes.subscription?.plan_name || 'NEET Counselling Pro';
+            subPlan = payRes.subscription_plan || payRes.subscription?.plan_name || 'BASIC Plan';
             subEndDate = payRes.subscription?.end_date || subEndDate;
           }
         } catch (pErr) {

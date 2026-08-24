@@ -298,13 +298,23 @@ export function SubscriptionPage() {
           };
           
           const PLAN_NAME_LEVELS: Record<string, number> = {
+            // Exact plan names stored in DB (from UpiPaymentPage PLANS constant)
+            'BASIC Plan': 1,
             'BASIC': 1,
+            'basic': 1,
+            // NEET UG Pro
             'NEET UG Counselling Pro': 2,
-            'Premium Plan': 2, // Legacy
-            'Ultimate Medical Master Bundle': 3
+            'neet-ug-pro': 2,
+            // Ultimate
+            'Ultimate Medical Master Bundle': 3,
+            'ultimate': 3,
+            // Legacy names from old payment flows
+            'Premium Plan': 2,
+            'NEET Counselling Pro': 2,
           };
 
-          const currentPlanLevel = isPremium ? (PLAN_NAME_LEVELS[subscriptionPlan || ''] || 2) : 0;
+          // Use || 0 (not || 2) so an unrecognized plan name → FREE, never grants fake higher-tier access
+          const currentPlanLevel = isPremium ? (PLAN_NAME_LEVELS[subscriptionPlan || ''] || 0) : 0;
           const thisPlanLevel = PLAN_LEVELS[plan.id] || 0;
           
           const isCurrent = isPremium && currentPlanLevel === thisPlanLevel;
