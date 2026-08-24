@@ -350,13 +350,25 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'endpoint, p256dh and auth are required' });
       }
 
-      await supabase.from('push_subscriptions').upsert({
+      const { error: upsertErr } = await supabase.from('push_subscriptions').upsert({
         user_id: user.id,
         endpoint,
         p256dh,
         auth: authKey,
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id' });
+      }, { onConflict: 'endpoint' });
+
+      if (upsertErr) {
+        console.warn('[push] push_subscriptions upsert error:', upsertErr.message);
+        // Try with user_id conflict as fallback (in case endpoint unique index doesn't exist)
+        await supabase.from('push_subscriptions').upsert({
+          user_id: user.id,
+          endpoint,
+          p256dh,
+          auth: authKey,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' }).catch(() => {});
+      }
 
       return res.status(200).json({ ok: true });
     }

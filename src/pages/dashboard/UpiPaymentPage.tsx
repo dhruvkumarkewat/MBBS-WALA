@@ -46,11 +46,29 @@ export function UpiPaymentPage() {
   // Check img.complete immediately after mount to handle that case.
   useEffect(() => {
     if (qrImgRef.current?.complete && !qrImgRef.current.naturalWidth) {
-      setQrError(true); // image failed to load
+      setQrError(true);
     } else if (qrImgRef.current?.complete) {
-      setQrLoaded(true); // already cached and loaded
+      setQrLoaded(true);
     }
   }, []);
+
+  // On mount: check if user already submitted a payment for this plan.
+  // If so, restore the 'pending' step so reload doesn't show the form again.
+  useEffect(() => {
+    if (!user?.id) return;
+    apiJson<any[]>('/api/upi-payment', { method: 'GET' }, true)
+      .then((requests) => {
+        if (!Array.isArray(requests)) return;
+        const existing = requests.find(
+          (r) => r.plan_slug === planSlug && (r.status === 'pending' || r.status === 'under_review')
+        );
+        if (existing) {
+          setStep('pending');
+          setUtr(existing.utr_number || '');
+        }
+      })
+      .catch(() => {}); // silent fail — don't block the page
+  }, [user?.id, planSlug]);
 
   const copyUpiId = () => {
     navigator.clipboard.writeText(UPI_ID);
