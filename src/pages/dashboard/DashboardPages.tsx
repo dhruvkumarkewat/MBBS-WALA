@@ -365,7 +365,8 @@ export function PredictorPage() {
       const saved = localStorage.getItem(`mbbswala_prediction_${profile.id}`);
       if (saved) {
         try {
-          setAiResponse(JSON.parse(saved));
+          const parsed = JSON.parse(saved);
+          setAiResponse(parsed);
         } catch (e) {
           console.error('Failed to parse saved prediction');
         }
@@ -379,12 +380,15 @@ export function PredictorPage() {
     }
   }, [aiResponse, profile?.id]);
 
-  const handleRecalculate = () => {
-    setAiResponse(null);
-    if (profile?.id) {
-      localStorage.removeItem(`mbbswala_prediction_${profile.id}`);
+  // Clear cached result whenever key prediction inputs change
+  // so the user always gets fresh results matching their current selections
+  useEffect(() => {
+    if (aiResponse) {
+      setAiResponse(null);
+      if (profile?.id) localStorage.removeItem(`mbbswala_prediction_${profile.id}`);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quotas.join(','), targetState, domicileState, category, examTrack]);
 
   // Sync profile data when loaded
   useEffect(() => {
@@ -399,6 +403,14 @@ export function PredictorPage() {
 
   // Select a single quota
   const toggleQuota = (v: string) => setQuotas([v]);
+
+  const handleRecalculate = () => {
+    setAiResponse(null);
+    if (profile?.id) {
+      localStorage.removeItem(`mbbswala_prediction_${profile.id}`);
+    }
+  };
+
 
 
 
@@ -594,8 +606,7 @@ export function PredictorPage() {
           </label>
         </div>
 
-        {/* Category + Counselling Round + Domicile */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="block">
             <span className={`text-xs font-bold uppercase ${s.muted}`}>Category</span>
             <select
