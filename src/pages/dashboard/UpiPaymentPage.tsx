@@ -28,6 +28,8 @@ export function UpiPaymentPage() {
   const planSlug = searchParams.get('plan') || 'basic';
   const plan = PLANS[planSlug] || PLANS['basic'];
 
+  const [qrLoaded, setQrLoaded] = useState(false);
+  const [qrError, setQrError] = useState(false);
   const [step, setStep] = useState<Step>('qr');
   const [copied, setCopied] = useState(false);
   const [utr, setUtr] = useState('');
@@ -221,21 +223,22 @@ export function UpiPaymentPage() {
             </div>
 
             <div className="relative">
-              <div className="w-56 h-56 rounded-2xl overflow-hidden border-4 border-primary/20 shadow-lg shadow-primary/10">
-                {/* Show actual QR code — replace /upi-qr.jpg with your real QR image */}
+            <div className="w-56 h-56 rounded-2xl overflow-hidden border-4 border-primary/20 shadow-lg shadow-primary/10 bg-white flex items-center justify-center">
+                {/* Real QR image — shows when loaded successfully */}
                 <img
                   src="/upi-qr.jpg"
-                  alt="UPI QR Code"
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
+                  alt="UPI QR Code — mbbswala060826@aubiz"
+                  className={`w-full h-full object-contain transition-opacity duration-300 ${qrLoaded && !qrError ? 'opacity-100' : 'opacity-0 absolute'}`}
+                  onLoad={() => { setQrLoaded(true); setQrError(false); }}
+                  onError={() => setQrError(true)}
                 />
-                {/* Fallback if image fails */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white">
-                  <QrCode className="w-24 h-24 text-gray-800" />
-                  <p className="text-xs text-gray-500 mt-2 font-mono">QR Code</p>
-                </div>
+                {/* Fallback icon — shown only while loading or on error */}
+                {(!qrLoaded || qrError) && (
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <QrCode className="w-24 h-24 text-gray-400" />
+                    <p className="text-xs text-gray-400">{qrError ? 'QR unavailable' : 'Loading QR...'}</p>
+                  </div>
+                )}
               </div>
             </div>
 
