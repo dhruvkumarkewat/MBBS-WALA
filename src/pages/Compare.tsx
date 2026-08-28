@@ -330,7 +330,8 @@ export default function Compare() {
                   </div>
                 )}
 
-                <div className="rounded-3xl border border-white/10 overflow-hidden bg-[#171B24]">
+                <div className="overflow-x-auto -webkit-overflow-scrolling-touch rounded-3xl">
+                  <div className="rounded-3xl border border-white/10 overflow-hidden bg-[#171B24]" style={{ minWidth: '360px' }}>
                   <div className="grid grid-cols-3 gap-2 p-4 border-b border-white/10 bg-white/5 font-bold text-sm">
                     <span className="text-white/50">Field</span>
                     <span className="truncate">{data.a.college.name}</span>
@@ -365,6 +366,7 @@ export default function Compare() {
                       </span>
                     </div>
                   ))}
+                  </div>
                 </div>
 
                 <div>

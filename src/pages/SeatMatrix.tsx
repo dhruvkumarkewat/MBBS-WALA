@@ -85,8 +85,9 @@ export default function SeatMatrix() {
           </button>
         ))}
       </div>
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <label className="relative flex-1">
+      {/* Search row — always full width */}
+      <div className="mb-3">
+        <label className="relative block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-grey" />
           <input
             value={q}
@@ -95,13 +96,16 @@ export default function SeatMatrix() {
             className="w-full border-2 border-black rounded pl-10 pr-3 py-2.5 font-medium"
           />
         </label>
-        <div className="flex flex-wrap gap-2">
+      </div>
+      {/* Filter buttons row — scrollable on mobile */}
+      <div className="overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div className="flex gap-2 flex-nowrap sm:flex-wrap mb-6">
           {['All', 'Government', 'Private', 'Government Dental', 'Government AYUSH', 'Private AYUSH', 'Private Dental'].map((k) => (
             <button
               key={k}
               type="button"
               onClick={() => setKind(k)}
-              className={`px-4 py-2 rounded border-2 border-black font-semibold text-sm ${
+              className={`px-4 py-2 rounded border-2 border-black font-semibold text-sm whitespace-nowrap ${
                 kind === k ? 'btn-dark border-transparent' : 'bg-white force-black border border-black/15'
               }`}
             >
@@ -122,39 +126,39 @@ export default function SeatMatrix() {
           <table className="w-full text-sm min-w-[720px] md:min-w-[960px]">
             <thead className="bg-black text-white">
               <tr>
-                <th className="text-left p-3 font-bold">College</th>
-                <th className="text-left p-3 font-bold">Type</th>
-                <th className="text-right p-3 font-bold">Total</th>
-                <th className="text-right p-3 font-bold">All India</th>
-                <th className="text-right p-3 font-bold">GOI</th>
-                <th className="text-right p-3 font-bold">NRI</th>
-                <th className="text-right p-3 font-bold">Left seats</th>
-                <th className="text-right p-3 font-bold">PWD</th>
-                <th className="text-right p-3 font-bold">Sainik</th>
-                <th className="text-right p-3 font-bold">FF</th>
-                <th className="text-right p-3 font-bold">GS</th>
-                <th className="text-right p-3 font-bold">Open</th>
+                <th className="text-left p-3 font-bold whitespace-nowrap">College</th>
+                <th className="text-left p-3 font-bold whitespace-nowrap">Type</th>
+                <th className="text-right p-3 font-bold whitespace-nowrap">Total</th>
+                <th className="text-right p-3 font-bold whitespace-nowrap">All India</th>
+                <th className="text-right p-3 font-bold whitespace-nowrap">GOI</th>
+                <th className="text-right p-3 font-bold whitespace-nowrap">NRI</th>
+                <th className="text-right p-3 font-bold whitespace-nowrap">Left seats</th>
+                <th className="text-right p-3 font-bold whitespace-nowrap">PWD</th>
+                <th className="text-right p-3 font-bold whitespace-nowrap">Sainik</th>
+                <th className="text-right p-3 font-bold whitespace-nowrap">FF</th>
+                <th className="text-right p-3 font-bold whitespace-nowrap">GS</th>
+                <th className="text-right p-3 font-bold whitespace-nowrap">Open</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r, i) => (
                 <tr key={r.id} className={i % 2 ? 'bg-grey-bg-light' : 'bg-white'}>
                   <td className="p-3 font-semibold"><Link to={`/colleges/${encodeURIComponent(r.college_name)}`} className="hover:underline decoration-orange-500 underline-offset-4">{r.college_name}</Link></td>
-                  <td className="p-3">
+                  <td className="p-3 whitespace-nowrap">
                     <span className={`text-xs font-bold px-2 py-0.5 rounded border border-black/10 ${
                       r.college_kind === 'Private' ? 'bg-orange-bg' : 'bg-green-bg'
                     }`}>{r.college_kind}</span>
                   </td>
-                  <td className="p-3 text-right font-black">{r.total_seats}</td>
-                  <td className="p-3 text-right">{r.all_india || '—'}</td>
-                  <td className="p-3 text-right">{r.goi || '—'}</td>
-                  <td className="p-3 text-right">{r.nri_seats || '—'}</td>
-                  <td className="p-3 text-right">{r.remaining_seats || '—'}</td>
-                  <td className="p-3 text-right">{r.pwd || '—'}</td>
-                  <td className="p-3 text-right">{r.sainik || '—'}</td>
-                  <td className="p-3 text-right">{r.ff || '—'}</td>
-                  <td className="p-3 text-right">{r.gs || '—'}</td>
-                  <td className="p-3 text-right font-bold">{r.open_seats || '—'}</td>
+                  <td className="p-3 text-right font-black whitespace-nowrap">{r.total_seats}</td>
+                  <td className="p-3 text-right whitespace-nowrap">{r.all_india || '—'}</td>
+                  <td className="p-3 text-right whitespace-nowrap">{r.goi || '—'}</td>
+                  <td className="p-3 text-right whitespace-nowrap">{r.nri_seats || '—'}</td>
+                  <td className="p-3 text-right whitespace-nowrap">{r.remaining_seats || '—'}</td>
+                  <td className="p-3 text-right whitespace-nowrap">{r.pwd || '—'}</td>
+                  <td className="p-3 text-right whitespace-nowrap">{r.sainik || '—'}</td>
+                  <td className="p-3 text-right whitespace-nowrap">{r.ff || '—'}</td>
+                  <td className="p-3 text-right whitespace-nowrap">{r.gs || '—'}</td>
+                  <td className="p-3 text-right font-bold whitespace-nowrap">{r.open_seats || '—'}</td>
                 </tr>
               ))}
             </tbody>

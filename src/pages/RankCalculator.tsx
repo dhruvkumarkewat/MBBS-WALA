@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calculator, Loader2, Sparkles, Trophy, Award, MapPin, CheckCircle2, GraduationCap, ExternalLink } from 'lucide-react';
+import { Calculator, Sparkles, Trophy, Award, MapPin, CheckCircle2, GraduationCap, ExternalLink } from 'lucide-react';
 import CollegeMatchResults, { type MatchRow } from '../components/CollegeMatchResults';
 import { MEDICAL_COURSES, maxScoreForCourse, INDIAN_STATES, COUNSELLING_ROUNDS } from '../lib/courses';
 
@@ -171,7 +171,7 @@ export default function RankCalculator() {
         </div>
 
         {/* Input Mode Selector (Rank vs Score) */}
-        <div className="flex p-1.5 rounded-2xl bg-white/[0.06] border border-white/10 max-w-md mx-auto mb-8">
+        <div className="flex p-1.5 rounded-2xl bg-white/[0.06] border border-white/10 max-w-md mx-auto mb-8 overflow-hidden">
           <button
             type="button"
             onClick={() => {
@@ -179,15 +179,15 @@ export default function RankCalculator() {
               setResult(null);
               setMatches([]);
             }}
-            className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+            className={`flex-1 py-3 px-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
               mode === 'rank'
                 ? 'bg-gradient-to-r from-[#F97316] to-[#EA580C] text-white shadow-lg shadow-orange-500/25'
                 : 'text-white/60 hover:text-white'
             }`}
           >
-            <Trophy className="w-4 h-4" />
-            <span>By NEET Rank (AIR)</span>
-            <span className="text-[10px] uppercase font-black px-1.5 py-0.5 rounded-full bg-white/20">
+            <Trophy className="w-4 h-4 shrink-0" />
+            <span className="truncate">By NEET Rank (AIR)</span>
+            <span className="text-[10px] uppercase font-black px-1.5 py-0.5 rounded-full bg-white/20 rank-mode-badge whitespace-nowrap shrink-0">
               Direct
             </span>
           </button>
@@ -198,14 +198,14 @@ export default function RankCalculator() {
               setResult(null);
               setMatches([]);
             }}
-            className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+            className={`flex-1 py-3 px-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
               mode === 'score'
                 ? 'bg-gradient-to-r from-[#F97316] to-[#EA580C] text-white shadow-lg shadow-orange-500/25'
                 : 'text-white/60 hover:text-white'
             }`}
           >
-            <Award className="w-4 h-4" />
-            <span>By Marks / Score</span>
+            <Award className="w-4 h-4 shrink-0" />
+            <span className="truncate">By Marks / Score</span>
           </button>
         </div>
 
@@ -406,7 +406,11 @@ export default function RankCalculator() {
           >
             {loading ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin" /> Matching colleges from live cutoff matrix...
+                <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+                Generating predictions…
               </>
             ) : (
               <>
@@ -418,6 +422,28 @@ export default function RankCalculator() {
             )}
           </button>
         </form>
+
+        {/* ── Generating loader — shown while prediction is running ── */}
+        {loading && (
+          <div className="predictor-loader-overlay">
+            <div className="loader-wrapper">
+              <span className="loader-letter">G</span>
+              <span className="loader-letter">e</span>
+              <span className="loader-letter">n</span>
+              <span className="loader-letter">e</span>
+              <span className="loader-letter">r</span>
+              <span className="loader-letter">a</span>
+              <span className="loader-letter">t</span>
+              <span className="loader-letter">i</span>
+              <span className="loader-letter">n</span>
+              <span className="loader-letter">g</span>
+              <div className="loader" />
+            </div>
+            <p className="text-white/50 text-sm font-medium text-center max-w-xs">
+              Scanning live cut-off matrix across {course} colleges…
+            </p>
+          </div>
+        )}
 
         {/* Prediction Summary Hero Card */}
         {result && (

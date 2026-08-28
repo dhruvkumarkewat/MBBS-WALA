@@ -31,8 +31,10 @@ export default function Footer() {
   return (
     <footer className="bg-[#0E1117] text-white">
       <div className="max-w-6xl mx-auto px-5 sm:px-8 py-14 sm:py-16">
-        <div className="grid md:grid-cols-[1.2fr_1fr_1fr_1fr] gap-10 mb-12">
-          <div className="max-w-sm">
+        {/* Brand col always full-width on mobile; all 4 cols at md+ */}
+        <div className="mb-12">
+          {/* Brand info */}
+          <div className="mb-10 max-w-sm">
             <div className="mb-5 inline-flex !bg-transparent p-0 m-0 border-0 shadow-none">
               <BrandLogo to="/" size="md" onDark />
             </div>
@@ -55,29 +57,32 @@ export default function Footer() {
             </div>
           </div>
 
-          {[
-            { title: 'Explore', items: quick },
-            { title: 'Company', items: company },
-            { title: 'Legal', items: legal },
-          ].map((col) => (
-            <div key={col.title}>
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/40 mb-4">
-                {col.title}
-              </p>
-              <ul className="space-y-2.5">
-                {col.items.map((l) => (
-                  <li key={l.path}>
-                    <Link
-                      to={l.path}
-                      className="text-sm font-semibold text-white/65 hover:text-white transition-colors"
-                    >
-                      {l.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {/* Link columns: 3-col grid at sm, 3-col portion of 4-col at md (via parent layout) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-8">
+            {[
+              { title: 'Explore', items: quick },
+              { title: 'Company', items: company },
+              { title: 'Legal', items: legal },
+            ].map((col) => (
+              <div key={col.title}>
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/40 mb-4">
+                  {col.title}
+                </p>
+                <ul className="space-y-2.5">
+                  {col.items.map((l) => (
+                    <li key={l.path}>
+                      <Link
+                        to={l.path}
+                        className="text-sm font-semibold text-white/65 hover:text-white transition-colors"
+                      >
+                        {l.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-white/10">

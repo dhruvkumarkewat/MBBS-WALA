@@ -98,7 +98,8 @@ export function CompareResultUI({ payload, s, isPremium }: { payload: any, s: an
           </div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="md:col-span-2 grid grid-cols-2 gap-4">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="md:col-span-2 overflow-x-auto">
+          <div className="grid grid-cols-2 gap-4" style={{ minWidth: '320px' }}>
           {[a, b].map((col, idx) => {
             const key = idx === 0 ? 'college_a' : 'college_b';
             const scores = ai.overall_scores?.[key] || {};
@@ -139,6 +140,7 @@ export function CompareResultUI({ payload, s, isPremium }: { payload: any, s: an
               </div>
             );
           })}
+          </div>
         </motion.div>
       </div>
 
@@ -180,7 +182,8 @@ export function CompareResultUI({ payload, s, isPremium }: { payload: any, s: an
           ))}
         </div>
 
-        <div className="pt-6">
+        <div className="pt-6 overflow-x-auto -webkit-overflow-scrolling-touch">
+          <div style={{ minWidth: '420px' }}>
           <DetailedTable 
             section={activeTab} 
             ai={ai} 
@@ -188,6 +191,7 @@ export function CompareResultUI({ payload, s, isPremium }: { payload: any, s: an
             b={b} 
             s={s} 
           />
+          </div>
         </div>
       </div>
 
