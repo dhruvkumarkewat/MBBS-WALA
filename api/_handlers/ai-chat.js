@@ -24,21 +24,19 @@ function getProviderOrder() {
   if (envOrder) {
     return envOrder.split(',').map((s) => s.trim().toLowerCase());
   }
-  return ['gemini', 'gemini_1', 'gemini_2', 'gemini_3', 'gemini_4', 'gemini_5', 'gemini_6', 'gemini_7', 'gemini_8', 'gemini_9', 'gemini_10', 'gemini_11', 'gemini_12', 'gemini_13', 'gemini_14', 'gemini_15', 'groq'];
+  return ['groq', 'gemini', 'gemini_1', 'gemini_2', 'gemini_3', 'gemini_4', 'gemini_5', 'gemini_6', 'gemini_7', 'gemini_8', 'gemini_9', 'gemini_10', 'gemini_11', 'gemini_12', 'gemini_13', 'gemini_14', 'gemini_15'];
 }
 
 export default async function (req, res) {
   if (req.method !== 'POST') {
-    res.writeHead(405, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify({ error: 'Method not allowed' }));
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     const { messages, userContext } = req.body || {};
 
     if (!messages || !Array.isArray(messages)) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify({ error: 'Missing messages array' }));
+      return res.status(400).json({ error: 'Missing messages array' });
     }
 
     const contextualPrompt = `
@@ -175,18 +173,15 @@ Student Profile (Current Context):
 
     if (!success) {
       console.error('All AI providers failed. Last error:', lastError);
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify({ 
+      return res.status(400).json({ 
         reply: `My AI brain is currently overloaded or timed out. Please try again in a few moments. (Error: ${lastError})` 
-      }));
+      });
     }
 
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ reply: replyText }));
+    return res.status(200).json({ reply: replyText });
   } catch (err) {
     console.error('AI Chat error:', err);
-    res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Failed to process chat' }));
+    return res.status(500).json({ error: 'Failed to process chat' });
   }
 }
 
