@@ -791,12 +791,9 @@ export default function Login({ defaultPortal }: LoginProps) {
                               setError(''); setMsg(''); setLoading(true);
                               try {
                                 await callOtpApi({ action: 'verify_email_otp', email: email.trim().toLowerCase(), otp: emailOtp });
-                                // Send phone OTP automatically
-                                await callOtpApi({ action: 'send_phone_otp', email: email.trim().toLowerCase(), name: name.trim() });
-                                startResendCooldown();
+                                // Advance to phone step — MSG91 widget will handle SMS
                                 setSignupStep('phone_otp');
-                                setPhoneOtp('');
-                                setMsg(`Phone OTP sent to ${email}. Check your inbox.`);
+                                setMsg('');
                               } catch (e: any) { setError(e.message || 'Verification failed'); }
                               finally { setLoading(false); }
                             }}
@@ -842,88 +839,120 @@ export default function Login({ defaultPortal }: LoginProps) {
                             <div className="text-3xl mb-2">📱</div>
                             <p className="text-sm font-bold text-slate-900 dark:text-white">Verify your phone number</p>
                             <p className="text-xs text-slate-500 dark:text-white/50 mt-1">
-                              A 6-digit code was sent to <span className="font-bold text-orange-500">{email}</span>
+                              We'll send an SMS OTP to <span className="font-bold text-orange-500">{phone || 'your phone'}</span>
                             </p>
                           </div>
-
-                          <Field label="Phone verification code" icon={<Phone className="h-4 w-4" />} focused={focused === 'phoneotp'}>
-                            <input
-                              value={phoneOtp}
-                              onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                              onFocus={() => setFocused('phoneotp')}
-                              onBlur={() => setFocused(null)}
-                              className="login-input text-center text-xl tracking-[0.5em] font-mono font-bold"
-                              placeholder="000000"
-                              maxLength={6}
-                              inputMode="numeric"
-                              autoComplete="one-time-code"
-                              id="phone-otp-input"
-                            />
-                          </Field>
 
                           <AnimatePresence mode="wait">
                             {error && <motion.div key="err" initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="auth-alert-error rounded-xl p-3 text-sm font-semibold"><p>{error}</p></motion.div>}
                             {msg && !error && <motion.p key="ok" initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="auth-alert-ok rounded-xl px-3 py-2.5 text-sm font-semibold">{msg}</motion.p>}
                           </AnimatePresence>
 
+                          {/* MSG91 Widget trigger */}
                           <motion.button
                             type="button"
-                            disabled={loading || phoneOtp.length < 6}
+                            disabled={loading}
                             whileHover={{ scale: loading ? 1 : 1.01, y: loading ? 0 : -1 }}
                             whileTap={{ scale: 0.985 }}
                             className="auth-submit-btn group relative mt-1 flex w-full items-center justify-center gap-2 overflow-hidden rounded-full px-6 py-3.5 text-[15px] font-bold transition disabled:opacity-60 touch-manipulation"
-                            onClick={async () => {
-                              setError(''); setMsg(''); setLoading(true);
-                              try {
-                                await callOtpApi({ action: 'verify_phone_otp', email: email.trim().toLowerCase(), otp: phoneOtp });
-                                // Complete signup — create account + send welcome email
-                                setMsg('Creating your account…');
-                                await callOtpApi({
-                                  action: 'complete_signup',
-                                  email: email.trim().toLowerCase(),
-                                  password,
-                                  name: name.trim(),
-                                  phone: phone.trim(),
-                                  referralCode: referralCode.trim() || undefined,
-                                });
-                                // Sign in the user via Supabase client
-                                const { error: signInErr } = await supabase.auth.signInWithPassword({
-                                  email: email.trim().toLowerCase(),
-                                  password,
-                                });
-                                if (signInErr) throw signInErr;
-                                setSignupStep('done');
-                                setMsg('🎉 Account created! Welcome email sent. Redirecting…');
-                                setTimeout(() => navigate('/onboarding', { replace: true }), 1500);
-                              } catch (e: any) { setError(e.message || 'Signup failed. Please try again.'); }
-                              finally { setLoading(false); }
+                            onClick={() => {
+                              setError('');
+                              setMsg('');
+
+                              const cleanEmail = email.trim().toLowerCase();
+                              const cleanPhone = phone.trim().replace(/\s+/g, '');
+
+                              // MSG91 widget configuration
+                              const configuration = {
+                                widgetId: '366843686369393035303133',
+                                tokenAuth: '{token}', // MSG91 tokenAuth from dashboard
+                                identifier: cleanPhone,
+                                exposeMethods: false,
+                                success: async (data: any) => {
+                                  setLoading(true);
+                                  try {
+                                    const accessToken = data?.message || data?.access_token || data?.token || JSON.stringify(data);
+                                    // Verify MSG91 token server-side
+                                    await callOtpApi({
+                                      action: 'verify_msg91_token',
+                                      email: cleanEmail,
+                                      msg91Token: accessToken,
+                                    });
+                                    // Complete signup — create account + send welcome email
+                                    setMsg('Creating your account…');
+                                    await callOtpApi({
+                                      action: 'complete_signup',
+                                      email: cleanEmail,
+                                      password,
+                                      name: name.trim(),
+                                      phone: cleanPhone,
+                                      referralCode: referralCode.trim() || undefined,
+                                    });
+                                    // Sign in via Supabase
+                                    const { error: signInErr } = await supabase.auth.signInWithPassword({
+                                      email: cleanEmail,
+                                      password,
+                                    });
+                                    if (signInErr) throw signInErr;
+                                    setSignupStep('done');
+                                    setMsg('🎉 Account created! Welcome email sent. Redirecting…');
+                                    setTimeout(() => navigate('/onboarding', { replace: true }), 1500);
+                                  } catch (e: any) {
+                                    setError(e.message || 'Signup failed. Please try again.');
+                                  } finally {
+                                    setLoading(false);
+                                  }
+                                },
+                                failure: (error: any) => {
+                                  setError(error?.message || 'Phone verification failed. Please try again.');
+                                },
+                              };
+
+                              // Load and launch MSG91 widget
+                              (window as any).__msg91Config = configuration;
+
+                              const existingScript = document.getElementById('msg91-otp-script');
+                              if (existingScript) existingScript.remove();
+
+                              const urls = [
+                                'https://verify.msg91.com/otp-provider.js',
+                                'https://verify.phone91.com/otp-provider.js',
+                              ];
+                              let i = 0;
+                              const attempt = () => {
+                                const s = document.createElement('script');
+                                s.id = 'msg91-otp-script';
+                                s.src = urls[i];
+                                s.async = true;
+                                s.onload = () => {
+                                  if (typeof (window as any).initSendOTP === 'function') {
+                                    (window as any).initSendOTP(configuration);
+                                  }
+                                };
+                                s.onerror = () => {
+                                  i++;
+                                  if (i < urls.length) attempt();
+                                  else setError('Failed to load phone verification. Please check your internet connection.');
+                                };
+                                document.head.appendChild(s);
+                              };
+                              attempt();
                             }}
                           >
                             <span className="relative flex items-center gap-2">
-                              {loading ? <><span className="auth-btn-spinner h-4 w-4 rounded-full" />{msg || 'Creating account…'}</> : <>Create My Account 🎉 <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" /></>}
+                              {loading
+                                ? <><span className="auth-btn-spinner h-4 w-4 rounded-full" />{msg || 'Creating account…'}</>
+                                : <>📲 Verify Phone via SMS <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" /></>
+                              }
                             </span>
                           </motion.button>
 
-                          <div className="text-center">
-                            <button
-                              type="button"
-                              disabled={otpResendCountdown > 0 || loading}
-                              className="text-xs font-bold text-orange-500 hover:underline disabled:opacity-40 disabled:cursor-not-allowed touch-manipulation"
-                              onClick={async () => {
-                                setError(''); setMsg(''); setLoading(true);
-                                try {
-                                  await callOtpApi({ action: 'send_phone_otp', email: email.trim().toLowerCase(), name: name.trim() });
-                                  startResendCooldown();
-                                  setMsg('New phone OTP sent to your email.');
-                                } catch (e: any) { setError(e.message || 'Failed to resend'); }
-                                finally { setLoading(false); }
-                              }}
-                            >
-                              {otpResendCountdown > 0 ? `Resend in ${otpResendCountdown}s` : 'Resend code'}
-                            </button>
-                          </div>
+                          <p className="text-center text-xs text-slate-400 dark:text-white/30">
+                            An SMS OTP will be sent to your phone number via MSG91
+                          </p>
                         </motion.div>
                       )}
+
                     </div>
                   ) : (
                   <form onSubmit={submit} className="relative mt-6 space-y-4">

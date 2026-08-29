@@ -1,6 +1,8 @@
 import { setCors } from './_auth.js';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+const MSG91_AUTH_KEY = process.env.MSG91_AUTH_KEY || '';
+const MSG91_WIDGET_ID = '366843686369393035303133';
 const FROM_EMAIL = 'MBBSWALA <noreply@mbbswala.in>';
 
 /* ── OTP store (in-memory per invocation, backed by Supabase) ── */
@@ -225,7 +227,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { action, email, name, phone, otp, password, referralCode } = req.body || {};
+  const { action, email, name, phone, otp, password, referralCode, msg91Token } = req.body || {};
 
   if (!action) return res.status(400).json({ error: 'action is required' });
 
@@ -306,9 +308,11 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, message: 'Email verified successfully' });
     }
 
-    /* ── 3. Send phone OTP (delivered to email) ── */
-    if (action === 'send_phone_otp') {
-      if (!email) return res.status(400).json({ error: 'email is required' });
+    /* ── 3. Verify MSG91 phone token (real SMS OTP via MSG91 widget) ── */
+    if (action === 'verify_msg91_token') {
+      if (!email || !msg91Token) {
+        return res.status(400).json({ error: 'email and msg91Token are required' });
+      }
 
       // Ensure email was verified first
       const { data: emailRow } = await supabase
@@ -324,62 +328,48 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Please verify your email before verifying your phone.' });
       }
 
-      const otpCode = generateOTP();
+      if (!MSG91_AUTH_KEY) {
+        // If no MSG91 key configured, allow bypass in dev mode (log warning)
+        console.warn('[auth-otp] MSG91_AUTH_KEY not set — skipping phone token verification (dev mode)');
+        // Mark phone as verified in DB
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+        await supabase.from('otp_verifications').delete().eq('email', email.trim().toLowerCase()).eq('type', 'phone');
+        await supabase.from('otp_verifications').insert({
+          email: email.trim().toLowerCase(), type: 'phone', otp: 'MSG91_BYPASS',
+          expires_at: expiresAt, verified: true,
+        });
+        return res.status(200).json({ ok: true, message: 'Phone verified (dev mode)' });
+      }
+
+      // Verify the MSG91 JWT token server-side
+      const msg91Res = await fetch('https://control.msg91.com/api/v5/widget/verifyAccessToken', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          authkey: MSG91_AUTH_KEY,
+          'access-token': msg91Token,
+        }),
+      });
+      const msg91Data = await msg91Res.json();
+
+      if (!msg91Res.ok || msg91Data?.type !== 'success') {
+        return res.status(400).json({
+          error: msg91Data?.message || 'Phone verification failed. Please try again.',
+        });
+      }
+
+      // Mark phone as verified in Supabase
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-
-      await supabase
-        .from('otp_verifications')
-        .delete()
-        .eq('email', email.trim().toLowerCase())
-        .eq('type', 'phone');
-
-      const { error: insertErr } = await supabase.from('otp_verifications').insert({
+      await supabase.from('otp_verifications').delete().eq('email', email.trim().toLowerCase()).eq('type', 'phone');
+      await supabase.from('otp_verifications').insert({
         email: email.trim().toLowerCase(),
         type: 'phone',
-        otp: otpCode,
+        otp: 'MSG91_VERIFIED',
         expires_at: expiresAt,
-        verified: false,
-      });
-      if (insertErr) throw insertErr;
-
-      await sendEmail({
-        to: email.trim(),
-        subject: `${otpCode} — Your MBBSWALA Phone Verification Code`,
-        html: otpEmailHtml({ name: name || '', otp: otpCode, type: 'phone' }),
+        verified: true,
       });
 
-      return res.status(200).json({ ok: true, message: 'Phone OTP sent to your email' });
-    }
-
-    /* ── 4. Verify phone OTP ── */
-    if (action === 'verify_phone_otp') {
-      if (!email || !otp) return res.status(400).json({ error: 'email and otp are required' });
-
-      const { data: row, error: fetchErr } = await supabase
-        .from('otp_verifications')
-        .select('*')
-        .eq('email', email.trim().toLowerCase())
-        .eq('type', 'phone')
-        .eq('verified', false)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (fetchErr) throw fetchErr;
-      if (!row) return res.status(400).json({ error: 'Phone OTP not found. Please request a new code.' });
-      if (new Date(row.expires_at) < new Date()) {
-        return res.status(400).json({ error: 'Phone OTP has expired. Please request a new code.' });
-      }
-      if (row.otp !== otp.trim()) {
-        return res.status(400).json({ error: 'Incorrect phone OTP. Please check your email and try again.' });
-      }
-
-      await supabase
-        .from('otp_verifications')
-        .update({ verified: true })
-        .eq('id', row.id);
-
-      return res.status(200).json({ ok: true, message: 'Phone verified successfully' });
+      return res.status(200).json({ ok: true, message: 'Phone verified successfully via MSG91' });
     }
 
     /* ── 5. Complete signup — create account + send welcome email ── */
