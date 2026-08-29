@@ -61,6 +61,12 @@ export default defineConfig(async ({ mode }) => {
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any'
+          },
+          {
+            src: '/images/mbbswala/icon-padded.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ]
       }
