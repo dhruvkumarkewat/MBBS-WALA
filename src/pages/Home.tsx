@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Hero from '../components/Hero';
 import Stats from '../components/Stats';
 import PainPoints from '../components/PainPoints';
@@ -12,6 +14,7 @@ import MbbsWalaTools from '../components/MbbsWalaTools';
 import ChoiceFinder from '../components/ChoiceFinder';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 
 /**
  * Full homepage section flow.
@@ -19,7 +22,16 @@ import { useTheme } from '../contexts/ThemeContext';
  */
 export default function Home() {
   const { theme } = useTheme();
+  const { user, isStaff, loading, profileLoading } = useAuth();
+  const navigate = useNavigate();
   const light = theme === 'light';
+
+  useEffect(() => {
+    // If a user is already logged in, skip the marketing page and send them to their dashboard
+    if (user && !loading && !profileLoading) {
+      navigate(isStaff ? '/admin' : '/dashboard', { replace: true });
+    }
+  }, [user, isStaff, loading, profileLoading, navigate]);
 
   return (
     <div

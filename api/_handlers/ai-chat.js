@@ -19,6 +19,14 @@ Rules:
 7. Do not use overly complex markdown, but bolding and simple lists are fine.
 `;
 
+function getProviderOrder() {
+  const envOrder = process.env.AI_PROVIDER_ORDER;
+  if (envOrder) {
+    return envOrder.split(',').map((s) => s.trim().toLowerCase());
+  }
+  return ['gemini', 'gemini_1', 'gemini_2', 'gemini_3', 'gemini_4', 'gemini_5', 'gemini_6', 'gemini_7', 'gemini_8', 'gemini_9', 'gemini_10', 'gemini_11', 'gemini_12', 'gemini_13', 'gemini_14', 'gemini_15', 'groq'];
+}
+
 export default async function (req, res) {
   if (req.method !== 'POST') {
     res.writeHead(405, { 'Content-Type': 'application/json' });
@@ -33,118 +41,145 @@ export default async function (req, res) {
       return res.end(JSON.stringify({ error: 'Missing messages array' }));
     }
 
-    const keys = [
-      process.env.GEMINI_API_KEY,
-      ...Array.from({length: 15}, (_, i) => process.env[`GEMINI_API_KEY_${i + 1}`]),
-      process.env.GEMINI_API_KEY_FALLBACK
-    ].filter(Boolean);
+    const contextualPrompt = `
+${SYSTEM_PROMPT}
 
-    if (keys.length === 0) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify({ 
-        reply: "No Gemini API keys found! Please go to your Vercel Dashboard and add your Gemini API key (it should start with 'AIza...') as 'GEMINI_API_KEY' in the Environment Variables." 
-      }));
-    }
+Student Profile (Current Context):
+- Domicile: ${userContext?.domicile_state || 'Not provided'}
+- Target State: ${userContext?.target_state || 'Not provided'}
+- Category: ${userContext?.category || 'Not provided'}
+- NEET Rank: ${userContext?.rank ? `AIR ${userContext.rank}` : 'Not provided'}
+- Score: ${userContext?.score || 'Not provided'}
+- Quotas: ${userContext?.quotas?.join(', ') || 'Not provided'}
+`;
 
-    // Prepare contextual system prompt
-    let contextualPrompt = SYSTEM_PROMPT;
-    if (userContext) {
-      contextualPrompt += `\n\n--- STUDENT PROFILE CONTEXT ---\n`;
-      contextualPrompt += `Name: ${userContext.name || userContext.full_name || 'Unknown'}\n`;
-      contextualPrompt += `NEET Rank (AIR): ${userContext.neet_rank || 'Not provided'}\n`;
-      contextualPrompt += `NEET Score: ${userContext.neet_score || 'Not provided'}\n`;
-      contextualPrompt += `Category: ${userContext.category || 'General'}\n`;
-      contextualPrompt += `Domicile State: ${userContext.domicile_state || 'Not provided'}\n`;
-      contextualPrompt += `Preferred Course: ${userContext.preferred_course || 'MBBS'}\n`;
-      contextualPrompt += `Use this student profile context to provide personalized advice. Do NOT ask them for their rank or category if it is provided above!\n`;
-      
-      // Inject real-time database cutoffs if we have a rank
-      if (userContext.neet_rank && userContext.category) {
-        try {
-          const { data: colleges } = await supabase
-            .from('cutoffs')
-            .select('college_name, state, quota, round, closing_rank')
-            .eq('category', userContext.category)
-            .gte('closing_rank', userContext.neet_rank * 0.9) // slightly above rank
-            .lte('closing_rank', userContext.neet_rank * 1.5) // moderately below rank (safe)
-            .limit(10);
-            
-          if (colleges && colleges.length > 0) {
-            contextualPrompt += `\n\n--- REAL-TIME DATABASE CUTOFFS (FOR THIS STUDENT'S RANK & CATEGORY) ---\n`;
-            contextualPrompt += `Here are some actual colleges from our Supabase database where the closing rank is safely near the student's rank:\n`;
-            colleges.forEach(c => {
-               contextualPrompt += `- ${c.college_name} (${c.state}) | Quota: ${c.quota} | Round: ${c.round} | Closing Rank: ${c.closing_rank}\n`;
-            });
-            contextualPrompt += `\nYou MUST use these specific database examples when suggesting colleges to the student! Highlight that these are real historical cutoffs for their category.\n`;
-          }
-        } catch (dbErr) {
-          console.error("Failed to fetch contextual cutoffs:", dbErr);
-        }
-      }
-    }
+    const order = getProviderOrder();
 
-    // Format messages for Gemini
-    // Gemini expects role to be 'user' or 'model'
-    const formattedMessages = messages.map(msg => ({
-      role: msg.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: msg.text }]
-    }));
-
-    const payload = {
-      systemInstruction: { parts: [{ text: contextualPrompt }] },
-      contents: formattedMessages,
-      generationConfig: {
-        temperature: 0.5,
-        maxOutputTokens: 1024,
-      },
-    };
-
-    let data;
+    let replyText = null;
     let success = false;
     let lastError = null;
 
-    for (const key of keys) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${key}`;
+    for (const providerKey of order) {
       try {
+        const isGroq = providerKey === 'groq';
+        const isGemini = providerKey.startsWith('gemini');
+
+        let key;
+        if (isGroq) {
+          key = process.env.GROQ_API_KEY || process.env.GROQ_PREDICT_API_KEY;
+        } else if (providerKey === 'gemini') {
+          key = process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY_2 || process.env.GEMINI_API_KEY_FALLBACK;
+        } else {
+          const idx = providerKey.split('_')[1];
+          key = process.env[`GEMINI_API_KEY_${idx}`];
+        }
+
+        if (!key) continue;
+
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+        const timeoutId = setTimeout(() => controller.abort(), isGroq ? 60000 : 120000);
 
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
+        if (isGemini) {
+          // Format for Gemini
+          const geminiContents = messages.map(msg => ({
+            role: msg.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: msg.text }]
+          }));
 
-        if (response.ok) {
-          data = await response.json();
-          success = true;
-          break; // Exit loop on success
-        } else {
-          lastError = await response.text();
-          console.warn(`Gemini API Error with a key (Status ${response.status}): ${lastError}`);
+          const payload = {
+            systemInstruction: { parts: [{ text: contextualPrompt }] },
+            contents: geminiContents,
+            generationConfig: {
+              responseMimeType: 'text/plain',
+              temperature: 0.5,
+              maxOutputTokens: 2048
+            }
+          };
+
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${key}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          });
+
+          clearTimeout(timeoutId);
+
+          if (response.ok) {
+            const data = await response.json();
+            const parts = data?.candidates?.[0]?.content?.parts || [];
+            let text = null;
+            for (const part of parts) {
+              if (part.text && !part.thought) { text = part.text; break; }
+            }
+            if (!text) text = parts[0]?.text;
+            if (text) {
+              replyText = text;
+              success = true;
+              console.log(`[AI Chat] Success with ${providerKey}`);
+              break;
+            }
+          } else {
+            lastError = await response.text();
+          }
+        } else if (isGroq) {
+          // Format for Groq
+          const groqMessages = messages.map(msg => ({
+            role: msg.role === 'assistant' ? 'assistant' : 'user',
+            content: msg.text
+          }));
+          
+          const payload = {
+            model: 'llama-3.3-70b-versatile',
+            temperature: 0.5,
+            max_tokens: 2048,
+            messages: [
+              { role: 'system', content: contextualPrompt },
+              ...groqMessages
+            ]
+          };
+
+          const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${key}`
+            },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          });
+
+          clearTimeout(timeoutId);
+
+          if (response.ok) {
+            const data = await response.json();
+            const text = data?.choices?.[0]?.message?.content;
+            if (text) {
+              replyText = text;
+              success = true;
+              console.log(`[AI Chat] Success with ${providerKey}`);
+              break;
+            }
+          } else {
+            lastError = await response.text();
+          }
         }
-      } catch (fetchErr) {
-        if (fetchErr.name === 'AbortError') {
-          lastError = "Request timed out after 60 seconds.";
-        } else {
-          lastError = fetchErr.message;
+      } catch (err) {
+        lastError = err.message;
+        if (err.name === 'TimeoutError' || err.message.includes('timeout') || err.message.includes('aborted')) {
+          console.warn(`[AI Chat] Timeout with ${providerKey}`);
+          if (providerKey.startsWith('gemini')) break; // Stop trying more Gemini keys on network timeout
         }
-        console.warn(`Fetch error with a Gemini key: ${lastError}`);
       }
     }
 
     if (!success) {
-      console.error('All Gemini API keys failed. Last error:', lastError);
+      console.error('All AI providers failed. Last error:', lastError);
       res.writeHead(400, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ 
         reply: `My AI brain is currently overloaded or timed out. Please try again in a few moments. (Error: ${lastError})` 
       }));
     }
-
-    const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I couldn't process that request right now.";
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ reply: replyText }));
@@ -154,3 +189,4 @@ export default async function (req, res) {
     res.end(JSON.stringify({ error: 'Failed to process chat' }));
   }
 }
+

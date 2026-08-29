@@ -233,7 +233,7 @@ export default function Login({ defaultPortal }: LoginProps) {
       } else if (from.startsWith('/admin')) {
         navigate('/dashboard', { replace: true });
       } else {
-        const safeDest = from && !from.startsWith('/admin') && from !== '/' ? from : '/dashboard';
+        const safeDest = from && !from.startsWith('/admin') && from !== '/' && from !== '/login' ? from : '/dashboard';
         navigate(safeDest, { replace: true });
       }
     })();
@@ -450,8 +450,8 @@ export default function Login({ defaultPortal }: LoginProps) {
           }
         }
 
-        // Always send to /dashboard after login (or back to the page they came from, if it's not home/admin)
-        const safeDest = from && !from.startsWith('/admin') && from !== '/' ? from : '/dashboard';
+        // Always send to /dashboard after login (or back to the page they came from, if it's not home/admin/login)
+        const safeDest = from && !from.startsWith('/admin') && from !== '/' && from !== '/login' ? from : '/dashboard';
         navigate(safeDest, { replace: true });
       }
     } catch (err: unknown) {
