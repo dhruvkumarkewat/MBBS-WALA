@@ -865,7 +865,7 @@ export default function Login({ defaultPortal }: LoginProps) {
                               // MSG91 widget configuration
                               const configuration = {
                                 widgetId: '366843686369393035303133',
-                                tokenAuth: '{token}', // MSG91 tokenAuth from dashboard
+                                tokenAuth: '516547TZVKFiFNJWRR6a9298b9P1', // MSG91 tokenAuth from dashboard
                                 identifier: cleanPhone,
                                 exposeMethods: false,
                                 success: async (data: any) => {
