@@ -183,7 +183,7 @@ export default function DashboardTopbar({ title }: { title?: string }) {
             {notifOpen && (
               <>
                 <button type="button" className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} aria-label="Close" />
-                <div className={`absolute right-0 top-12 z-50 w-72 rounded-2xl border p-2 shadow-2xl ${
+                <div className={`absolute -right-16 sm:right-0 top-12 z-50 w-[280px] sm:w-80 rounded-2xl border p-2 shadow-2xl ${
                   dark ? 'bg-[#1a1d24] border-white/10' : 'bg-white border-[#e5e7eb]'
                 }`}>
                   <p className="px-3 py-2 text-xs font-bold uppercase tracking-wide opacity-50">Notifications</p>
