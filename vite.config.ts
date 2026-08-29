@@ -42,7 +42,7 @@ export default defineConfig(async ({ mode }) => {
     apiDevMiddlewarePlugin(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['images/mbbswala/favicon.png', 'images/mbbswala/icon.png'],
+      includeAssets: ['images/mbbswala/favicon.png', 'images/mbbswala/pwa-icon.jpg'],
       manifest: {
         name: 'MBBS Waala',
         short_name: 'MBBS Waala',
@@ -51,22 +51,10 @@ export default defineConfig(async ({ mode }) => {
         background_color: '#0B0D12',
         icons: [
           {
-            src: '/images/mbbswala/logo-mark.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'any'
-          },
-          {
-            src: '/images/mbbswala/logo-mark.png',
+            src: '/images/mbbswala/pwa-icon.jpg',
             sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any'
-          },
-          {
-            src: '/images/mbbswala/logo-mark-padded.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable'
+            type: 'image/jpeg',
+            purpose: 'any maskable'
           }
         ]
       }
