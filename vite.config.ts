@@ -53,12 +53,14 @@ export default defineConfig(async ({ mode }) => {
           {
             src: '/images/mbbswala/icon.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
           },
           {
             src: '/images/mbbswala/icon.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
           }
         ]
       }
