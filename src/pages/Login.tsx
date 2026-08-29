@@ -117,6 +117,36 @@ export default function Login({ defaultPortal }: LoginProps) {
   const [error, setError] = useState('');
   const [focused, setFocused] = useState<string | null>(null);
 
+  // ── OTP Wizard State ──
+  // signupStep: 'form' → 'email_otp' → 'phone_otp' → 'done'
+  const [signupStep, setSignupStep] = useState<'form' | 'email_otp' | 'phone_otp' | 'done'>('form');
+  const [emailOtp, setEmailOtp] = useState('');
+  const [phoneOtp, setPhoneOtp] = useState('');
+  const [otpResendCountdown, setOtpResendCountdown] = useState(0);
+  const resendTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startResendCooldown = () => {
+    setOtpResendCountdown(30);
+    if (resendTimer.current) clearInterval(resendTimer.current);
+    resendTimer.current = setInterval(() => {
+      setOtpResendCountdown((v) => {
+        if (v <= 1) { clearInterval(resendTimer.current!); return 0; }
+        return v - 1;
+      });
+    }, 1000);
+  };
+
+  const callOtpApi = async (body: Record<string, unknown>) => {
+    const res = await fetch('/api/auth-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || 'OTP request failed');
+    return data;
+  };
+
   const isRefFromURL = useMemo(() => !!new URLSearchParams(window.location.search).get('ref'), []);
   const from = (location.state as { from?: string } | null)?.from || '/dashboard';
 
@@ -217,12 +247,18 @@ export default function Login({ defaultPortal }: LoginProps) {
     setMode('login');
     setError('');
     setMsg('');
+    setSignupStep('form');
+    setEmailOtp('');
+    setPhoneOtp('');
   };
 
   const switchMode = (next: 'login' | 'signup') => {
     setMode(next);
     setError('');
     setMsg('');
+    setSignupStep('form');
+    setEmailOtp('');
+    setPhoneOtp('');
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -332,85 +368,30 @@ export default function Login({ defaultPortal }: LoginProps) {
         const cleanEmail = email.trim().toLowerCase();
 
         if (mode === 'signup') {
-          // 1. Pre-check if email already exists in profiles or students database
+          // ── Step 1: send email OTP (instead of direct signup) ──
           try {
-            const { data: existingList } = await supabase
-              .from('profiles')
-              .select('id, email')
-              .ilike('email', cleanEmail)
-              .limit(1);
-
-            if (existingList && existingList.length > 0) {
-              setError(`An account with email "${cleanEmail}" already exists. Please enter your password to log in.`);
+            await callOtpApi({
+              action: 'send_email_otp',
+              email: cleanEmail,
+              name: name.trim(),
+            });
+          } catch (otpErr: any) {
+            const msg = otpErr?.message || '';
+            if (msg.toLowerCase().includes('already exists') || msg.toLowerCase().includes('already registered')) {
+              setError(`An account with "${cleanEmail}" already exists. Please log in.`);
               setMode('login');
-              setLoading(false);
-              isSubmitting.current = false;
-              return;
+            } else {
+              setError(msg || 'Failed to send OTP. Please try again.');
             }
-          } catch {
-            /* proceed with auth provider check */
-          }
-
-          // 2. Call Supabase signUp
-          const { data, error: signErr } = await supabase.auth.signUp({
-            email: cleanEmail,
-            password,
-            options: {
-              data: {
-                full_name: name.trim(),
-                phone: phone.trim(),
-                referred_by_code: referralCode.trim() || undefined,
-              },
-            },
-          });
-
-          if (signErr) {
-            const errLower = signErr.message?.toLowerCase() || '';
-            if (
-              errLower.includes('already registered') ||
-              errLower.includes('already exists') ||
-              errLower.includes('user_already_exists') ||
-              (signErr as any).status === 422
-            ) {
-              setError(`An account with email "${cleanEmail}" already exists. Please enter your password to log in.`);
-              setMode('login');
-              setLoading(false);
-              isSubmitting.current = false;
-              return;
-            }
-            throw signErr;
-          }
-
-          // 3. Supabase empty identities detection (when email exists & email confirmation is active)
-          if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
-            setError(`An account with email "${cleanEmail}" already exists. Please enter your password to log in.`);
-            setMode('login');
             setLoading(false);
             isSubmitting.current = false;
             return;
           }
-
-          if (data?.user) {
-            try {
-              await apiJson(
-                '/api/profile',
-                {
-                  method: 'PUT',
-                  body: JSON.stringify({
-                    full_name: name.trim(),
-                    phone: phone.trim(),
-                    referred_by_code: referralCode.trim() || undefined,
-                  }),
-                },
-                true
-              );
-            } catch {
-              /* profile seeds on first GET */
-            }
-          }
-
-          setMsg('Account created successfully. Welcome to MBBSWALA!');
-          navigate('/onboarding', { replace: true });
+          startResendCooldown();
+          setSignupStep('email_otp');
+          setMsg(`A 6-digit code was sent to ${cleanEmail}. Enter it below.`);
+          setLoading(false);
+          isSubmitting.current = false;
           return;
         } else {
           const { error: signErr } = await supabase.auth.signInWithPassword({
@@ -745,6 +726,206 @@ export default function Login({ defaultPortal }: LoginProps) {
                     </div>
                   )}
 
+                  {/* ── OTP Wizard for signup, normal form for login/admin ── */}
+                  {portal === 'student' && mode === 'signup' && signupStep !== 'form' ? (
+                    /* ── OTP Steps ── */
+                    <div className="relative mt-6 space-y-5">
+                      {/* Step indicator */}
+                      <div className="flex items-center gap-2 justify-center mb-2">
+                        {(['email_otp', 'phone_otp'] as const).map((s, i) => (
+                          <React.Fragment key={s}>
+                            <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-all ${
+                              signupStep === s ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30' :
+                              (signupStep === 'phone_otp' && s === 'email_otp') ? 'bg-emerald-500 text-white' :
+                              'bg-slate-200 dark:bg-white/10 text-slate-500'
+                            }`}>
+                              {signupStep === 'phone_otp' && s === 'email_otp' ? '✓' : i + 1}
+                            </div>
+                            {i < 1 && <div className="h-px flex-1 bg-slate-200 dark:bg-white/10" />}
+                          </React.Fragment>
+                        ))}
+                      </div>
+
+                      {signupStep === 'email_otp' && (
+                        <motion.div
+                          key="email_otp_step"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="space-y-4"
+                        >
+                          <div className="text-center">
+                            <div className="text-3xl mb-2">📧</div>
+                            <p className="text-sm font-bold text-slate-900 dark:text-white">Check your email</p>
+                            <p className="text-xs text-slate-500 dark:text-white/50 mt-1">
+                              A 6-digit code was sent to <span className="font-bold text-orange-500">{email}</span>
+                            </p>
+                          </div>
+
+                          <Field label="Email verification code" icon={<ShieldCheck className="h-4 w-4" />} focused={focused === 'emailotp'}>
+                            <input
+                              value={emailOtp}
+                              onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                              onFocus={() => setFocused('emailotp')}
+                              onBlur={() => setFocused(null)}
+                              className="login-input text-center text-xl tracking-[0.5em] font-mono font-bold"
+                              placeholder="000000"
+                              maxLength={6}
+                              inputMode="numeric"
+                              autoComplete="one-time-code"
+                              id="email-otp-input"
+                            />
+                          </Field>
+
+                          <AnimatePresence mode="wait">
+                            {error && <motion.div key="err" initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="auth-alert-error rounded-xl p-3 text-sm font-semibold"><p>{error}</p></motion.div>}
+                            {msg && !error && <motion.p key="ok" initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="auth-alert-ok rounded-xl px-3 py-2.5 text-sm font-semibold">{msg}</motion.p>}
+                          </AnimatePresence>
+
+                          <motion.button
+                            type="button"
+                            disabled={loading || emailOtp.length < 6}
+                            whileHover={{ scale: loading ? 1 : 1.01, y: loading ? 0 : -1 }}
+                            whileTap={{ scale: 0.985 }}
+                            className="auth-submit-btn group relative mt-1 flex w-full items-center justify-center gap-2 overflow-hidden rounded-full px-6 py-3.5 text-[15px] font-bold transition disabled:opacity-60 touch-manipulation"
+                            onClick={async () => {
+                              setError(''); setMsg(''); setLoading(true);
+                              try {
+                                await callOtpApi({ action: 'verify_email_otp', email: email.trim().toLowerCase(), otp: emailOtp });
+                                // Send phone OTP automatically
+                                await callOtpApi({ action: 'send_phone_otp', email: email.trim().toLowerCase(), name: name.trim() });
+                                startResendCooldown();
+                                setSignupStep('phone_otp');
+                                setPhoneOtp('');
+                                setMsg(`Phone OTP sent to ${email}. Check your inbox.`);
+                              } catch (e: any) { setError(e.message || 'Verification failed'); }
+                              finally { setLoading(false); }
+                            }}
+                          >
+                            <span className="relative flex items-center gap-2">
+                              {loading ? <><span className="auth-btn-spinner h-4 w-4 rounded-full" />Verifying…</> : <>Verify Email <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" /></>}
+                            </span>
+                          </motion.button>
+
+                          <div className="text-center">
+                            <button
+                              type="button"
+                              disabled={otpResendCountdown > 0 || loading}
+                              className="text-xs font-bold text-orange-500 hover:underline disabled:opacity-40 disabled:cursor-not-allowed touch-manipulation"
+                              onClick={async () => {
+                                setError(''); setMsg(''); setLoading(true);
+                                try {
+                                  await callOtpApi({ action: 'send_email_otp', email: email.trim().toLowerCase(), name: name.trim() });
+                                  startResendCooldown();
+                                  setMsg('New code sent to your email.');
+                                } catch (e: any) { setError(e.message || 'Failed to resend OTP'); }
+                                finally { setLoading(false); }
+                              }}
+                            >
+                              {otpResendCountdown > 0 ? `Resend in ${otpResendCountdown}s` : 'Resend code'}
+                            </button>
+                          </div>
+
+                          <button type="button" onClick={() => { setSignupStep('form'); setEmailOtp(''); setError(''); setMsg(''); }} className="text-xs text-center w-full text-slate-400 hover:text-slate-600 dark:hover:text-white/70 touch-manipulation">
+                            ← Back to edit details
+                          </button>
+                        </motion.div>
+                      )}
+
+                      {signupStep === 'phone_otp' && (
+                        <motion.div
+                          key="phone_otp_step"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="space-y-4"
+                        >
+                          <div className="text-center">
+                            <div className="text-3xl mb-2">📱</div>
+                            <p className="text-sm font-bold text-slate-900 dark:text-white">Verify your phone number</p>
+                            <p className="text-xs text-slate-500 dark:text-white/50 mt-1">
+                              A 6-digit code was sent to <span className="font-bold text-orange-500">{email}</span>
+                            </p>
+                          </div>
+
+                          <Field label="Phone verification code" icon={<Phone className="h-4 w-4" />} focused={focused === 'phoneotp'}>
+                            <input
+                              value={phoneOtp}
+                              onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                              onFocus={() => setFocused('phoneotp')}
+                              onBlur={() => setFocused(null)}
+                              className="login-input text-center text-xl tracking-[0.5em] font-mono font-bold"
+                              placeholder="000000"
+                              maxLength={6}
+                              inputMode="numeric"
+                              autoComplete="one-time-code"
+                              id="phone-otp-input"
+                            />
+                          </Field>
+
+                          <AnimatePresence mode="wait">
+                            {error && <motion.div key="err" initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="auth-alert-error rounded-xl p-3 text-sm font-semibold"><p>{error}</p></motion.div>}
+                            {msg && !error && <motion.p key="ok" initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="auth-alert-ok rounded-xl px-3 py-2.5 text-sm font-semibold">{msg}</motion.p>}
+                          </AnimatePresence>
+
+                          <motion.button
+                            type="button"
+                            disabled={loading || phoneOtp.length < 6}
+                            whileHover={{ scale: loading ? 1 : 1.01, y: loading ? 0 : -1 }}
+                            whileTap={{ scale: 0.985 }}
+                            className="auth-submit-btn group relative mt-1 flex w-full items-center justify-center gap-2 overflow-hidden rounded-full px-6 py-3.5 text-[15px] font-bold transition disabled:opacity-60 touch-manipulation"
+                            onClick={async () => {
+                              setError(''); setMsg(''); setLoading(true);
+                              try {
+                                await callOtpApi({ action: 'verify_phone_otp', email: email.trim().toLowerCase(), otp: phoneOtp });
+                                // Complete signup — create account + send welcome email
+                                setMsg('Creating your account…');
+                                await callOtpApi({
+                                  action: 'complete_signup',
+                                  email: email.trim().toLowerCase(),
+                                  password,
+                                  name: name.trim(),
+                                  phone: phone.trim(),
+                                  referralCode: referralCode.trim() || undefined,
+                                });
+                                // Sign in the user via Supabase client
+                                const { error: signInErr } = await supabase.auth.signInWithPassword({
+                                  email: email.trim().toLowerCase(),
+                                  password,
+                                });
+                                if (signInErr) throw signInErr;
+                                setSignupStep('done');
+                                setMsg('🎉 Account created! Welcome email sent. Redirecting…');
+                                setTimeout(() => navigate('/onboarding', { replace: true }), 1500);
+                              } catch (e: any) { setError(e.message || 'Signup failed. Please try again.'); }
+                              finally { setLoading(false); }
+                            }}
+                          >
+                            <span className="relative flex items-center gap-2">
+                              {loading ? <><span className="auth-btn-spinner h-4 w-4 rounded-full" />{msg || 'Creating account…'}</> : <>Create My Account 🎉 <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" /></>}
+                            </span>
+                          </motion.button>
+
+                          <div className="text-center">
+                            <button
+                              type="button"
+                              disabled={otpResendCountdown > 0 || loading}
+                              className="text-xs font-bold text-orange-500 hover:underline disabled:opacity-40 disabled:cursor-not-allowed touch-manipulation"
+                              onClick={async () => {
+                                setError(''); setMsg(''); setLoading(true);
+                                try {
+                                  await callOtpApi({ action: 'send_phone_otp', email: email.trim().toLowerCase(), name: name.trim() });
+                                  startResendCooldown();
+                                  setMsg('New phone OTP sent to your email.');
+                                } catch (e: any) { setError(e.message || 'Failed to resend'); }
+                                finally { setLoading(false); }
+                              }}
+                            >
+                              {otpResendCountdown > 0 ? `Resend in ${otpResendCountdown}s` : 'Resend code'}
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
+                  ) : (
                   <form onSubmit={submit} className="relative mt-6 space-y-4">
                     <AnimatePresence initial={false}>
                       {portal === 'student' && mode === 'signup' && (
@@ -942,13 +1123,15 @@ export default function Login({ defaultPortal }: LoginProps) {
                               ? 'Sign in to Staff CRM'
                               : mode === 'login'
                               ? 'Sign in to Student Dashboard'
-                              : 'Create student account'}
+                              : 'Send Verification Code →'}
                             <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
                           </>
                         )}
                       </span>
                     </motion.button>
                   </form>
+                  )}
+
 
                   {/* Student Google OAuth */}
                   {portal === 'student' && (
