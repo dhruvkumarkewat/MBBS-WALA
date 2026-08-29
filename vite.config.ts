@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv, type Plugin, type ViteDevServer } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { VitePWA } from 'vite-plugin-pwa'
 
 // Local Dev API Middleware plugin
 function apiDevMiddlewarePlugin(): Plugin {
@@ -35,7 +36,34 @@ export default defineConfig(async ({ mode }) => {
     if (!process.env[k]) process.env[k] = v;
   }
 
-  const plugins = [react(), tailwindcss(), apiDevMiddlewarePlugin()];
+  const plugins = [
+    react(), 
+    tailwindcss(), 
+    apiDevMiddlewarePlugin(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['images/mbbswala/favicon.png', 'images/mbbswala/icon.png'],
+      manifest: {
+        name: 'MBBS Waala',
+        short_name: 'MBBS Waala',
+        description: 'Your ultimate NEET UG admission partner',
+        theme_color: '#0B0D12',
+        background_color: '#0B0D12',
+        icons: [
+          {
+            src: '/images/mbbswala/icon.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: '/images/mbbswala/icon.png',
+            sizes: '512x512',
+            type: 'image/png'
+          }
+        ]
+      }
+    })
+  ];
   try {
     // @ts-ignore
     const m = await import('./.vite-source-tags.js');
