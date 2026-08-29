@@ -418,30 +418,182 @@ export function PredictorResults({ aiResponse, s, isPremium, domicileState, targ
 
       {/* ── Admission Summary ── */}
       {aiResponse.admission_summary && (
-        <div className={`rounded-2xl border p-5 ${s.card}`}>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-lg">🎯</span>
-            <h3 className="font-black text-sm uppercase tracking-wider">Admission Summary</h3>
+        <div className={`rounded-2xl border ${s.card} overflow-hidden`}>
+          {/* Header */}
+          <div className="bg-gradient-to-r from-primary/20 to-emerald-500/10 px-5 pt-5 pb-4 border-b border-white/10">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xl">🎯</span>
+              <h3 className="font-black text-sm uppercase tracking-wider">Admission Summary</h3>
+            </div>
+            {/* Top 3 KPIs */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-primary/10 rounded-xl p-3 border border-primary/20">
+                <p className="text-[10px] uppercase font-bold text-primary mb-1">Status</p>
+                <p className="text-sm font-black text-primary leading-tight">{aiResponse.admission_summary.status}</p>
+              </div>
+              <div className={`${s.dark ? 'bg-emerald-900/20' : 'bg-emerald-50'} rounded-xl p-3 border border-emerald-500/20`}>
+                <p className="text-[10px] uppercase font-bold text-emerald-500 mb-1">Admission Probability</p>
+                <p className="text-sm font-black text-emerald-500">{aiResponse.admission_summary.expected_probability}</p>
+              </div>
+              <div className={`${s.dark ? 'bg-blue-900/20' : 'bg-blue-50'} rounded-xl p-3 border border-blue-500/20`}>
+                <p className="text-[10px] uppercase font-bold text-blue-400 mb-1">Data Reliability</p>
+                <p className="text-sm font-black text-blue-400">{aiResponse.admission_summary.data_reliability || 'High'}</p>
+              </div>
+            </div>
           </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-             <div className="bg-primary/10 rounded-xl p-3 border border-primary/20">
-               <p className="text-[10px] uppercase font-bold text-primary mb-1">Status</p>
-               <p className="text-sm font-black text-primary">{aiResponse.admission_summary.status}</p>
-             </div>
-             <div className={`${s.dark ? 'bg-white/5' : 'bg-slate-50'} rounded-xl p-3 border border-slate-500/20`}>
-               <p className={`text-[10px] uppercase font-bold ${s.muted} mb-1`}>Expected Probability</p>
-               <p className="text-sm font-black text-emerald-500">{aiResponse.admission_summary.expected_probability}</p>
-             </div>
-             <div className={`${s.dark ? 'bg-white/5' : 'bg-slate-50'} rounded-xl p-3 border border-slate-500/20`}>
-               <p className={`text-[10px] uppercase font-bold ${s.muted} mb-1`}>Data Reliability</p>
-               <p className="text-sm font-black text-blue-500">{aiResponse.admission_summary.data_reliability || 'High'}</p>
-             </div>
-           </div>
-          
-          <p className={`text-sm leading-relaxed ${s.muted}`}>
-            {aiResponse.admission_summary.explanation}
-          </p>
+
+          <div className="p-5 space-y-5">
+            {/* Overview explanation */}
+            <p className={`text-sm leading-relaxed ${s.muted}`}>
+              {aiResponse.admission_summary.explanation}
+            </p>
+
+            {/* Counselling Strategy */}
+            {aiResponse.counselling_strategy && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-base">📋</span>
+                  <h4 className="font-black text-xs uppercase tracking-wider">Counselling Round Strategy</h4>
+                </div>
+                <div className="space-y-2">
+                  {[
+                    { key: 'round_1',         label: 'Round 1',         icon: '1️⃣', color: 'emerald' },
+                    { key: 'round_2',         label: 'Round 2',         icon: '2️⃣', color: 'blue' },
+                    { key: 'round_3',         label: 'Round 3',         icon: '3️⃣', color: 'amber' },
+                    { key: 'stray_vacancy',   label: 'Stray Vacancy Round', icon: '🔄', color: 'purple' },
+                    { key: 'state_counselling', label: 'State Counselling',  icon: '📍', color: 'rose' },
+                  ]
+                    .filter(({ key }) => aiResponse.counselling_strategy[key])
+                    .map(({ key, label, icon, color }) => (
+                      <div key={key} className={`rounded-xl p-3 border ${
+                        color === 'emerald' ? (s.dark ? 'bg-emerald-900/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200') :
+                        color === 'blue'    ? (s.dark ? 'bg-blue-900/10 border-blue-500/20'       : 'bg-blue-50 border-blue-200') :
+                        color === 'amber'   ? (s.dark ? 'bg-amber-900/10 border-amber-500/20'     : 'bg-amber-50 border-amber-200') :
+                        color === 'purple'  ? (s.dark ? 'bg-purple-900/10 border-purple-500/20'   : 'bg-purple-50 border-purple-200') :
+                                              (s.dark ? 'bg-rose-900/10 border-rose-500/20'       : 'bg-rose-50 border-rose-200')
+                      }`}>
+                        <p className={`text-[10px] font-black uppercase mb-1 ${
+                          color === 'emerald' ? 'text-emerald-500' :
+                          color === 'blue'    ? 'text-blue-400' :
+                          color === 'amber'   ? 'text-amber-500' :
+                          color === 'purple'  ? 'text-purple-400' : 'text-rose-400'
+                        }`}>{icon} {label}</p>
+                        <p className={`text-xs leading-relaxed ${s.muted}`}>{aiResponse.counselling_strategy[key]}</p>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+            )}
+
+            {/* Quota-wise Analysis */}
+            {aiResponse.quota_wise_analysis && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-base">⚖️</span>
+                  <h4 className="font-black text-xs uppercase tracking-wider">Quota-wise Analysis</h4>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {[
+                    { key: 'aiq',              label: 'All India Quota (AIQ — 15%)', icon: '🇮🇳', body: aiResponse.quota_wise_analysis.aiq },
+                    { key: 'state_quota',      label: 'State Quota (85%)',           icon: '📍', body: aiResponse.quota_wise_analysis.state_quota },
+                    { key: 'management_quota', label: 'Management Quota',            icon: '🏛️', body: aiResponse.quota_wise_analysis.management_quota },
+                    { key: 'deemed_universities', label: 'Deemed Universities',      icon: '🎓', body: aiResponse.quota_wise_analysis.deemed_universities },
+                  ]
+                    .filter(({ body }) => body)
+                    .map(({ key, label, icon, body }) => (
+                      <div key={key} className={`rounded-xl p-3 border ${s.dark ? 'bg-white/3 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
+                        <div className="flex items-start gap-2 mb-1">
+                          <span className="text-sm mt-0.5">{icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-black uppercase mb-0.5">{label}</p>
+                            {body.counselling_authority && (
+                              <p className="text-[10px] text-primary font-bold mb-1">Counselling: {body.counselling_authority}</p>
+                            )}
+                            {'eligible' in body && (
+                              <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${
+                                body.eligible ? 'bg-emerald-500/15 text-emerald-500' : 'bg-rose-500/15 text-rose-400'
+                              }`}>
+                                {body.eligible ? '✅ Eligible' : '❌ Not Eligible'}
+                              </span>
+                            )}
+                            {body.total_colleges_found != null && (
+                              <span className="ml-1 text-[9px] font-bold text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded-full">
+                                {body.total_colleges_found} colleges
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <p className={`text-[11px] leading-relaxed ${s.muted} mt-1`}>{body.explanation}</p>
+                        {body.top_colleges && body.top_colleges.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {body.top_colleges.slice(0, 3).map((c: string, i: number) => (
+                              <span key={i} className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${s.dark ? 'bg-white/8 text-white/70' : 'bg-slate-200 text-slate-600'}`}>{c}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+            )}
+
+            {/* Fee Comparison */}
+            {aiResponse.fee_comparison && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-base">💰</span>
+                  <h4 className="font-black text-xs uppercase tracking-wider">Fee Comparison (Per Year)</h4>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {[
+                    { label: 'Government',  value: aiResponse.fee_comparison.government,  color: 'emerald' },
+                    { label: 'Private',     value: aiResponse.fee_comparison.private,      color: 'amber' },
+                    { label: 'Management',  value: aiResponse.fee_comparison.management,   color: 'orange' },
+                    { label: 'NRI Quota',   value: aiResponse.fee_comparison.nri,          color: 'purple' },
+                  ].filter(f => f.value).map(({ label, value, color }) => (
+                    <div key={label} className={`rounded-xl p-3 border text-center ${
+                      color === 'emerald' ? (s.dark ? 'bg-emerald-900/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200') :
+                      color === 'amber'   ? (s.dark ? 'bg-amber-900/10 border-amber-500/20'     : 'bg-amber-50 border-amber-200') :
+                      color === 'orange'  ? (s.dark ? 'bg-orange-900/10 border-orange-500/20'   : 'bg-orange-50 border-orange-200') :
+                                            (s.dark ? 'bg-purple-900/10 border-purple-500/20'   : 'bg-purple-50 border-purple-200')
+                    }`}>
+                      <p className={`text-[9px] font-black uppercase mb-1 ${
+                        color === 'emerald' ? 'text-emerald-500' : color === 'amber' ? 'text-amber-500' :
+                        color === 'orange'  ? 'text-orange-500' : 'text-purple-400'
+                      }`}>{label}</p>
+                      <p className="text-xs font-black">{value}</p>
+                    </div>
+                  ))}
+                </div>
+                {aiResponse.fee_comparison.total_course_cost && (
+                  <p className={`text-[11px] mt-2 font-semibold ${s.muted}`}>
+                    📊 Total MBBS Course Cost (4.5 yrs): <span className="font-black text-primary">{aiResponse.fee_comparison.total_course_cost}</span>
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Documents Required */}
+            {aiResponse.documents_required && aiResponse.documents_required.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-base">📄</span>
+                  <h4 className="font-black text-xs uppercase tracking-wider">Documents Required for Counselling</h4>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {aiResponse.documents_required.map((doc: string, i: number) => (
+                    <span key={i} className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border ${
+                      s.dark ? 'bg-white/5 border-white/15 text-white/70' : 'bg-slate-100 border-slate-300 text-slate-600'
+                    }`}>
+                      ✅ {doc}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
