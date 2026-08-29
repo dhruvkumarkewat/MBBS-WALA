@@ -70,12 +70,10 @@ export function NeetLoader({ isPredicting = true }: { isPredicting?: boolean }) 
         zIndex: 9999,
         background: 'linear-gradient(135deg, #0a1018 0%, #0d1e2f 50%, #091a1a 100%)',
         display: 'flex',
-        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: '0px',
         padding: '24px 20px',
-        overflowY: 'auto',
+        overflow: 'hidden',
       }}
     >
       {/* Ambient glow blobs */}
@@ -116,117 +114,108 @@ export function NeetLoader({ isPredicting = true }: { isPredicting?: boolean }) 
         />
       </div>
 
-      {/* SVG Animation */}
+      {/* Single centered card — SVG + text + progress all together */}
       <div
         style={{
           position: 'relative',
           zIndex: 1,
-          width: '100%',
-          maxWidth: '420px',
-          aspectRatio: '4/3',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-        }}
-      >
-        <img
-          src={reportingSvg}
-          alt="Analyzing data"
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain',
-            userSelect: 'none',
-            pointerEvents: 'none',
-            filter: 'brightness(1.1)',
-          }}
-          draggable={false}
-        />
-      </div>
-
-      {/* Step info */}
-      <div
-        style={{
-          position: 'relative',
-          zIndex: 1,
-          textAlign: 'center',
-          opacity: fadeIn ? 1 : 0,
-          transform: fadeIn ? 'translateY(0)' : 'translateY(6px)',
-          transition: 'opacity 0.2s ease, transform 0.2s ease',
-          marginTop: '-8px',
-        }}
-      >
-        <p
-          style={{
-            fontSize: '1.8rem',
-            margin: '0 0 6px',
-            lineHeight: 1,
-          }}
-        >
-          {current.icon}
-        </p>
-        <p
-          style={{
-            fontSize: '1.15rem',
-            fontWeight: 800,
-            color: '#fff',
-            margin: '0 0 4px',
-            letterSpacing: '-0.01em',
-          }}
-        >
-          {current.title}
-        </p>
-        <p
-          style={{
-            fontSize: '0.82rem',
-            color: 'rgba(255,255,255,0.6)',
-            margin: 0,
-          }}
-        >
-          {current.desc}
-        </p>
-      </div>
-
-      {/* Progress bar */}
-      <div
-        style={{
-          position: 'relative',
-          zIndex: 1,
           width: '100%',
-          maxWidth: '340px',
-          height: '5px',
-          borderRadius: '999px',
-          backgroundColor: 'rgba(255,255,255,0.08)',
-          overflow: 'hidden',
-          marginTop: '18px',
+          maxWidth: '380px',
+          gap: '0px',
         }}
       >
+        {/* SVG Animation — constrained so it doesn't dominate the layout */}
         <div
           style={{
-            height: '100%',
-            borderRadius: '999px',
-            width: `${progress}%`,
-            background: 'linear-gradient(90deg, #6d5bf5, #9b7fff)',
-            transition: 'width 0.9s cubic-bezier(0.4,0,0.2,1)',
+            width: '220px',
+            height: '165px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
           }}
-        />
-      </div>
+        >
+          <img
+            src={reportingSvg}
+            alt="Analyzing data"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              userSelect: 'none',
+              pointerEvents: 'none',
+              filter: 'brightness(1.1)',
+            }}
+            draggable={false}
+          />
+        </div>
 
-      {/* Dots */}
-      <style dangerouslySetInnerHTML={{ __html: dotCSS }} />
-      <div
-        style={{
-          position: 'relative',
-          zIndex: 1,
-          display: 'flex',
-          gap: '6px',
-          marginTop: '12px',
-        }}
-        aria-hidden="true"
-      >
-        <span className="nl-dot" />
-        <span className="nl-dot nl-dot-2" />
-        <span className="nl-dot nl-dot-3" />
+        {/* Step info */}
+        <div
+          style={{
+            textAlign: 'center',
+            opacity: fadeIn ? 1 : 0,
+            transform: fadeIn ? 'translateY(0)' : 'translateY(6px)',
+            transition: 'opacity 0.2s ease, transform 0.2s ease',
+            marginTop: '16px',
+          }}
+        >
+          <p style={{ fontSize: '1.8rem', margin: '0 0 6px', lineHeight: 1 }}>
+            {current.icon}
+          </p>
+          <p
+            style={{
+              fontSize: '1.15rem',
+              fontWeight: 800,
+              color: '#fff',
+              margin: '0 0 4px',
+              letterSpacing: '-0.01em',
+            }}
+          >
+            {current.title}
+          </p>
+          <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)', margin: 0 }}>
+            {current.desc}
+          </p>
+        </div>
+
+        {/* Progress bar */}
+        <div
+          style={{
+            width: '100%',
+            maxWidth: '300px',
+            height: '5px',
+            borderRadius: '999px',
+            backgroundColor: 'rgba(255,255,255,0.08)',
+            overflow: 'hidden',
+            marginTop: '20px',
+          }}
+        >
+          <div
+            style={{
+              height: '100%',
+              borderRadius: '999px',
+              width: `${progress}%`,
+              background: 'linear-gradient(90deg, #6d5bf5, #9b7fff)',
+              transition: 'width 0.9s cubic-bezier(0.4,0,0.2,1)',
+            }}
+          />
+        </div>
+
+        {/* Dots */}
+        <style dangerouslySetInnerHTML={{ __html: dotCSS }} />
+        <div
+          style={{ display: 'flex', gap: '6px', marginTop: '12px' }}
+          aria-hidden="true"
+        >
+          <span className="nl-dot" />
+          <span className="nl-dot nl-dot-2" />
+          <span className="nl-dot nl-dot-3" />
+        </div>
       </div>
     </div>
   );
