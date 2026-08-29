@@ -1,4 +1,4 @@
-import Lottie from 'lottie-react';
+import { Lottie } from 'lottie-react';
 import loaderAnimation from '../assets/loader-animation.json';
 
 interface FullScreenLoaderProps {
@@ -46,7 +46,7 @@ export default function FullScreenLoader({ message, title }: FullScreenLoaderPro
       {/* Lottie animation */}
       <div className="relative z-10 w-72 h-56 sm:w-80 sm:h-64">
         <Lottie
-          animationData={loaderAnimation}
+          src={loaderAnimation}
           loop
           autoplay
           style={{ width: '100%', height: '100%' }}
