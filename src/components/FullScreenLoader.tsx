@@ -1,5 +1,4 @@
-import { Lottie } from 'lottie-react';
-import loaderAnimation from '../assets/loader-animation.json';
+import hospitalSvg from '../assets/hospital.svg';
 
 interface FullScreenLoaderProps {
   /** Optional subtitle shown below the animation */
@@ -9,15 +8,15 @@ interface FullScreenLoaderProps {
 }
 
 /**
- * Full-screen loading overlay with the custom Lottie animation.
+ * Full-screen loading overlay with the custom hospital SVG animation.
  * Uses a dark gradient backdrop so it looks great over any background.
  */
 export default function FullScreenLoader({ message, title }: FullScreenLoaderProps) {
   return (
     <div
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center"
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center select-none"
       style={{
-        background: 'linear-gradient(135deg, #0e1217 0%, #0f1c2e 50%, #0e1a1a 100%)',
+        background: 'linear-gradient(135deg, #0a1018 0%, #0d1e2f 50%, #091a1a 100%)',
       }}
       role="status"
       aria-label={title || message || 'Loading…'}
@@ -28,14 +27,14 @@ export default function FullScreenLoader({ message, title }: FullScreenLoaderPro
         aria-hidden
       >
         <div
-          className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full opacity-10"
+          className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full opacity-15"
           style={{
             background:
               'radial-gradient(circle, rgba(0,113,188,0.8) 0%, transparent 70%)',
           }}
         />
         <div
-          className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full opacity-10"
+          className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full opacity-15"
           style={{
             background:
               'radial-gradient(circle, rgba(0,180,160,0.6) 0%, transparent 70%)',
@@ -43,25 +42,24 @@ export default function FullScreenLoader({ message, title }: FullScreenLoaderPro
         />
       </div>
 
-      {/* Lottie animation */}
-      <div className="relative z-10 w-72 h-56 sm:w-80 sm:h-64">
-        <Lottie
-          src={loaderAnimation}
-          loop
-          autoplay
-          style={{ width: '100%', height: '100%' }}
+      {/* Hospital SVG Animation */}
+      <div className="relative z-10 w-72 h-56 sm:w-96 sm:h-72 flex items-center justify-center">
+        <img
+          src={hospitalSvg}
+          alt="Loading animation"
+          className="w-full h-full object-contain pointer-events-none"
         />
       </div>
 
       {/* Text */}
-      <div className="relative z-10 mt-2 text-center px-6">
+      <div className="relative z-10 mt-1 text-center px-6">
         {title && (
           <p className="text-base sm:text-lg font-bold text-white tracking-tight mb-1">
             {title}
           </p>
         )}
         {message && (
-          <p className="text-xs sm:text-sm text-white/60 font-medium max-w-xs mx-auto">
+          <p className="text-xs sm:text-sm text-white/70 font-medium max-w-xs mx-auto">
             {message}
           </p>
         )}
@@ -74,3 +72,4 @@ export default function FullScreenLoader({ message, title }: FullScreenLoaderPro
     </div>
   );
 }
+
