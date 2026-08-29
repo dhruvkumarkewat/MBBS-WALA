@@ -449,7 +449,9 @@ export default function Login({ defaultPortal }: LoginProps) {
           }
         }
 
-        navigate(from.startsWith('/admin') ? '/dashboard' : from, { replace: true });
+        // Always send to /dashboard after login (or back to the page they came from, if it's not home/admin)
+        const safeDest = from && !from.startsWith('/admin') && from !== '/' ? from : '/dashboard';
+        navigate(safeDest, { replace: true });
       }
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'Authentication failed. Please check your credentials.';
