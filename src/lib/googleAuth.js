@@ -7,6 +7,8 @@ import supabase from './supabase';
 export async function signInWithGoogle(_appName = 'MBBSWala') {
   try {
     const redirectTo = `${window.location.origin}/login`;
+    // Set a flag so the Login page knows we're returning from a Google OAuth flow
+    sessionStorage.setItem('google_oauth_pending', '1');
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -19,6 +21,7 @@ export async function signInWithGoogle(_appName = 'MBBSWala') {
     });
 
     if (error) {
+      sessionStorage.removeItem('google_oauth_pending');
       console.error('[google-auth] signInWithOAuth error:', error.message);
       // Fallback: If custom OAuth client is specified in env
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -60,6 +63,9 @@ export async function handleGoogleRedirect() {
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
+    // NOTE: Do NOT clear google_oauth_pending here — this function runs before React
+    // mounts, so removing the flag would prevent Login.tsx from detecting the redirect.
+    // The Login page clears the flag itself after routing.
   } catch (err) {
     console.error('[google-auth] Error handling redirect:', err);
   }

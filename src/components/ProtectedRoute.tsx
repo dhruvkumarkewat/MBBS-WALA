@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import FullScreenLoader from './FullScreenLoader';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -18,14 +19,10 @@ export default function ProtectedRoute({
   // don't block them with a spinner that could cause a race condition redirect.
   if (loading || (user && profileLoading && checkOnboarding && !isProfileComplete)) {
     return (
-      <div className="min-h-screen grid place-items-center bg-[#0e1217] text-white">
-        <div className="text-center">
-          <div className="w-12 h-12 border-3 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-sm font-semibold text-white/70 tracking-wide">
-            Verifying your counselling profile…
-          </p>
-        </div>
-      </div>
+      <FullScreenLoader
+        title="Verifying your profile…"
+        message="Setting up your counselling workspace, just a moment."
+      />
     );
   }
 

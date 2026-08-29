@@ -3,26 +3,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import ProtectedRoute from './components/ProtectedRoute';
-
-function PageFallback() {
-  return (
-    <div
-      className="min-h-[50vh] grid place-items-center px-6 page-route-fallback"
-      role="status"
-      aria-label="Loading page"
-    >
-      <div className="flex flex-col items-center gap-4 w-full max-w-[200px]">
-        <div className="route-spinner" aria-hidden />
-        <p className="text-[12px] font-semibold tracking-wide text-[var(--ds-text-muted,#6b7280)]">
-          Loading…
-        </p>
-      </div>
-    </div>
-  );
-}
+import FullScreenLoader from './components/FullScreenLoader';
 
 function L({ children }: { children: React.ReactNode }) {
-  return <Suspense fallback={<PageFallback />}>{children}</Suspense>;
+  return <Suspense fallback={<FullScreenLoader />}>{children}</Suspense>;
 }
 
 function lazyWithRetry(componentImport: () => Promise<any>) {

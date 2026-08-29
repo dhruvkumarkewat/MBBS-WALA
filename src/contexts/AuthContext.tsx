@@ -303,7 +303,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') return;
       if (u) {
         checkStaffRole(u.id);
-        fetchProfile(u, true);
+        // For SIGNED_IN (e.g. Google OAuth callback), do NOT skip loading state so
+        // the Login routing effect waits for real profile data before deciding
+        // whether to send the user to /onboarding or /dashboard.
+        // For other events (e.g. initial session restore) we also want fresh data.
+        fetchProfile(u, false);
         if (event === 'SIGNED_IN') tryInitPush(u.id); // ← Subscribe to push on login
       } else {
         setIsStaff(false);

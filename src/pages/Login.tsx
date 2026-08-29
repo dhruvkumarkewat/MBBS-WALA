@@ -23,6 +23,7 @@ import { signInWithGoogle } from '../lib/googleAuth';
 import { useAuth } from '../contexts/AuthContext';
 import { apiJson } from '../lib/api';
 import BrandLogo from '../components/BrandLogo';
+import FullScreenLoader from '../components/FullScreenLoader';
 
 /** Decorative 3D props — positioned only inside the left visual stage */
 const stageProps = [
@@ -119,9 +120,14 @@ export default function Login({ defaultPortal }: LoginProps) {
   const isRefFromURL = useMemo(() => !!new URLSearchParams(window.location.search).get('ref'), []);
   const from = (location.state as { from?: string } | null)?.from || '/dashboard';
 
-  // Detect if we are processing an OAuth callback
+  // Detect if we are processing an OAuth callback (implicit flow via hash, or PKCE via sessionStorage flag)
   const isOAuthRedirect = useMemo(() => {
-    return window.location.hash.includes('access_token=') || window.location.hash.includes('type=recovery');
+    return (
+      window.location.hash.includes('access_token=') ||
+      window.location.hash.includes('type=recovery') ||
+      sessionStorage.getItem('google_oauth_pending') === '1' ||
+      new URLSearchParams(window.location.search).has('code')
+    );
   }, []);
 
   const routingDone = useRef(false);
@@ -171,6 +177,7 @@ export default function Login({ defaultPortal }: LoginProps) {
       if (cancelled) return;
 
       if (staffAccount) {
+        sessionStorage.removeItem('google_oauth_pending');
         navigate('/admin', { replace: true });
         return;
       }
@@ -182,7 +189,16 @@ export default function Login({ defaultPortal }: LoginProps) {
       }
 
       // Normal student routing
+      // For a fresh Google OAuth login: always check real profile completeness
+      // (ignore stale localStorage flag if the profile fields are actually missing)
+      const isGoogleOAuth = isOAuthRedirect;
+      sessionStorage.removeItem('google_oauth_pending');
+
       if (!isProfileComplete) {
+        navigate('/onboarding', { replace: true });
+      } else if (isGoogleOAuth && !user.user_metadata?.profile_completed) {
+        // New Google account: user_metadata doesn't have profile_completed set
+        // (it gets set after onboarding is done). Send to onboarding.
         navigate('/onboarding', { replace: true });
       } else if (from.startsWith('/admin')) {
         navigate('/dashboard', { replace: true });
@@ -194,7 +210,7 @@ export default function Login({ defaultPortal }: LoginProps) {
     return () => {
       cancelled = true;
     };
-  }, [user, isStaff, isProfileComplete, profileLoading, portal, from, navigate]);
+  }, [user, isStaff, isProfileComplete, profileLoading, portal, from, navigate, isOAuthRedirect]);
 
   const switchPortal = (next: 'student' | 'admin') => {
     setPortal(next);
@@ -494,18 +510,10 @@ export default function Login({ defaultPortal }: LoginProps) {
 
   if (isRoutingActive) {
     return (
-      <div className="auth-page relative min-h-[calc(100dvh-5rem)] flex items-center justify-center p-6">
-        <div className="pointer-events-none absolute inset-0 auth-page-ambient" aria-hidden />
-        <div className="relative z-10 text-center max-w-sm">
-          <div className="w-12 h-12 border-3 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-white tracking-tight mb-1">
-            {portal === 'admin' || isStaff ? 'Opening Staff Workstation…' : 'Opening your counselling workspace…'}
-          </h3>
-          <p className="text-xs text-white/70 font-medium">
-            {msg || 'Verifying your credentials and session…'}
-          </p>
-        </div>
-      </div>
+      <FullScreenLoader
+        title={portal === 'admin' || isStaff ? 'Opening Staff Workstation…' : 'Opening your counselling workspace…'}
+        message={msg || 'Verifying your credentials and session…'}
+      />
     );
   }
 
