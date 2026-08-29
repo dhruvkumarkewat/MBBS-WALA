@@ -233,7 +233,8 @@ export default function Login({ defaultPortal }: LoginProps) {
       } else if (from.startsWith('/admin')) {
         navigate('/dashboard', { replace: true });
       } else {
-        navigate(from, { replace: true });
+        const safeDest = from && !from.startsWith('/admin') && from !== '/' ? from : '/dashboard';
+        navigate(safeDest, { replace: true });
       }
     })();
 
