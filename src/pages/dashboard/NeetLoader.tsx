@@ -2,12 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import reportingSvg from '../../assets/reporting.svg';
 
 const STEPS = [
-  { icon: '🔍', title: 'Scanning your rank…',         desc: 'Fetching latest counselling data' },
-  { icon: '📊', title: 'Analyzing cutoffs…',           desc: 'Comparing past year cutoff trends' },
-  { icon: '🧠', title: 'AI is thinking…',              desc: 'Our model is processing your rank' },
-  { icon: '🎯', title: 'Matching colleges…',           desc: 'Finding best matches for you' },
-  { icon: '🔒', title: 'Finalizing results…',          desc: 'Almost there! Applying your filters' },
-  { icon: '✅', title: 'Prediction ready!',            desc: 'Your results are being loaded' },
+  { icon: '🔍', title: 'Scanning your rank…',     desc: 'Fetching latest counselling data' },
+  { icon: '📊', title: 'Analyzing cutoffs…',       desc: 'Comparing past year cutoff trends' },
+  { icon: '🧠', title: 'AI is thinking…',          desc: 'Our model is processing your rank' },
+  { icon: '🎯', title: 'Matching colleges…',       desc: 'Finding best matches for you' },
+  { icon: '🔒', title: 'Finalizing results…',      desc: 'Almost there! Applying your filters' },
+  { icon: '✅', title: 'Prediction ready!',        desc: 'Your results are being loaded' },
 ];
 
 const STEP_MS = 1500;
@@ -18,7 +18,6 @@ export function NeetLoader({ isPredicting = true }: { isPredicting?: boolean }) 
   const dataReady = useRef(!isPredicting);
   const stepRef = useRef(0);
 
-  // Advance steps every STEP_MS ms, freeze at step 4 until data is ready
   useEffect(() => {
     if (!isPredicting) {
       dataReady.current = true;
@@ -32,20 +31,21 @@ export function NeetLoader({ isPredicting = true }: { isPredicting?: boolean }) 
       setFadeIn(false);
       setTimeout(() => {
         setStep((prev) => {
-          const next = prev >= STEPS.length - 2
-            ? (dataReady.current ? Math.min(prev + 1, STEPS.length - 1) : prev)
-            : prev + 1;
+          const next =
+            prev >= STEPS.length - 2
+              ? dataReady.current
+                ? Math.min(prev + 1, STEPS.length - 1)
+                : prev
+              : prev + 1;
           stepRef.current = next;
           return next;
         });
         setFadeIn(true);
       }, 200);
     }, STEP_MS);
-
     return () => clearInterval(interval);
   }, []);
 
-  // When data becomes ready and we are stuck at step 4, push to final step
   useEffect(() => {
     if (!isPredicting && stepRef.current >= STEPS.length - 2) {
       setTimeout(() => {
@@ -62,13 +62,84 @@ export function NeetLoader({ isPredicting = true }: { isPredicting?: boolean }) 
   const progress = Math.round(((step + 1) / STEPS.length) * 100);
 
   return (
-    <div style={wrapperStyle}>
-      {/* SVG animation */}
-      <div style={svgContainerStyle}>
+    /* Full-screen fixed overlay — sits above everything */
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        background: 'linear-gradient(135deg, #0a1018 0%, #0d1e2f 50%, #091a1a 100%)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '0px',
+        padding: '24px 20px',
+        overflowY: 'auto',
+      }}
+    >
+      {/* Ambient glow blobs */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          overflow: 'hidden',
+          pointerEvents: 'none',
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            top: '-128px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '600px',
+            height: '600px',
+            borderRadius: '50%',
+            opacity: 0.15,
+            background:
+              'radial-gradient(circle, rgba(109,91,245,0.7) 0%, transparent 70%)',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            right: '25%',
+            width: '400px',
+            height: '400px',
+            borderRadius: '50%',
+            opacity: 0.12,
+            background:
+              'radial-gradient(circle, rgba(0,180,160,0.6) 0%, transparent 70%)',
+          }}
+        />
+      </div>
+
+      {/* SVG Animation */}
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          width: '100%',
+          maxWidth: '420px',
+          aspectRatio: '4/3',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         <img
           src={reportingSvg}
           alt="Analyzing data"
-          style={svgStyle}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            userSelect: 'none',
+            pointerEvents: 'none',
+            filter: 'brightness(1.1)',
+          }}
           draggable={false}
         />
       </div>
@@ -76,29 +147,83 @@ export function NeetLoader({ isPredicting = true }: { isPredicting?: boolean }) 
       {/* Step info */}
       <div
         style={{
-          ...infoStyle,
+          position: 'relative',
+          zIndex: 1,
+          textAlign: 'center',
           opacity: fadeIn ? 1 : 0,
           transform: fadeIn ? 'translateY(0)' : 'translateY(6px)',
+          transition: 'opacity 0.2s ease, transform 0.2s ease',
+          marginTop: '-8px',
         }}
       >
-        <p style={iconStyle}>{current.icon}</p>
-        <p style={titleStyle}>{current.title}</p>
-        <p style={descStyle}>{current.desc}</p>
+        <p
+          style={{
+            fontSize: '1.8rem',
+            margin: '0 0 6px',
+            lineHeight: 1,
+          }}
+        >
+          {current.icon}
+        </p>
+        <p
+          style={{
+            fontSize: '1.15rem',
+            fontWeight: 800,
+            color: '#fff',
+            margin: '0 0 4px',
+            letterSpacing: '-0.01em',
+          }}
+        >
+          {current.title}
+        </p>
+        <p
+          style={{
+            fontSize: '0.82rem',
+            color: 'rgba(255,255,255,0.6)',
+            margin: 0,
+          }}
+        >
+          {current.desc}
+        </p>
       </div>
 
       {/* Progress bar */}
-      <div style={barTrackStyle}>
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          width: '100%',
+          maxWidth: '340px',
+          height: '5px',
+          borderRadius: '999px',
+          backgroundColor: 'rgba(255,255,255,0.08)',
+          overflow: 'hidden',
+          marginTop: '18px',
+        }}
+      >
         <div
           style={{
-            ...barFillStyle,
+            height: '100%',
+            borderRadius: '999px',
             width: `${progress}%`,
+            background: 'linear-gradient(90deg, #6d5bf5, #9b7fff)',
+            transition: 'width 0.9s cubic-bezier(0.4,0,0.2,1)',
           }}
         />
       </div>
 
       {/* Dots */}
       <style dangerouslySetInnerHTML={{ __html: dotCSS }} />
-      <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }} aria-hidden="true">
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          display: 'flex',
+          gap: '6px',
+          marginTop: '12px',
+        }}
+        aria-hidden="true"
+      >
         <span className="nl-dot" />
         <span className="nl-dot nl-dot-2" />
         <span className="nl-dot nl-dot-3" />
@@ -106,81 +231,6 @@ export function NeetLoader({ isPredicting = true }: { isPredicting?: boolean }) 
     </div>
   );
 }
-
-const wrapperStyle: React.CSSProperties = {
-  width: '100%',
-  position: 'relative',
-  borderRadius: '20px',
-  overflow: 'hidden',
-  backgroundColor: '#0d1624',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '24px 20px 20px',
-  gap: '4px',
-  border: '1px solid rgba(109, 91, 245, 0.2)',
-  boxShadow: '0 4px 40px rgba(109, 91, 245, 0.12)',
-};
-
-const svgContainerStyle: React.CSSProperties = {
-  width: '100%',
-  maxWidth: '360px',
-  aspectRatio: '4/3',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-};
-
-const svgStyle: React.CSSProperties = {
-  width: '100%',
-  height: '100%',
-  objectFit: 'contain',
-  userSelect: 'none',
-  pointerEvents: 'none',
-};
-
-const infoStyle: React.CSSProperties = {
-  textAlign: 'center',
-  transition: 'opacity 0.2s ease, transform 0.2s ease',
-};
-
-const iconStyle: React.CSSProperties = {
-  fontSize: '1.6rem',
-  margin: '0 0 4px',
-  lineHeight: 1,
-};
-
-const titleStyle: React.CSSProperties = {
-  fontSize: '1.05rem',
-  fontWeight: 800,
-  color: '#fff',
-  margin: '0 0 3px',
-  letterSpacing: '-0.01em',
-};
-
-const descStyle: React.CSSProperties = {
-  fontSize: '0.78rem',
-  color: 'rgba(255,255,255,0.6)',
-  margin: 0,
-};
-
-const barTrackStyle: React.CSSProperties = {
-  width: '100%',
-  maxWidth: '320px',
-  height: '5px',
-  borderRadius: '999px',
-  backgroundColor: 'rgba(255,255,255,0.08)',
-  overflow: 'hidden',
-  marginTop: '12px',
-};
-
-const barFillStyle: React.CSSProperties = {
-  height: '100%',
-  borderRadius: '999px',
-  background: 'linear-gradient(90deg, #6d5bf5, #9b7fff)',
-  transition: 'width 0.9s cubic-bezier(0.4,0,0.2,1)',
-};
 
 const dotCSS = `
   .nl-dot {
