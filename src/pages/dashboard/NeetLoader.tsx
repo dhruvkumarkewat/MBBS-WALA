@@ -1,192 +1,108 @@
 import React, { useEffect, useRef, useState } from 'react';
+import reportingSvg from '../../assets/reporting.svg';
 
-// Video timing constants
-// The video is 8 seconds of actual animation — no storyboard/intro.
-// Timeline:
-//   0.0s – 3.0s : Loading animation (character running, cutoffs/seat-matrix scenes)
-//   3.0s – 4.2s : ~90% hold section (character near end of bar) — loop here while waiting
-//   4.2s – 8.0s : Final animation ("Done!" + 100%) — play through on data ready
-//
-// 90% hold: loop [LOOP_START, LOOP_END) while API is still processing.
-// When data is ready: stop looping, seek to FINAL_START, play to natural end.
-const VIDEO_START = 0;
-const LOOP_START  = 3.0;
-const LOOP_END    = 4.2;
-const FINAL_START = 4.2;
+const STEPS = [
+  { icon: '🔍', title: 'Scanning your rank…',         desc: 'Fetching latest counselling data' },
+  { icon: '📊', title: 'Analyzing cutoffs…',           desc: 'Comparing past year cutoff trends' },
+  { icon: '🧠', title: 'AI is thinking…',              desc: 'Our model is processing your rank' },
+  { icon: '🎯', title: 'Matching colleges…',           desc: 'Finding best matches for you' },
+  { icon: '🔒', title: 'Finalizing results…',          desc: 'Almost there! Applying your filters' },
+  { icon: '✅', title: 'Prediction ready!',            desc: 'Your results are being loaded' },
+];
+
+const STEP_MS = 1500;
 
 export function NeetLoader({ isPredicting = true }: { isPredicting?: boolean }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [step, setStep] = useState(0);
+  const [fadeIn, setFadeIn] = useState(true);
+  const dataReady = useRef(!isPredicting);
+  const stepRef = useRef(0);
 
-  // phase ref — avoids stale closures in event handlers
-  const phase = useRef<'playing' | 'holding' | 'finishing' | 'done'>('playing');
-  const dataReady = useRef(false);
-  const revealed = useRef(false);
-
-  const [holdLabel, setHoldLabel] = useState(false);
-  const [videoVisible, setVideoVisible] = useState(false);
-
-  // Sync isPredicting → dataReady; if we are already holding, trigger finish
+  // Advance steps every STEP_MS ms, freeze at step 4 until data is ready
   useEffect(() => {
     if (!isPredicting) {
       dataReady.current = true;
-      (window as any).neetLoaderForceDone = true;
-
-      if (phase.current === 'holding') {
-        phase.current = 'finishing';
-        setHoldLabel(false);
-        const video = videoRef.current;
-        if (video) {
-          video.currentTime = FINAL_START;
-          video.play().catch(() => {});
-        }
-      }
     } else {
       dataReady.current = false;
-      (window as any).neetLoaderForceDone = false;
     }
   }, [isPredicting]);
 
-  // Main video lifecycle — runs once on mount
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+    const interval = setInterval(() => {
+      setFadeIn(false);
+      setTimeout(() => {
+        setStep((prev) => {
+          const next = prev >= STEPS.length - 2
+            ? (dataReady.current ? Math.min(prev + 1, STEPS.length - 1) : prev)
+            : prev + 1;
+          stepRef.current = next;
+          return next;
+        });
+        setFadeIn(true);
+      }, 200);
+    }, STEP_MS);
 
-    phase.current = 'playing';
-    dataReady.current = !isPredicting;
-    revealed.current = false;
-    setHoldLabel(false);
-    setVideoVisible(false);
-
-    const onCanPlay = () => {
-      // Seek to start position (in this video 0, no intro to skip)
-      video.currentTime = VIDEO_START;
-    };
-
-    const onSeeked = () => {
-      if (!revealed.current) {
-        revealed.current = true;
-        setVideoVisible(true);
-        video.play().catch(() => {});
-      }
-    };
-
-    let rafId: number;
-    const monitorVideo = () => {
-      const video = videoRef.current;
-      if (!video) return;
-      const t = video.currentTime;
-
-      if (phase.current === 'playing' && t >= LOOP_START) {
-        if (dataReady.current) {
-          // Data arrived before 90% — just let it play through
-          phase.current = 'finishing';
-        } else {
-          // Enter 90% hold loop
-          phase.current = 'holding';
-          setHoldLabel(true);
-        }
-      }
-
-      if (phase.current === 'holding') {
-        if (t >= LOOP_END) {
-          // Loop back to start of hold section instantly
-          video.currentTime = LOOP_START;
-        }
-        // Check if data became ready
-        if (dataReady.current) {
-          phase.current = 'finishing';
-          setHoldLabel(false);
-          video.currentTime = FINAL_START;
-          video.play().catch(() => {});
-        }
-      }
-      
-      rafId = requestAnimationFrame(monitorVideo);
-    };
-
-    const onEnded = () => {
-      if (phase.current !== 'done') {
-        phase.current = 'done';
-        setHoldLabel(false);
-        (window as any).neetLoaderForceDone = true;
-      }
-    };
-
-    video.addEventListener('canplay', onCanPlay);
-    video.addEventListener('seeked', onSeeked);
-    video.addEventListener('ended', onEnded);
-    
-    // Start 60fps monitor loop
-    rafId = requestAnimationFrame(monitorVideo);
-    video.load();
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      video.removeEventListener('canplay', onCanPlay);
-      video.removeEventListener('seeked', onSeeked);
-      video.removeEventListener('ended', onEnded);
-      video.pause();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => clearInterval(interval);
   }, []);
 
-  // Retry support: isPredicting goes false → true means new attempt
-  const prevPredicting = useRef(isPredicting);
+  // When data becomes ready and we are stuck at step 4, push to final step
   useEffect(() => {
-    const wasDone = !prevPredicting.current;
-    prevPredicting.current = isPredicting;
-    if (wasDone && isPredicting) {
-      const video = videoRef.current;
-      if (!video) return;
-      phase.current = 'playing';
-      dataReady.current = false;
-      revealed.current = false;
-      setHoldLabel(false);
-      setVideoVisible(false);
-      video.currentTime = VIDEO_START;
-      video.play().catch(() => {});
+    if (!isPredicting && stepRef.current >= STEPS.length - 2) {
+      setTimeout(() => {
+        setFadeIn(false);
+        setTimeout(() => {
+          setStep(STEPS.length - 1);
+          setFadeIn(true);
+        }, 200);
+      }, 400);
     }
   }, [isPredicting]);
 
+  const current = STEPS[Math.min(step, STEPS.length - 1)];
+  const progress = Math.round(((step + 1) / STEPS.length) * 100);
+
   return (
-    <div style={wrapperStyle} onContextMenu={(e) => e.preventDefault()}>
-      <style dangerouslySetInnerHTML={{ __html: dotCSS }} />
+    <div style={wrapperStyle}>
+      {/* SVG animation */}
+      <div style={svgContainerStyle}>
+        <img
+          src={reportingSvg}
+          alt="Analyzing data"
+          style={svgStyle}
+          draggable={false}
+        />
+      </div>
 
-      <video
-        ref={videoRef}
-        src="/Character_runs_across_progress_bar_no_audio.mp4"
-        muted
-        playsInline
-        preload="auto"
-        controls={false}
-        controlsList="nodownload nofullscreen noremoteplayback"
-        disablePictureInPicture
-        onContextMenu={(e) => e.preventDefault()}
+      {/* Step info */}
+      <div
         style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'contain',
-          display: 'block',
-          opacity: videoVisible ? 1 : 0,
-          transition: 'opacity 0.25s ease',
-          pointerEvents: 'none',
-          userSelect: 'none',
-          WebkitUserSelect: 'none',
+          ...infoStyle,
+          opacity: fadeIn ? 1 : 0,
+          transform: fadeIn ? 'translateY(0)' : 'translateY(6px)',
         }}
-      />
+      >
+        <p style={iconStyle}>{current.icon}</p>
+        <p style={titleStyle}>{current.title}</p>
+        <p style={descStyle}>{current.desc}</p>
+      </div>
 
-      {holdLabel && (
-        <div style={overlayStyle}>
-          <p style={{ fontSize: '1.75rem', fontWeight: 800, color: '#fff', margin: 0, lineHeight: 1.1, textShadow: '0 2px 12px rgba(0,0,0,0.7)' }}>90%</p>
-          <p style={{ fontSize: '1rem', fontWeight: 600, color: '#fff', margin: '4px 0 2px', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>Still analyzing&hellip;</p>
-          <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.75)', margin: 0, textShadow: '0 1px 6px rgba(0,0,0,0.5)' }}>Finalizing your college predictions</p>
-          <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }} aria-hidden="true">
-            <span className="nl-dot" />
-            <span className="nl-dot nl-dot-2" />
-            <span className="nl-dot nl-dot-3" />
-          </div>
-        </div>
-      )}
+      {/* Progress bar */}
+      <div style={barTrackStyle}>
+        <div
+          style={{
+            ...barFillStyle,
+            width: `${progress}%`,
+          }}
+        />
+      </div>
+
+      {/* Dots */}
+      <style dangerouslySetInnerHTML={{ __html: dotCSS }} />
+      <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }} aria-hidden="true">
+        <span className="nl-dot" />
+        <span className="nl-dot nl-dot-2" />
+        <span className="nl-dot nl-dot-3" />
+      </div>
     </div>
   );
 }
@@ -194,39 +110,88 @@ export function NeetLoader({ isPredicting = true }: { isPredicting?: boolean }) 
 const wrapperStyle: React.CSSProperties = {
   width: '100%',
   position: 'relative',
-  borderRadius: '16px',
+  borderRadius: '20px',
   overflow: 'hidden',
-  backgroundColor: '#0d1b2a',
-  aspectRatio: '16/9',
+  backgroundColor: '#0d1624',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '24px 20px 20px',
+  gap: '4px',
+  border: '1px solid rgba(109, 91, 245, 0.2)',
+  boxShadow: '0 4px 40px rgba(109, 91, 245, 0.12)',
+};
+
+const svgContainerStyle: React.CSSProperties = {
+  width: '100%',
+  maxWidth: '360px',
+  aspectRatio: '4/3',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
 };
 
-const overlayStyle: React.CSSProperties = {
-  position: 'absolute',
-  top: 0,
-  left: 0,
+const svgStyle: React.CSSProperties = {
   width: '100%',
   height: '100%',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'flex-start',
-  paddingTop: '5%',
+  objectFit: 'contain',
+  userSelect: 'none',
   pointerEvents: 'none',
+};
+
+const infoStyle: React.CSSProperties = {
+  textAlign: 'center',
+  transition: 'opacity 0.2s ease, transform 0.2s ease',
+};
+
+const iconStyle: React.CSSProperties = {
+  fontSize: '1.6rem',
+  margin: '0 0 4px',
+  lineHeight: 1,
+};
+
+const titleStyle: React.CSSProperties = {
+  fontSize: '1.05rem',
+  fontWeight: 800,
+  color: '#fff',
+  margin: '0 0 3px',
+  letterSpacing: '-0.01em',
+};
+
+const descStyle: React.CSSProperties = {
+  fontSize: '0.78rem',
+  color: 'rgba(255,255,255,0.6)',
+  margin: 0,
+};
+
+const barTrackStyle: React.CSSProperties = {
+  width: '100%',
+  maxWidth: '320px',
+  height: '5px',
+  borderRadius: '999px',
+  backgroundColor: 'rgba(255,255,255,0.08)',
+  overflow: 'hidden',
+  marginTop: '12px',
+};
+
+const barFillStyle: React.CSSProperties = {
+  height: '100%',
+  borderRadius: '999px',
+  background: 'linear-gradient(90deg, #6d5bf5, #9b7fff)',
+  transition: 'width 0.9s cubic-bezier(0.4,0,0.2,1)',
 };
 
 const dotCSS = `
   .nl-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: rgba(255,255,255,0.85);
+    width: 7px; height: 7px; border-radius: 50%;
+    background: rgba(255,255,255,0.6);
     animation: nl-bounce 1.2s infinite ease-in-out;
   }
   .nl-dot-2 { animation-delay: 0.15s; }
   .nl-dot-3 { animation-delay: 0.30s; }
   @keyframes nl-bounce {
-    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.35; }
     40%           { transform: translateY(-5px); opacity: 1; }
   }
 `;
