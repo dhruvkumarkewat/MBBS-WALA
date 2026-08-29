@@ -51,19 +51,19 @@ export default defineConfig(async ({ mode }) => {
         background_color: '#0B0D12',
         icons: [
           {
-            src: '/images/mbbswala/icon.png',
+            src: '/images/mbbswala/logo-mark.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any'
           },
           {
-            src: '/images/mbbswala/icon.png',
+            src: '/images/mbbswala/logo-mark.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any'
           },
           {
-            src: '/images/mbbswala/icon-padded.png',
+            src: '/images/mbbswala/logo-mark-padded.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable'
