@@ -3,7 +3,7 @@ import { setCors } from './_auth.js';
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 const MSG91_AUTH_KEY = process.env.MSG91_AUTH_KEY || '';
 const MSG91_WIDGET_ID = '366843686369393035303133';
-const FROM_EMAIL = 'MBBSWALA <noreply@mbbswala.in>';
+const FROM_EMAIL = 'MBBSWALA <noreply@newmbbs.starchainlabs.com>';
 
 /* ── OTP store (in-memory per invocation, backed by Supabase) ── */
 
