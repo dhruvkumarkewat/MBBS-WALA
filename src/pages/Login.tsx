@@ -83,7 +83,7 @@ interface LoginProps {
 export default function Login({ defaultPortal }: LoginProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, isStaff, isProfileComplete, profileLoading } = useAuth();
+  const { user, isStaff, isProfileComplete, profileLoading, loading: authLoading } = useAuth();
 
   // Determine initial portal based on props, URL params, or pathname
   const initialPortal = useMemo<'student' | 'admin'>(() => {
@@ -150,15 +150,35 @@ export default function Login({ defaultPortal }: LoginProps) {
   const isRefFromURL = useMemo(() => !!new URLSearchParams(window.location.search).get('ref'), []);
   const from = (location.state as { from?: string } | null)?.from || '/dashboard';
 
+  // Removed duplicate useAuth()
+
   // Detect if we are processing an OAuth callback (implicit flow via hash, or PKCE via sessionStorage flag)
-  const isOAuthRedirect = useMemo(() => {
+  const [isOAuthRedirect, setIsOAuthRedirect] = useState(() => {
     return (
       window.location.hash.includes('access_token=') ||
       window.location.hash.includes('type=recovery') ||
       sessionStorage.getItem('google_oauth_pending') === '1' ||
       new URLSearchParams(window.location.search).has('code')
     );
-  }, []);
+  });
+
+  // Clear stuck OAuth loader if Supabase finishes loading but user is still null
+  useEffect(() => {
+    if (!authLoading && !user && isOAuthRedirect) {
+      // If we don't have actual URL tokens, it's a stale sessionStorage flag
+      if (!window.location.hash.includes('access_token=') && !new URLSearchParams(window.location.search).has('code')) {
+        sessionStorage.removeItem('google_oauth_pending');
+        setIsOAuthRedirect(false);
+      } else {
+        // Even if URL tokens exist, if authLoading is done and user is null, the tokens were invalid/expired.
+        // We must clear the loader and let them try again.
+        sessionStorage.removeItem('google_oauth_pending');
+        setIsOAuthRedirect(false);
+        setError('Google sign-in failed or expired. Please try again.');
+        window.history.replaceState({}, document.title, window.location.pathname); // clear hash/query
+      }
+    }
+  }, [authLoading, user, isOAuthRedirect]);
 
   const routingDone = useRef(false);
   const isSubmitting = useRef(false);
@@ -176,7 +196,10 @@ export default function Login({ defaultPortal }: LoginProps) {
 
   // Automatic routing for already authenticated users
   useEffect(() => {
-    if (!user || profileLoading || routingDone.current || isSubmitting.current) return;
+    if (!user || profileLoading || routingDone.current || isSubmitting.current) {
+      return;
+    }
+    
     routingDone.current = true;
     let cancelled = false;
 
