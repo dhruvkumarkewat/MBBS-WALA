@@ -121,7 +121,7 @@ export default function DashboardTopbar({ title }: { title?: string }) {
     : 'bg-white/90 border-[#e8ecf1] text-[#111827]';
 
   return (
-    <header className={`sticky top-0 z-30 border-b backdrop-blur-2xl ${bar} pt-[env(safe-area-inset-top)] transition-transform duration-300 ease-in-out ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
+    <header className={`absolute top-0 left-0 right-0 w-full z-30 border-b backdrop-blur-2xl ${bar} pt-[env(safe-area-inset-top)] transition-transform duration-300 ease-in-out ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
       <div className="h-[56px] sm:h-[60px] flex items-center gap-2 sm:gap-3 px-3 sm:px-5">
         <button
           type="button"

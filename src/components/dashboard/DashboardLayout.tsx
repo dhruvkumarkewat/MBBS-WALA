@@ -44,7 +44,7 @@ function Shell() {
       }`}
     >
       <DashboardSidebar />
-      <div className="flex-1 flex flex-col min-w-0 min-h-0 w-full max-w-[100vw] overflow-hidden">
+      <div className="relative flex-1 flex flex-col min-w-0 min-h-0 w-full max-w-[100vw] overflow-hidden">
         <DashboardTopbar title={title} />
         <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
           <main
@@ -52,6 +52,7 @@ function Shell() {
             className="flex-1 min-w-0 min-h-0 overflow-x-hidden overflow-y-auto overscroll-y-contain"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
+            <div className="h-[56px] sm:h-[60px] w-full shrink-0 pointer-events-none" aria-hidden="true" />
             <div className="dash-main-pad px-3 xs:px-4 sm:px-5 lg:px-6 py-4 sm:py-5 pb-[max(5.5rem,env(safe-area-inset-bottom))] md:pb-[max(1.5rem,env(safe-area-inset-bottom))]">
               <AnimatePresence mode="wait" initial={false}>
                 <PageTransition key={location.pathname} id={location.pathname} className="min-h-0">
@@ -69,6 +70,7 @@ function Shell() {
           </main>
           {isHome && (
             <div className="hidden xl:block shrink-0 min-h-0 overflow-y-auto">
+              <div className="h-[56px] sm:h-[60px] w-full shrink-0 pointer-events-none" aria-hidden="true" />
               <DashboardRightPanel />
             </div>
           )}
