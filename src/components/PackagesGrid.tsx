@@ -112,7 +112,7 @@ export default function PackagesGrid({ limit }: { limit?: number }) {
                   ) : (
                     <>
                       <span className="text-lg align-top opacity-70 mr-0.5">₹</span>
-                      {pkg.price_label || pkg.price.toLocaleString('en-IN')}
+                      {(pkg.price_label || pkg.price.toLocaleString('en-IN')).toString().replace('₹', '')}
                     </>
                   )}
                 </p>

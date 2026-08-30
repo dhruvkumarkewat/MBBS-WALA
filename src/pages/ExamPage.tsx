@@ -83,7 +83,7 @@ export default function ExamPage() {
         </p>
         <h1 className="text-4xl md:text-5xl font-bold mb-3">{pkg.name}</h1>
         <p className="text-4xl font-black mb-6 text-primary">
-          {pkg.price === 0 ? 'Free' : `₹${pkg.price_label || pkg.price}`}
+          {pkg.price === 0 ? 'Free' : `₹${(pkg.price_label || pkg.price.toLocaleString('en-IN')).toString().replace('₹', '')}`}
         </p>
         <p className="text-lg text-text-grey font-medium mb-4">
           {pkg.description}

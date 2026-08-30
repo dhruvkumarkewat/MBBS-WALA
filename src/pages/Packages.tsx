@@ -103,7 +103,7 @@ export default function Packages() {
                   </p>
                 </div>
                 <p className="text-3xl font-black shrink-0">
-                  {pkg.price === 0 ? 'Free' : `₹${pkg.price_label || pkg.price}`}
+                  {pkg.price === 0 ? 'Free' : `₹${(pkg.price_label || pkg.price.toLocaleString('en-IN')).toString().replace('₹', '')}`}
                 </p>
               </div>
               <ul className="space-y-2.5 mb-6 flex-1">
