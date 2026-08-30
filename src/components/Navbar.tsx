@@ -48,18 +48,28 @@ export default function Navbar() {
   const lastScrollY = useRef(0);
 
   useEffect(() => {
+    let ticking = false;
+
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      if (currentScrollY < 50) {
-        setIsVisible(true);
-      } else if (currentScrollY > lastScrollY.current) {
-        setIsVisible(false);
-      } else {
-        setIsVisible(true);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+          
+          if (currentScrollY < 50) {
+            setIsVisible(true);
+          } else if (Math.abs(currentScrollY - lastScrollY.current) > 10) {
+            if (currentScrollY > lastScrollY.current) {
+              setIsVisible(false); // scrolling down
+            } else {
+              setIsVisible(true); // scrolling up
+            }
+            lastScrollY.current = currentScrollY;
+          }
+          
+          ticking = false;
+        });
+        ticking = true;
       }
-      
-      lastScrollY.current = currentScrollY;
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
