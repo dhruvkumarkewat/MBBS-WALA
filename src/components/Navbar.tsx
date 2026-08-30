@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useScroll, useMotionValueEvent } from 'framer-motion';
 import { ChevronDown, X } from 'lucide-react';
 import BrandLogo from './BrandLogo';
 import ThemeToggle from './ui/ThemeToggle';
@@ -45,36 +46,18 @@ export default function Navbar() {
   const location = useLocation();
 
   const [isVisible, setIsVisible] = useState(true);
-  const lastScrollY = useRef(0);
+  const { scrollY } = useScroll();
 
-  useEffect(() => {
-    let ticking = false;
-
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          const currentScrollY = window.scrollY;
-          
-          if (currentScrollY < 50) {
-            setIsVisible(true);
-          } else if (Math.abs(currentScrollY - lastScrollY.current) > 10) {
-            if (currentScrollY > lastScrollY.current) {
-              setIsVisible(false); // scrolling down
-            } else {
-              setIsVisible(true); // scrolling up
-            }
-            lastScrollY.current = currentScrollY;
-          }
-          
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    const previous = scrollY.getPrevious() || 0;
+    if (latest < 50) {
+      setIsVisible(true);
+    } else if (latest > previous && latest > 50) {
+      setIsVisible(false); // scrolling down
+    } else if (latest < previous) {
+      setIsVisible(true); // scrolling up
+    }
+  });
 
   useEffect(() => {
     setMobileOpen(false);
@@ -108,8 +91,8 @@ export default function Navbar() {
   const visibilityClass = `transition-transform duration-300 ease-in-out ${isVisible ? 'translate-y-0' : '-translate-y-full'}`;
 
   const shellClass = isLight
-    ? `sticky top-0 z-[99] pt-[max(0.75rem,env(safe-area-inset-top))] sm:pt-3 px-3 sm:px-5 bg-white/90 backdrop-blur-xl border-b border-black/8 ${visibilityClass}`
-    : `sticky top-0 z-[99] pt-[max(0.75rem,env(safe-area-inset-top))] sm:pt-3 px-3 sm:px-5 bg-[#12151C]/94 backdrop-blur-xl border-b border-white/8 ${visibilityClass}`;
+    ? `fixed top-0 left-0 right-0 w-full z-[99] pt-[max(0.75rem,env(safe-area-inset-top))] sm:pt-3 px-3 sm:px-5 bg-white/90 backdrop-blur-xl border-b border-black/8 ${visibilityClass}`
+    : `fixed top-0 left-0 right-0 w-full z-[99] pt-[max(0.75rem,env(safe-area-inset-top))] sm:pt-3 px-3 sm:px-5 bg-[#12151C]/94 backdrop-blur-xl border-b border-white/8 ${visibilityClass}`;
 
   const linkCls = isLight
     ? 'px-3 py-2 text-[13px] xl:text-[14px] font-semibold text-slate-700 hover:text-black rounded-full hover:bg-black/[0.05] transition-colors'
@@ -164,8 +147,10 @@ export default function Navbar() {
   };
 
   return (
-    <div className={shellClass}>
-      <nav
+    <>
+      <div className="h-[76px] sm:h-[84px] w-full shrink-0 pointer-events-none" aria-hidden="true" />
+      <div className={shellClass}>
+        <nav
         ref={navRef}
         className={
           isLight
@@ -321,6 +306,7 @@ export default function Navbar() {
           </div>
         )}
       </nav>
-    </div>
+      </div>
+    </>
   );
 }
