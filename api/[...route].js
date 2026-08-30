@@ -1,6 +1,7 @@
 export const maxDuration = 60;
 import aiPredict from './_handlers/ai-predict.js';
 import aiCollegeInfo from './_handlers/ai-college-info.js';
+import aiSeatMatrixInfo from './_handlers/ai-seat-matrix-info.js';
 import aiChat from './_handlers/ai-chat.js';
 import adminActivity from './_handlers/admin-activity.js';
 import adminAuth from './_handlers/admin-auth.js';
@@ -16,6 +17,7 @@ import adminStaff from './_handlers/admin-staff.js';
 import adminStudents from './_handlers/admin-students.js';
 import adminWithdrawals from './_handlers/admin-withdrawals.js';
 import applications from './_handlers/applications.js';
+import assignedCounselor from './_handlers/assigned-counselor.js';
 import badges from './_handlers/badges.js';
 import blogs from './_handlers/blogs.js';
 import careers from './_handlers/careers.js';
@@ -35,6 +37,7 @@ import faqs from './_handlers/faqs.js';
 import features from './_handlers/features.js';
 import inquiries from './_handlers/inquiries.js';
 import leaderboard from './_handlers/leaderboard.js';
+import messages from './_handlers/messages.js';
 import notifications from './_handlers/notifications.js';
 import packagesHandler from './_handlers/packages.js';
 import payment from './_handlers/payment.js';
@@ -50,11 +53,12 @@ import withdrawals from './_handlers/withdrawals.js';
 import upiPayment from './_handlers/upi-payment.js';
 import upload from './_handlers/upload.js';
 import authOtp from './_handlers/auth-otp.js';
+import supabaseClient from './_handlers/db-client.js';
 
 const routes = {
   'ai-predict': aiPredict,
   'ai-college-info': aiCollegeInfo,
-  'ai-seat-matrix-info': (await import('./_handlers/ai-seat-matrix-info.js')).default,
+  'ai-seat-matrix-info': aiSeatMatrixInfo,
   'ai-chat': aiChat,
   'admin-activity': adminActivity,
   'admin-auth': adminAuth,
@@ -65,8 +69,8 @@ const routes = {
   'admin-notify': adminNotify,
   'admin-overview': adminOverview,
   'admin-purchases': adminPurchases,
-  'assigned-counselor': (await import('./_handlers/assigned-counselor.js')).default,
-  'messages': (await import('./_handlers/messages.js')).default,
+  'assigned-counselor': assignedCounselor,
+  'messages': messages,
   'admin-sessions': adminSessions,
   'admin-staff': adminStaff,
   'admin-students': adminStudents,
@@ -107,7 +111,7 @@ const routes = {
   'upload': upload,
   'auth-otp': authOtp,
   'debug-db': async (req, res) => {
-    const { default: supabase } = await import('./_handlers/db-client.js');
+    const supabase = supabaseClient;
     const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'FALLBACK';
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'NONE';
     const { count } = await supabase.from('cutoffs').select('*', { count: 'exact', head: true });
