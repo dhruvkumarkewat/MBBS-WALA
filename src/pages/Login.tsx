@@ -225,16 +225,14 @@ export default function Login({ defaultPortal }: LoginProps) {
       sessionStorage.removeItem('google_oauth_pending');
 
       if (!isProfileComplete) {
-        navigate('/onboarding', { replace: true });
+        window.location.replace('/onboarding');
       } else if (isGoogleOAuth && !user.user_metadata?.profile_completed) {
-        // New Google account: user_metadata doesn't have profile_completed set
-        // (it gets set after onboarding is done). Send to onboarding.
-        navigate('/onboarding', { replace: true });
+        window.location.replace('/onboarding');
       } else if (from.startsWith('/admin')) {
-        navigate('/dashboard', { replace: true });
+        window.location.replace('/dashboard');
       } else {
         const safeDest = from && !from.startsWith('/admin') && from !== '/' && from !== '/login' ? from : '/dashboard';
-        navigate(safeDest, { replace: true });
+        window.location.replace(safeDest);
       }
     })();
 
@@ -427,7 +425,7 @@ export default function Login({ defaultPortal }: LoginProps) {
         }
 
         if (isStaffAccount) {
-          navigate('/admin', { replace: true });
+          window.location.replace('/admin');
           return;
         }
 
@@ -440,19 +438,19 @@ export default function Login({ defaultPortal }: LoginProps) {
             localStorage.getItem('onboarding_done_flag') === 'true' ||
             (Boolean(prof?.phone) && Boolean(prof?.category) && (prof?.neet_score != null || prof?.neet_rank != null));
           if (!isComplete) {
-            navigate('/onboarding', { replace: true });
+            window.location.replace('/onboarding');
             return;
           }
         } catch {
           if (localStorage.getItem('onboarding_done_flag') !== 'true') {
-            navigate('/onboarding', { replace: true });
+            window.location.replace('/onboarding');
             return;
           }
         }
 
         // Always send to /dashboard after login (or back to the page they came from, if it's not home/admin/login)
         const safeDest = from && !from.startsWith('/admin') && from !== '/' && from !== '/login' ? from : '/dashboard';
-        navigate(safeDest, { replace: true });
+        window.location.replace(safeDest);
       }
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'Authentication failed. Please check your credentials.';
