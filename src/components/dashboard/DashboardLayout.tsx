@@ -48,6 +48,7 @@ function Shell() {
         <DashboardTopbar title={title} />
         <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
           <main
+            id="dash-scroll-container"
             className="flex-1 min-w-0 min-h-0 overflow-x-hidden overflow-y-auto overscroll-y-contain"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >

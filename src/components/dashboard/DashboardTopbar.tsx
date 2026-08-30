@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Bell,
@@ -28,6 +28,9 @@ export default function DashboardTopbar({ title }: { title?: string }) {
   const [displayName, setDisplayName] = useState(() => {
     return user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '';
   });
+
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollY = useRef(0);
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -80,6 +83,28 @@ export default function DashboardTopbar({ title }: { title?: string }) {
       .catch(() => setNotifs([]));
   }, [user]);
 
+  useEffect(() => {
+    const scrollContainer = document.getElementById('dash-scroll-container');
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      const currentScrollY = scrollContainer.scrollTop;
+      
+      if (currentScrollY < 50) {
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY.current) {
+        setIsVisible(false);
+      } else {
+        setIsVisible(true);
+      }
+      
+      lastScrollY.current = currentScrollY;
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const unread = notifs.filter((n) => !n.read).length;
   const nameToUse = displayName || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Student';
   const initials = nameToUse
@@ -96,7 +121,7 @@ export default function DashboardTopbar({ title }: { title?: string }) {
     : 'bg-white/90 border-[#e8ecf1] text-[#111827]';
 
   return (
-    <header className={`sticky top-0 z-30 border-b backdrop-blur-2xl ${bar} pt-[env(safe-area-inset-top)]`}>
+    <header className={`sticky top-0 z-30 border-b backdrop-blur-2xl ${bar} pt-[env(safe-area-inset-top)] transition-transform duration-300 ease-in-out ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
       <div className="h-[56px] sm:h-[60px] flex items-center gap-2 sm:gap-3 px-3 sm:px-5">
         <button
           type="button"
