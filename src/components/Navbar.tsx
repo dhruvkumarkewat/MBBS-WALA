@@ -44,6 +44,28 @@ export default function Navbar() {
   const navRef = useRef<HTMLElement>(null);
   const location = useLocation();
 
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY < 50) {
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY.current) {
+        setIsVisible(false);
+      } else {
+        setIsVisible(true);
+      }
+      
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   useEffect(() => {
     setMobileOpen(false);
     setOpenMenu(null);
@@ -73,9 +95,11 @@ export default function Navbar() {
     };
   }, [mobileOpen]);
 
+  const visibilityClass = `transition-transform duration-300 ease-in-out ${isVisible ? 'translate-y-0' : '-translate-y-full'}`;
+
   const shellClass = isLight
-    ? 'sticky top-0 z-[99] pt-[max(0.75rem,env(safe-area-inset-top))] sm:pt-3 px-3 sm:px-5 bg-white/90 backdrop-blur-xl border-b border-black/8'
-    : 'sticky top-0 z-[99] pt-[max(0.75rem,env(safe-area-inset-top))] sm:pt-3 px-3 sm:px-5 bg-[#12151C]/94 backdrop-blur-xl border-b border-white/8';
+    ? `sticky top-0 z-[99] pt-[max(0.75rem,env(safe-area-inset-top))] sm:pt-3 px-3 sm:px-5 bg-white/90 backdrop-blur-xl border-b border-black/8 ${visibilityClass}`
+    : `sticky top-0 z-[99] pt-[max(0.75rem,env(safe-area-inset-top))] sm:pt-3 px-3 sm:px-5 bg-[#12151C]/94 backdrop-blur-xl border-b border-white/8 ${visibilityClass}`;
 
   const linkCls = isLight
     ? 'px-3 py-2 text-[13px] xl:text-[14px] font-semibold text-slate-700 hover:text-black rounded-full hover:bg-black/[0.05] transition-colors'
