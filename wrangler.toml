@@ -9,3 +9,9 @@ directory = "./dist"
 binding = "ASSETS"
 html_handling = "auto-trailing-slash"
 not_found_handling = "single-page-application"
+
+[vars]
+SUPABASE_URL = "https://hbzzamezfhzsdupdhcin.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_5D517PLNdF92v3Q1s6Dp_w_WaZtsrPo"
+VAPID_PUBLIC_KEY = "BOGT9aKRMuwAK5WaxDuSnTUNFsytfPlDoWlkyGdLfc4fvlKeMRvrK44mgVlENoXFSOcNnfmtuiwJvBsbbYujMLw"
+MSG91_AUTH_KEY = "516547AOljY4F0aibm6a92977aP1"

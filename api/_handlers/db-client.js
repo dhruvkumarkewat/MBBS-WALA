@@ -1,11 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 import { triggerRestore } from './db-wake.js';
 
-const supabaseUrl =
+const rawUrl =
   process.env.SUPABASE_URL ||
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  process.env.VITE_SUPABASE_URL ||
-  'https://dummy.supabase.co';
+  process.env.VITE_SUPABASE_URL;
+
+const supabaseUrl =
+  rawUrl && rawUrl !== 'https://dummy.supabase.co' && !rawUrl.includes('dummy')
+    ? rawUrl
+    : 'https://hbzzamezfhzsdupdhcin.supabase.co';
 
 // For database operations: prefer service role key (bypasses RLS), fall back to anon key
 const supabaseServiceKey =
@@ -14,11 +18,15 @@ const supabaseServiceKey =
   process.env.SERVICE_ROLE_KEY ||
   null;
 
-const supabaseAnonKey =
+const rawAnonKey =
   process.env.SUPABASE_ANON_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  process.env.VITE_SUPABASE_ANON_KEY ||
-  '';
+  process.env.VITE_SUPABASE_ANON_KEY;
+
+const supabaseAnonKey =
+  rawAnonKey && rawAnonKey !== 'dummy_key' && !rawAnonKey.includes('dummy')
+    ? rawAnonKey
+    : 'sb_publishable_5D517PLNdF92v3Q1s6Dp_w_WaZtsrPo';
 
 const supabaseKey = supabaseServiceKey || supabaseAnonKey;
 

@@ -27,9 +27,9 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://hbzzamezfhzsdupdhcin.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'sb_publishable_5D517PLNdF92v3Q1s6Dp_w_WaZtsrPo' }}
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY || 'BOGT9aKRMuwAK5WaxDuSnTUNFsytfPlDoWlkyGdLfc4fvlKeMRvrK44mgVlENoXFSOcNnfmtuiwJvBsbbYujMLw' }}
 
       - name: Deploy to Cloudflare Workers
         env:
