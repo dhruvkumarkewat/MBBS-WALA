@@ -577,6 +577,8 @@ export default async function handler(req, res) {
       round_id: body.round_id || null,
     };
 
+    const examTrack = query.exam_track;
+
     if (!query.score_or_rank.value || query.score_or_rank.value < 1) {
       return res.status(400).json({ error: 'Valid rank or score is required' });
     }
@@ -729,7 +731,7 @@ CRITICAL: LOWER AIR NUMBER = BETTER. AIR ${query.score_or_rank.value} is ${query
 === SCHOLARSHIPS TO ANALYZE ===
 Analyze these scholarships based on the student's rank (${query.score_or_rank.value}), category (${query.category}), and domicile (${domicileStateName}). Place them into the "eligible" or "ineligible" arrays in "scholarships_analysis". For ineligible ones, explain exactly why (e.g. requires different category or domicile). If we don't have enough info (like income), assume eligible but note it in match_reason.
 ${(context.scholarships || []).slice(0, 5).map(s => `- Name: ${s.name}\n  Provider: ${s.provider}\n  Amount: ${s.amount_description || s.amount}\n  Eligibility: ${s.eligibility}\n  Portal: ${s.official_portal}`).join('\n\n')}
-${examTrack === 'NEET_PG' ? `
+${query.exam_track === 'NEET_PG' ? `
 === NEET PG SPECIAL INSTRUCTIONS ===
 This is a NEET PG prediction for MD/MS/Diploma/DNB seats.
 - NEET PG Qualifying cutoff: 50th percentile for General, 40th for OBC/SC/ST/EWS.
