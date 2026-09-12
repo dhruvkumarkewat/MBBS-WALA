@@ -123,6 +123,8 @@ export async function retrieveContext(query) {
     cutoffQuery = cutoffQuery.in('course_name', ['MBBS', 'BDS']);
   } else if (examTrack === 'AYUSH') {
     cutoffQuery = cutoffQuery.in('course_name', ['BAMS', 'BUMS', 'BHMS', 'BSMS', 'BNYS']);
+  } else if (examTrack === 'NEET_PG') {
+    cutoffQuery = cutoffQuery.in('course_name', ['MD', 'MS', 'Diploma', 'DNB', 'MDS', 'MD/MS']);
   }
 
   // Apply state restriction to the DB cutoff query:
@@ -154,6 +156,8 @@ export async function retrieveContext(query) {
     collegesQuery = collegesQuery.in('course', ['MBBS', 'BDS']);
   } else if (examTrack === 'AYUSH') {
     collegesQuery = collegesQuery.in('course', ['BAMS', 'BUMS', 'BHMS', 'BSMS', 'BNYS']);
+  } else if (examTrack === 'NEET_PG') {
+    collegesQuery = collegesQuery.in('course', ['MD', 'MS', 'Diploma', 'DNB', 'MDS']);
   }
 
   const { data: allColleges } = await collegesQuery;
@@ -244,7 +248,7 @@ const DEEMED_KEYWORDS = [
       category: category,
       round_name: selectedRound === 'All Rounds' || selectedRound === 'All' ? 'Round 1' : selectedRound,
       year: year,
-      course_name: col.course || (examTrack === 'AYUSH' ? 'BAMS' : 'MBBS'),
+      course_name: col.course || (examTrack === 'AYUSH' ? 'BAMS' : examTrack === 'NEET_PG' ? 'MD' : 'MBBS'),
       quota_code: quotaCode,
       fee_amount: feeString,
       seats: col.seats || null,
@@ -725,6 +729,17 @@ CRITICAL: LOWER AIR NUMBER = BETTER. AIR ${query.score_or_rank.value} is ${query
 === SCHOLARSHIPS TO ANALYZE ===
 Analyze these scholarships based on the student's rank (${query.score_or_rank.value}), category (${query.category}), and domicile (${domicileStateName}). Place them into the "eligible" or "ineligible" arrays in "scholarships_analysis". For ineligible ones, explain exactly why (e.g. requires different category or domicile). If we don't have enough info (like income), assume eligible but note it in match_reason.
 ${(context.scholarships || []).slice(0, 5).map(s => `- Name: ${s.name}\n  Provider: ${s.provider}\n  Amount: ${s.amount_description || s.amount}\n  Eligibility: ${s.eligibility}\n  Portal: ${s.official_portal}`).join('\n\n')}
+${examTrack === 'NEET_PG' ? `
+=== NEET PG SPECIAL INSTRUCTIONS ===
+This is a NEET PG prediction for MD/MS/Diploma/DNB seats.
+- NEET PG Qualifying cutoff: 50th percentile for General, 40th for OBC/SC/ST/EWS.
+- Counselling: AIQ seats (50%) by MCC, State seats (50%) by respective state authority.
+- There is NO AYUSH category here — only MD, MS, Diploma, DNB, MDS subjects.
+- Course_name must be one of: MD, MS, Diploma, DNB, MDS (with specialty e.g. "MD - Radiology", "MS - Orthopaedics").
+- Fees: Govt PG seats ₹10,000–₹50,000/year. Private/Deemed PG seats ₹5L–₹25L/year.
+- Probability benchmarks: AIR < 5000 → Top Govt hospitals (AIIMS, PGI, MAMC). AIR 5000-20000 → Good Govt + Top Private. AIR > 20000 → Private/Deemed PG colleges.
+- For each college, show the SPECIALTY (e.g. MD Radiology at AIIMS Delhi) not just the institute.
+` : ''}
 `.trim();
 
     const aiPayload = {

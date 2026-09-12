@@ -341,7 +341,7 @@ export function PredictorPage() {
 
   // ── Form state ──
   const [mode, setMode] = useState<'rank' | 'score'>('rank');
-  const [examTrack, setExamTrack] = useState<'MBBS_BDS' | 'AYUSH'>('MBBS_BDS');
+  const [examTrack, setExamTrack] = useState<'MBBS_BDS' | 'AYUSH' | 'NEET_PG'>('MBBS_BDS');
   const [rank, setRank] = useState(profile?.neet_rank?.toString() || '');
   const [score, setScore] = useState(profile?.neet_score?.toString() || '');
   const [category, setCategory] = useState(profile?.category || 'General');
@@ -535,18 +535,23 @@ export function PredictorPage() {
         {/* Exam Track */}
         <div>
           <span className={`text-xs font-bold uppercase ${s.muted}`}>Exam Track</span>
-          <div className="flex gap-2 mt-1.5">
-            {(['MBBS_BDS', 'AYUSH'] as const).map((t) => (
+          <div className="grid grid-cols-3 gap-2 mt-1.5">
+            {([
+              { value: 'MBBS_BDS', label: '🏥 MBBS / BDS', sub: 'NEET UG' },
+              { value: 'NEET_PG',  label: '🩺 MD / MS / Diploma', sub: 'NEET PG' },
+              { value: 'AYUSH',    label: '🌿 AYUSH', sub: 'BAMS/BHMS/BUMS' },
+            ] as const).map(({ value, label, sub }) => (
               <button
-                key={t} type="button"
-                onClick={() => setExamTrack(t)}
-                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
-                  examTrack === t
+                key={value} type="button"
+                onClick={() => setExamTrack(value)}
+                className={`flex-1 py-2 px-2 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-0.5 ${
+                  examTrack === value
                     ? 'bg-primary text-white border-primary shadow-md'
                     : `border-white/10 ${s.muted} hover:border-primary/40`
                 }`}
               >
-                {t === 'MBBS_BDS' ? '🏥 MBBS / BDS' : '🌿 AYUSH (BAMS/BHMS/BUMS)'}
+                <span>{label}</span>
+                <span className={`text-[9px] font-bold opacity-70 ${examTrack === value ? 'text-white/80' : ''}`}>{sub}</span>
               </button>
             ))}
           </div>
@@ -574,7 +579,9 @@ export function PredictorPage() {
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
             <span className={`text-xs font-bold uppercase text-orange-500`}>
-              {mode === 'rank' ? 'NEET AIR *' : 'NEET Score (0–720) *'}
+              {mode === 'rank'
+                ? (examTrack === 'NEET_PG' ? 'NEET PG Rank *' : 'NEET AIR *')
+                : (examTrack === 'NEET_PG' ? 'NEET PG Score (0–800) *' : 'NEET Score (0–720) *')}
             </span>
             <input
               type="number"
@@ -584,12 +591,13 @@ export function PredictorPage() {
                   setRank(e.target.value);
                 } else {
                   const val = Number(e.target.value);
-                  if (val <= 720) setScore(e.target.value);
+                  const maxScore = examTrack === 'NEET_PG' ? 800 : 720;
+                  if (val <= maxScore) setScore(e.target.value);
                 }
               }}
               min={mode === 'rank' ? 1 : 0}
-              max={mode === 'rank' ? 2500000 : 720}
-              placeholder={mode === 'rank' ? 'e.g. 15400' : 'e.g. 612'}
+              max={mode === 'rank' ? 2500000 : (examTrack === 'NEET_PG' ? 800 : 720)}
+              placeholder={mode === 'rank' ? (examTrack === 'NEET_PG' ? 'e.g. 5200' : 'e.g. 15400') : (examTrack === 'NEET_PG' ? 'e.g. 380' : 'e.g. 612')}
               className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
               required
             />
@@ -700,7 +708,7 @@ export function PredictorPage() {
           </div>
         ) : (
           <button type="submit" disabled={loading} className="zn-cta zn-cta-primary w-full justify-center text-sm">
-            🔮 Predict Colleges{mode === 'rank' && rank ? ` for Rank #${Number(rank).toLocaleString()}` : mode === 'score' && score ? ` for Score ${score}/720` : ''}
+            🔮 {examTrack === 'NEET_PG' ? 'Predict PG Colleges' : 'Predict Colleges'}{mode === 'rank' && rank ? ` for Rank #${Number(rank).toLocaleString()}` : mode === 'score' && score ? ` for Score ${score}/${examTrack === 'NEET_PG' ? '800' : '720'}` : ''}
           </button>
         )}
       </form>
@@ -774,7 +782,7 @@ function AiBestCollegesTab({ s, isPremium }: { s: ReturnType<typeof useShell>; i
 
   // Form state (mirrors PredictorPage)
   const [aiMode, setAiMode] = useState<'rank' | 'score'>('rank');
-  const [aiExamTrack, setAiExamTrack] = useState<'MBBS_BDS' | 'AYUSH'>('MBBS_BDS');
+  const [aiExamTrack, setAiExamTrack] = useState<'MBBS_BDS' | 'AYUSH' | 'NEET_PG'>('MBBS_BDS');
   const [aiRank, setAiRank] = useState(profile?.neet_rank?.toString() || '');
   const [aiScore, setAiScore] = useState(profile?.neet_score?.toString() || '');
   const [aiCategory, setAiCategory] = useState(profile?.category || 'General');
@@ -802,8 +810,9 @@ function AiBestCollegesTab({ s, isPremium }: { s: ReturnType<typeof useShell>; i
     try {
       const rankNum = aiMode === 'rank' ? Number(aiRank) : 0;
       const scoreNum = aiMode === 'score' ? Number(aiScore) : 0;
-      if (aiMode === 'rank' && (isNaN(rankNum) || rankNum < 1)) throw new Error('Enter a valid NEET All India Rank (AIR)');
-      if (aiMode === 'score' && (isNaN(scoreNum) || scoreNum < 0 || scoreNum > 720)) throw new Error('Enter a valid NEET score (0–720)');
+      if (aiMode === 'rank' && (isNaN(rankNum) || rankNum < 1)) throw new Error('Enter a valid NEET Rank');
+      const maxScoreVal = aiExamTrack === 'NEET_PG' ? 800 : 720;
+      if (aiMode === 'score' && (isNaN(scoreNum) || scoreNum < 0 || scoreNum > maxScoreVal)) throw new Error(`Enter a valid NEET score (0–${maxScoreVal})`);
       if (aiQuotas.length === 0) throw new Error('Select at least one quota');
       if (aiQuotas.includes('State') && !aiDomicileState) throw new Error('Please select your Domicile State for State Quota colleges.');
       const payload = {
@@ -850,18 +859,23 @@ function AiBestCollegesTab({ s, isPremium }: { s: ReturnType<typeof useShell>; i
           {/* Exam Track */}
           <div>
             <span className={`text-xs font-bold uppercase ${s.muted}`}>Exam Track</span>
-            <div className="flex gap-2 mt-1.5">
-              {(['MBBS_BDS', 'AYUSH'] as const).map((t) => (
+            <div className="grid grid-cols-3 gap-2 mt-1.5">
+              {([
+                { value: 'MBBS_BDS', label: '🏥 MBBS / BDS', sub: 'NEET UG' },
+                { value: 'NEET_PG',  label: '🩺 MD / MS / Diploma', sub: 'NEET PG' },
+                { value: 'AYUSH',    label: '🌿 AYUSH', sub: 'BAMS/BHMS/BUMS' },
+              ] as const).map(({ value, label, sub }) => (
                 <button
-                  key={t} type="button"
-                  onClick={() => setAiExamTrack(t)}
-                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
-                    aiExamTrack === t
+                  key={value} type="button"
+                  onClick={() => setAiExamTrack(value)}
+                  className={`flex-1 py-2 px-2 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-0.5 ${
+                    aiExamTrack === value
                       ? 'bg-primary text-white border-primary shadow-md'
                       : `border-white/10 ${s.muted} hover:border-primary/40`
                   }`}
                 >
-                  {t === 'MBBS_BDS' ? '🏥 MBBS / BDS' : '🌿 AYUSH (BAMS/BHMS/BUMS)'}
+                  <span>{label}</span>
+                  <span className={`text-[9px] font-bold opacity-70 ${aiExamTrack === value ? 'text-white/80' : ''}`}>{sub}</span>
                 </button>
               ))}
             </div>
@@ -889,18 +903,20 @@ function AiBestCollegesTab({ s, isPremium }: { s: ReturnType<typeof useShell>; i
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
               <span className="text-xs font-bold uppercase text-orange-500">
-                {aiMode === 'rank' ? 'NEET AIR *' : 'NEET Score (0–720) *'}
+                {aiMode === 'rank'
+                  ? (aiExamTrack === 'NEET_PG' ? 'NEET PG Rank *' : 'NEET AIR *')
+                  : (aiExamTrack === 'NEET_PG' ? 'NEET PG Score (0–800) *' : 'NEET Score (0–720) *')}
               </span>
               <input
                 type="number"
                 value={aiMode === 'rank' ? aiRank : aiScore}
                 onChange={(e) => {
                   if (aiMode === 'rank') { setAiRank(e.target.value); }
-                  else { const v = Number(e.target.value); if (v <= 720) setAiScore(e.target.value); }
+                  else { const v = Number(e.target.value); const mx = aiExamTrack === 'NEET_PG' ? 800 : 720; if (v <= mx) setAiScore(e.target.value); }
                 }}
                 min={aiMode === 'rank' ? 1 : 0}
-                max={aiMode === 'rank' ? 2500000 : 720}
-                placeholder={aiMode === 'rank' ? 'e.g. 15400' : 'e.g. 612'}
+                max={aiMode === 'rank' ? 2500000 : (aiExamTrack === 'NEET_PG' ? 800 : 720)}
+                placeholder={aiMode === 'rank' ? (aiExamTrack === 'NEET_PG' ? 'e.g. 5200' : 'e.g. 15400') : (aiExamTrack === 'NEET_PG' ? 'e.g. 380' : 'e.g. 612')}
                 className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
                 required
               />
@@ -1009,7 +1025,7 @@ function AiBestCollegesTab({ s, isPremium }: { s: ReturnType<typeof useShell>; i
             </div>
           ) : (
             <button type="submit" disabled={aiLoading} className="zn-cta zn-cta-primary w-full justify-center text-sm">
-              🔮 Find Best Colleges{aiMode === 'rank' && aiRank ? ` for Rank #${Number(aiRank).toLocaleString()}` : aiMode === 'score' && aiScore ? ` for Score ${aiScore}/720` : ''}
+              🔮 {aiExamTrack === 'NEET_PG' ? 'Find Best PG Colleges' : 'Find Best Colleges'}{aiMode === 'rank' && aiRank ? ` for Rank #${Number(aiRank).toLocaleString()}` : aiMode === 'score' && aiScore ? ` for Score ${aiScore}/${aiExamTrack === 'NEET_PG' ? '800' : '720'}` : ''}
             </button>
           )}
         </form>
