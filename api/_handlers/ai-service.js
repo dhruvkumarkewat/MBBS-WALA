@@ -546,7 +546,7 @@ export function buildFallbackResponse(query, context, resolved) {
     return {
       college_name: cr.college_name,
       state: cr.state || 'India',
-      course: cr.course_name || (query.exam_track === 'AYUSH' ? 'BAMS' : 'MBBS'),
+      course: cr.course_name || (query.exam_track === 'AYUSH' ? 'BAMS' : query.exam_track === 'NEET_PG' ? 'MD / MS' : 'MBBS'),
       quota: quotaCode,
       category: cr.category || query.category,
       chance_tier,

@@ -360,6 +360,7 @@ export function PredictorPage() {
   const [quotaFilter, setQuotaFilter] = useState<string>('ALL');
 
   // ── Persistence ──
+  const isLoaded = useRef(false);
   useEffect(() => {
     if (profile?.id) {
       const saved = localStorage.getItem(`mbbswala_prediction_${profile.id}`);
@@ -367,6 +368,9 @@ export function PredictorPage() {
         try {
           const parsed = JSON.parse(saved);
           setAiResponse(parsed);
+          if (parsed?.query?.exam_track) {
+            setExamTrack(parsed.query.exam_track);
+          }
         } catch (e) {
           console.error('Failed to parse saved prediction');
         }
@@ -383,6 +387,10 @@ export function PredictorPage() {
   // Clear cached result whenever key prediction inputs change
   // so the user always gets fresh results matching their current selections
   useEffect(() => {
+    if (!isLoaded.current) {
+      isLoaded.current = true;
+      return;
+    }
     if (aiResponse) {
       setAiResponse(null);
       if (profile?.id) localStorage.removeItem(`mbbswala_prediction_${profile.id}`);
@@ -428,8 +436,9 @@ export function PredictorPage() {
       if (mode === 'rank' && (isNaN(rankNum) || rankNum < 1)) {
         throw new Error('Enter a valid NEET All India Rank (AIR)');
       }
-      if (mode === 'score' && (isNaN(scoreNum) || scoreNum < 0 || scoreNum > 720)) {
-        throw new Error('Enter a valid NEET score (0–720)');
+      const maxScoreVal = examTrack === 'NEET_PG' ? 800 : 720;
+      if (mode === 'score' && (isNaN(scoreNum) || scoreNum < 0 || scoreNum > maxScoreVal)) {
+        throw new Error(`Enter a valid NEET score (0–${maxScoreVal})`);
       }
       if (quotas.length === 0) throw new Error('Select at least one quota');
       if (quotas.includes('State') && !domicileState) {
@@ -717,7 +726,13 @@ export function PredictorPage() {
           <div>
             <h3 className="text-sm font-bold">Prediction Active</h3>
             <p className={`text-xs mt-1 ${s.muted}`}>
-              Showing results for {examTrack === 'MBBS_BDS' ? 'MBBS/BDS' : 'AYUSH'} · {mode === 'score' && aiResponse?.query?.score_or_rank?.original_score ? `Score ${aiResponse.query.score_or_rank.original_score} (Est. AIR ${aiResponse.query.score_or_rank.value?.toLocaleString()})` : `AIR ${rank}`} · {category} · {quotas.join(', ')}
+              Showing results for {
+                (aiResponse?.query?.exam_track || examTrack) === 'NEET_PG'
+                  ? 'NEET PG (MD / MS / Diploma)'
+                  : (aiResponse?.query?.exam_track || examTrack) === 'AYUSH'
+                  ? 'AYUSH (BAMS / BHMS / BUMS)'
+                  : 'MBBS / BDS'
+              } · {mode === 'score' && aiResponse?.query?.score_or_rank?.original_score ? `Score ${aiResponse.query.score_or_rank.original_score} (Est. AIR ${aiResponse.query.score_or_rank.value?.toLocaleString()})` : `AIR ${rank || aiResponse?.query?.score_or_rank?.value}`} · {category} · {quotas.join(', ')}
             </p>
           </div>
           <button onClick={handleRecalculate} className="zn-cta border border-white/10 text-sm whitespace-nowrap hover:bg-white/5">
@@ -736,7 +751,9 @@ export function PredictorPage() {
               <p className="text-sm font-bold text-red-400 mb-1">⛔ Below NEET Qualifying Threshold</p>
               <p className="text-sm text-red-300/80 leading-relaxed">
                 {aiResponse.fallback?.message ||
-                  'This score/rank is below the minimum NEET qualifying cutoff for this year and category. No MBBS/BDS/AYUSH seat is possible in any quota at any price this cycle. This is a regulatory requirement, not a budget constraint.'}
+                  ((aiResponse?.query?.exam_track || examTrack) === 'NEET_PG'
+                    ? 'This score/rank is below the minimum NEET PG qualifying cutoff. No MD/MS/Diploma seat is possible in any quota this cycle.'
+                    : 'This score/rank is below the minimum NEET qualifying cutoff for this year and category. No MBBS/BDS/AYUSH seat is possible in any quota at any price this cycle. This is a regulatory requirement, not a budget constraint.')}
               </p>
               {aiResponse.fallback?.alternative_courses && (
                 <div className="mt-3 flex flex-wrap gap-2">

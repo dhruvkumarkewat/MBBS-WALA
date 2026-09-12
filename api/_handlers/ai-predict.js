@@ -124,7 +124,7 @@ export async function retrieveContext(query) {
   } else if (examTrack === 'AYUSH') {
     cutoffQuery = cutoffQuery.in('course_name', ['BAMS', 'BUMS', 'BHMS', 'BSMS', 'BNYS']);
   } else if (examTrack === 'NEET_PG') {
-    cutoffQuery = cutoffQuery.in('course_name', ['MD', 'MS', 'Diploma', 'DNB', 'MDS', 'MD/MS']);
+    cutoffQuery = cutoffQuery.or('course_name.ilike.%MD%,course_name.ilike.%MS%,course_name.ilike.%Diploma%,course_name.ilike.%DNB%,course_name.ilike.%MDS%');
   }
 
   // Apply state restriction to the DB cutoff query:
@@ -157,7 +157,7 @@ export async function retrieveContext(query) {
   } else if (examTrack === 'AYUSH') {
     collegesQuery = collegesQuery.in('course', ['BAMS', 'BUMS', 'BHMS', 'BSMS', 'BNYS']);
   } else if (examTrack === 'NEET_PG') {
-    collegesQuery = collegesQuery.in('course', ['MD', 'MS', 'Diploma', 'DNB', 'MDS']);
+    collegesQuery = collegesQuery.in('course', ['MBBS', 'MD', 'MS', 'Diploma', 'DNB', 'PG']);
   }
 
   const { data: allColleges } = await collegesQuery;
@@ -248,7 +248,7 @@ const DEEMED_KEYWORDS = [
       category: category,
       round_name: selectedRound === 'All Rounds' || selectedRound === 'All' ? 'Round 1' : selectedRound,
       year: year,
-      course_name: col.course || (examTrack === 'AYUSH' ? 'BAMS' : examTrack === 'NEET_PG' ? 'MD' : 'MBBS'),
+      course_name: examTrack === 'NEET_PG' ? 'MD / MS' : (col.course || (examTrack === 'AYUSH' ? 'BAMS' : 'MBBS')),
       quota_code: quotaCode,
       fee_amount: feeString,
       seats: col.seats || null,
