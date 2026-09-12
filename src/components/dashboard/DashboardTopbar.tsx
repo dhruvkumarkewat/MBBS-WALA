@@ -5,7 +5,6 @@ import {
   Menu,
   Moon,
   Sun,
-  Search,
   Share2,
   Check,
   Crown,
@@ -21,7 +20,6 @@ export default function DashboardTopbar({ title }: { title?: string }) {
   const { dark, toggleDark, setSidebarOpen } = useDashboard();
   const { user } = useAuth();
   const { isPremium } = usePremium();
-  const [q, setQ] = useState('');
   const [notifOpen, setNotifOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [notifs, setNotifs] = useState<Array<{ id: number; title: string; read: boolean }>>([]);
@@ -141,23 +139,6 @@ export default function DashboardTopbar({ title }: { title?: string }) {
           <h1 className="text-[15px] sm:text-[16px] font-bold tracking-tight leading-tight truncate max-w-[36vw] sm:max-w-none">
             {title || 'Dashboard'}
           </h1>
-        </div>
-
-        <div className="hidden lg:block flex-1 max-w-md relative mx-auto min-w-0">
-          <Search className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${dark ? 'text-white/30' : 'text-[#9ca3af]'}`} />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search colleges, cutoffs, docs…"
-            className={`w-full rounded-full pl-11 pr-16 py-2 text-sm font-medium outline-none border transition-shadow ${
-              dark
-                ? 'bg-white/[0.04] border-white/10 placeholder:text-white/30 focus:ring-2 focus:ring-orange-500/25'
-                : 'bg-white border-[#e8eaed] placeholder:text-[#9ca3af] shadow-sm focus:ring-2 focus:ring-orange-500/15'
-            }`}
-          />
-          <kbd className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold px-1.5 py-0.5 rounded-md border hidden xl:inline ${
-            dark ? 'border-white/10 text-white/30' : 'border-[#e5e7eb] text-[#c0c4cc]'
-          }`}>⌘ K</kbd>
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto">
