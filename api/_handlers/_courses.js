@@ -1,7 +1,24 @@
 import supabase from './db-client.js';
 
 /** Shared medical course constants for API routes */
-export const MEDICAL_COURSES = ['MBBS', 'BDS', 'BAMS', 'BHMS', 'BUMS', 'BSMS', 'BNYS'];
+export const UG_COURSES = ['MBBS', 'BDS', 'BAMS', 'BHMS', 'BUMS', 'BSMS', 'BNYS'];
+export const PG_COURSES = ['MD / MS', 'MD', 'MS', 'Diploma', 'DNB', 'MDS'];
+export const MEDICAL_COURSES = [...UG_COURSES, ...PG_COURSES];
+
+export function isPGCourse(course) {
+  if (!course) return false;
+  const up = String(course).trim().toUpperCase();
+  return (
+    up === 'MD' ||
+    up === 'MS' ||
+    up === 'MD / MS' ||
+    up === 'MD/MS' ||
+    up === 'DIPLOMA' ||
+    up === 'DNB' ||
+    up === 'MDS' ||
+    up.includes('PG')
+  );
+}
 
 export const COURSE_META = {
   MBBS: { exam: 'NEET UG', authority: 'MCC / State', baseChoices: 4500 },
@@ -11,12 +28,18 @@ export const COURSE_META = {
   BUMS: { exam: 'NEET UG', authority: 'AACCC / State AYUSH', baseChoices: 900 },
   BSMS: { exam: 'NEET UG', authority: 'AACCC / State AYUSH', baseChoices: 700 },
   BNYS: { exam: 'NEET UG', authority: 'AACCC / State', baseChoices: 600 },
+  'MD / MS': { exam: 'NEET PG / INI-CET', authority: 'MCC / State 50%', baseChoices: 2000 },
+  MD: { exam: 'NEET PG / INI-CET', authority: 'MCC / State 50%', baseChoices: 2500 },
+  MS: { exam: 'NEET PG / INI-CET', authority: 'MCC / State 50%', baseChoices: 2000 },
+  Diploma: { exam: 'NEET PG', authority: 'MCC / State 50%', baseChoices: 1000 },
+  DNB: { exam: 'NEET PG', authority: 'NBEMS / MCC', baseChoices: 2200 },
+  MDS: { exam: 'NEET MDS', authority: 'MCC / State 50%', baseChoices: 1200 },
 };
 
 export function normalizeCourse(value) {
   if (!value || value === 'All') return null;
   const up = String(value).trim().toUpperCase();
-  const hit = MEDICAL_COURSES.find((c) => c === up);
+  const hit = MEDICAL_COURSES.find((c) => c.toUpperCase() === up);
   return hit || String(value).trim();
 }
 
@@ -34,16 +57,20 @@ export async function collegeNamesForCourse(course) {
   if (!c) return null;
 
   let q = supabase.from('colleges').select('name');
-  if (c === 'MBBS') {
-    q = q
-      .or('course.eq.MBBS,course.is.null')
-      .not('name', 'ilike', '%Dental%')
-      .not('name', 'ilike', '%Dentistry%')
-      .not('name', 'ilike', '%BDS%')
-      .not('name', 'ilike', '%Ayurved%')
-      .not('name', 'ilike', '%Homeopath%')
-      .not('name', 'ilike', '%Unani%')
-      .not('name', 'ilike', '%Nursing%');
+  if (c === 'MBBS' || isPGCourse(c)) {
+    if (c === 'MDS') {
+      q = q.or('course.eq.MDS,course.eq.BDS,name.ilike.%Dental%,name.ilike.%Dentistry%,name.ilike.%BDS%');
+    } else {
+      q = q
+        .or('course.eq.MBBS,course.is.null')
+        .not('name', 'ilike', '%Dental%')
+        .not('name', 'ilike', '%Dentistry%')
+        .not('name', 'ilike', '%BDS%')
+        .not('name', 'ilike', '%Ayurved%')
+        .not('name', 'ilike', '%Homeopath%')
+        .not('name', 'ilike', '%Unani%')
+        .not('name', 'ilike', '%Nursing%');
+    }
   } else if (c === 'BDS') {
     q = q.or('course.eq.BDS,name.ilike.%Dental%,name.ilike.%Dentistry%,name.ilike.%BDS%');
   } else if (c === 'BAMS') {
@@ -77,6 +104,21 @@ export function applyCourseFilterOnCollegesQuery(query, course) {
   }
   if (c === 'BDS') {
     return query.or('course.eq.BDS,name.ilike.%Dental%,name.ilike.%Dentistry%,name.ilike.%BDS%');
+  }
+  if (c === 'MDS') {
+    return query.or('course.eq.MDS,course.eq.BDS,name.ilike.%Dental%,name.ilike.%Dentistry%');
+  }
+  if (isPGCourse(c)) {
+    // Medical colleges that offer PG degrees (MD, MS, Diploma, DNB)
+    return query
+      .or('course.eq.MBBS,course.eq.MD,course.eq.MS,course.is.null')
+      .not('name', 'ilike', '%Dental%')
+      .not('name', 'ilike', '%Dentistry%')
+      .not('name', 'ilike', '%BDS%')
+      .not('name', 'ilike', '%Ayurved%')
+      .not('name', 'ilike', '%Homeopath%')
+      .not('name', 'ilike', '%Unani%')
+      .not('name', 'ilike', '%Nursing%');
   }
   if (c === 'BAMS') {
     return query.or('course.eq.BAMS,name.ilike.%Ayurved%,name.ilike.%Ayush%');

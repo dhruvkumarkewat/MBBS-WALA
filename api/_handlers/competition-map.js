@@ -1,5 +1,6 @@
 import supabase from './db-client.js';
 import { createClient } from '@supabase/supabase-js';
+import { isPGCourse } from './_courses.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hbzzamezfhzsdupdhcin.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_5D517PLNdF92v3Q1s6Dp_w_WaZtsrPo';
@@ -213,7 +214,7 @@ export default async function handler(req, res) {
       supabase.from('state_competition').select('*').order('competition_score', { ascending: false }),
       fetchAll('colleges', 'id,name,city,state,country,college_type,course,feePvt,feeGovt', q => q.ilike('country', 'INDIA'), 4),
       fetchAll('seat_matrix', '*', q => q, 3),
-      fetchAll('cutoffs', 'state, category, score, closing_rank, aiq_rank, aiq_score, state_rank_range, college_name, quota_code, year, round_name', q => {
+      fetchAll('cutoffs', 'state, category, score, closing_rank, aiq_rank, aiq_score, state_rank_range, college_name, quota_code, year, round_name, course_name', q => {
         let query = q;
         if (category !== 'All') {
           query = query.eq('category', category);
@@ -222,6 +223,19 @@ export default async function handler(req, res) {
         }
         if (round && round !== 'All') {
           query = query.ilike('round_name', `%${round}%`);
+        }
+        if (course && course !== 'All') {
+          if (isPGCourse(course)) {
+            if (String(course).toUpperCase() === 'MDS') {
+              query = query.or('course_name.ilike.%MDS%,course_name.ilike.%Dental%');
+            } else if (String(course).toUpperCase() === 'DIPLOMA') {
+              query = query.ilike('course_name', '%Diploma%');
+            } else if (String(course).toUpperCase() === 'DNB') {
+              query = query.ilike('course_name', '%DNB%');
+            } else {
+              query = query.or('course_name.ilike.%MD%,course_name.ilike.%MS%,course_name.ilike.%Diploma%,course_name.ilike.%DNB%');
+            }
+          }
         }
         return query;
       }, 15) // Fetch multiple years for weighting
@@ -233,7 +247,18 @@ export default async function handler(req, res) {
     const collegesByState = new Map();
     for (const c of colleges || []) {
       const cCourse = (c.course || 'MBBS').toUpperCase();
-      if (course && course !== 'All' && cCourse !== String(course).toUpperCase()) continue;
+      if (course && course !== 'All') {
+        if (isPGCourse(course)) {
+          if (String(course).toUpperCase() === 'MDS') {
+            if (!cCourse.includes('BDS') && !/dental/i.test(c.name)) continue;
+          } else {
+            // MD / MS / Diploma / DNB
+            if (cCourse.includes('BDS') || /dental/i.test(c.name) || /ayur/i.test(c.name) || /homeo/i.test(c.name) || /unani/i.test(c.name)) continue;
+          }
+        } else if (cCourse !== String(course).toUpperCase()) {
+          continue;
+        }
+      }
       if (college_type && college_type !== 'Both' && college_type !== 'All' && c.college_type !== college_type) continue;
       
       if (fees && fees !== 'All') {
@@ -550,13 +575,22 @@ export default async function handler(req, res) {
     // AI Map Analysis — generate for all users to enrich the map overview
     try {
       const { callAI } = await import('./ai-service.js');
-      const aiPrompt = `You are an expert NEET Medical Admissions Counsellor. 
-Analyze this map data for a student with AIR ${userRank || 'Not provided'}, Category: ${category}, Quotas: ${quota}.
+      const isPG = isPGCourse(course);
+      const aiPrompt = isPG
+        ? `You are an expert NEET PG Medical Admissions Counsellor. 
+Analyze this map competition data for a postgraduate student targeting ${course} with AIR ${userRank || 'Not provided'}, Category: ${category}, Quotas: ${quota}.
+The safest states for securing ${course} seats are: ${(summary.easiest || []).map(e => e.state_name).join(', ')}.
+The toughest states with highest competition are: ${(summary.hottest || []).map(e => e.state_name).join(', ')}.
+Total states analyzed: ${list.length}.
+
+Write a personalized, concise 2-sentence tactical summary providing expert advice on which 50% AIQ rounds, state quota counselling, bond stipulations, or DNB/MD/MS choices they should target. Do not use markdown, just plain text. Return it in JSON format: {"summary_text": "..."}`
+        : `You are an expert NEET Medical Admissions Counsellor. 
+Analyze this map data for a student with AIR ${userRank || 'Not provided'}, Course: ${course}, Category: ${category}, Quotas: ${quota}.
 The safest states for them are: ${(summary.easiest || []).map(e => e.state_name).join(', ')}.
 The toughest states are: ${(summary.hottest || []).map(e => e.state_name).join(', ')}.
 Total states analyzed: ${list.length}.
 
-Write a personalized 2-sentence summary providing strategic advice on which state quotas or management quotas they should target. Do not use markdown, just plain text. Return it in JSON format: {"summary_text": "..."}`;
+Write a personalized 2-sentence summary providing strategic advice on which state quotas or management quotas they should target for ${course}. Do not use markdown, just plain text. Return it in JSON format: {"summary_text": "..."}`;
       
       const aiResponse = await callAI({
         system_prompt: 'You are an expert NEET Admissions Analyst. ONLY RETURN VALID JSON with key "summary_text".',
@@ -571,6 +605,19 @@ Write a personalized 2-sentence summary providing strategic advice on which stat
       }
     } catch (e) {
       console.error("AI Map Summary Error:", e.message || e);
+    }
+
+    if (!summary.ai_analysis) {
+      const isPG = isPGCourse(course);
+      if (isPG) {
+        summary.ai_analysis = userRank
+          ? `For NEET PG (${course}) with AIR #${userRank}, states like ${(summary.highest_chance || summary.easiest || []).slice(0, 2).map(e => e.state_name).join(' and ')} offer highest probability for clinical/DNB seats. Focus on Round 1 AIQ 50% and your home state counselling to optimize specialty vs. bond conditions.`
+          : `For NEET PG (${course}) admissions, competition is highest in ${(summary.hottest || []).slice(0, 2).map(e => e.state_name).join(' and ')}, while ${(summary.easiest || []).slice(0, 2).map(e => e.state_name).join(' and ')} offer favorable opening-to-closing margins across AIQ and State Quotas.`;
+      } else {
+        summary.ai_analysis = userRank
+          ? `With AIR #${userRank} in ${course}, states like ${(summary.highest_chance || summary.easiest || []).slice(0, 2).map(e => e.state_name).join(' and ')} present your strongest admission chances. Target state quota rounds alongside AIQ Round 1/2 for optimal college allocation.`
+          : `States like ${(summary.easiest || []).slice(0, 2).map(e => e.state_name).join(' and ')} offer lower cutoff pressure for ${course}, while ${(summary.hottest || []).slice(0, 2).map(e => e.state_name).join(' and ')} remain intensely competitive across both government and private seats.`;
+      }
     }
 
     // For free users: strip all premium fields from every state record and the summary

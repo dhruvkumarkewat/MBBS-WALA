@@ -1,5 +1,5 @@
 /** Global medical courses supported across the platform */
-export const MEDICAL_COURSES = [
+export const UG_COURSES = [
   'MBBS',
   'BDS',
   'BAMS',
@@ -9,7 +9,36 @@ export const MEDICAL_COURSES = [
   'BNYS',
 ] as const;
 
+export const PG_COURSES = [
+  'MD / MS',
+  'MD',
+  'MS',
+  'Diploma',
+  'DNB',
+  'MDS',
+] as const;
+
+export const MEDICAL_COURSES = [
+  ...UG_COURSES,
+  ...PG_COURSES,
+] as const;
+
 export type MedicalCourse = (typeof MEDICAL_COURSES)[number];
+
+export function isPGCourse(course?: string | null): boolean {
+  if (!course) return false;
+  const up = String(course).trim().toUpperCase();
+  return (
+    up === 'MD' ||
+    up === 'MS' ||
+    up === 'MD / MS' ||
+    up === 'MD/MS' ||
+    up === 'DIPLOMA' ||
+    up === 'DNB' ||
+    up === 'MDS' ||
+    up.includes('PG')
+  );
+}
 
 export const MEDICAL_COURSE_OPTIONS = [
   { value: 'All', label: 'All courses' },
@@ -55,6 +84,36 @@ export const COURSE_COUNSELLING: Record<
     authorities: ['AACCC', 'State AYUSH', 'State Counselling'],
     exam: 'NEET UG',
     notes: 'Yoga & Naturopathy via AYUSH / state counselling',
+  },
+  'MD / MS': {
+    authorities: ['MCC (AIQ 50%)', 'State Counselling (50%)', 'Central / Deemed'],
+    exam: 'NEET PG / INI-CET',
+    notes: 'Postgraduate Medical Specialities (MD/MS)',
+  },
+  MD: {
+    authorities: ['MCC (AIQ 50%)', 'State Counselling (50%)', 'Central / Deemed'],
+    exam: 'NEET PG / INI-CET',
+    notes: 'Doctor of Medicine PG clinical & non-clinical branches',
+  },
+  MS: {
+    authorities: ['MCC (AIQ 50%)', 'State Counselling (50%)', 'Central / Deemed'],
+    exam: 'NEET PG / INI-CET',
+    notes: 'Master of Surgery PG surgical specialities',
+  },
+  Diploma: {
+    authorities: ['MCC (AIQ 50%)', 'State Counselling (50%)'],
+    exam: 'NEET PG',
+    notes: 'Postgraduate Medical Diploma courses',
+  },
+  DNB: {
+    authorities: ['NBEMS / MCC (AIQ)'],
+    exam: 'NEET PG',
+    notes: 'Diplomate of National Board post-MBBS hospital training',
+  },
+  MDS: {
+    authorities: ['MCC (AIQ 50%)', 'State Dental Counselling (50%)'],
+    exam: 'NEET MDS',
+    notes: 'Master of Dental Surgery PG specialities',
   },
 };
 

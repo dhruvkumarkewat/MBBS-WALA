@@ -236,7 +236,22 @@ export function AiAssistantPage() {
 }
 
 /* ---------------- Shared course list for dashboard tools ---------------- */
-const DASH_COURSES = ['All', 'MBBS', 'BDS', 'BAMS', 'BHMS', 'BUMS', 'BSMS', 'BNYS'];
+const DASH_COURSES = [
+  'All',
+  'MBBS',
+  'BDS',
+  'BAMS',
+  'BHMS',
+  'BUMS',
+  'BSMS',
+  'BNYS',
+  'MD / MS',
+  'MD',
+  'MS',
+  'Diploma',
+  'DNB',
+  'MDS',
+];
 
 /* ── AI Predictor types (spec Section 6 Output Contract) ── */
 interface CollegePrediction {

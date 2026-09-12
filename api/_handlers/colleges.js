@@ -1,6 +1,6 @@
 import supabase from './db-client.js';
 import { parsePagination } from './_auth.js';
-import { applyCourseFilterOnCollegesQuery, MEDICAL_COURSES } from './_courses.js';
+import { applyCourseFilterOnCollegesQuery, MEDICAL_COURSES, isPGCourse } from './_courses.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -45,8 +45,11 @@ export default async function handler(req, res) {
         });
         const { data, error, count } = await buildQuery().range(from, to);
         if (error) throw error;
+        const mappedData = isPGCourse(course)
+          ? (data || []).map((col) => ({ ...col, course }))
+          : (data || []);
         return res.status(200).json({
-          data: data || [],
+          data: mappedData,
           page,
           limit,
           total: count || 0,
@@ -68,14 +71,20 @@ export default async function handler(req, res) {
           if (!data || data.length <= step) break;
           from += step + 1;
         }
-        return res.status(200).json(allData);
+        const mappedAll = isPGCourse(course)
+          ? (allData || []).map((col) => ({ ...col, course }))
+          : (allData || []);
+        return res.status(200).json(mappedAll);
       }
 
       let finalQuery = buildQuery();
       if (limitVal > 0) finalQuery = finalQuery.limit(limitVal);
       const { data, error } = await finalQuery;
       if (error) throw error;
-      return res.status(200).json(data || []);
+      const mappedData = isPGCourse(course)
+        ? (data || []).map((col) => ({ ...col, course }))
+        : (data || []);
+      return res.status(200).json(mappedData);
     }
     res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
