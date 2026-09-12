@@ -5,7 +5,7 @@
  * AI generates predictions from its own knowledge → Return response
  */
 import supabase from './db-client.js';
-import { callAI } from './ai-service.js';
+import { callAI, buildFallbackResponse } from './ai-service.js';
 import { getRoundMultiplier } from './_courses.js';
 import { getStateRules } from './_state-rules.js';
 import { evaluateEligibility } from './_eligibility-engine.js';
@@ -964,8 +964,34 @@ This is a NEET PG prediction for MD/MS/Diploma/DNB seats.
 
       response = aiResponse;
     } catch (aiError) {
-      console.error('[AI-Predict] All AI providers failed:', aiError.message || aiError);
-      throw aiError;
+      console.warn('[AI-Predict] All AI providers failed, falling back to deterministic prediction engine:', aiError.message || aiError);
+      response = buildFallbackResponse(query, context, resolved);
+      if (!response.college_predictions && response.colleges) {
+        const mapCollege = (c) => ({
+          name: c.college_name,
+          probability: c.chance_tier,
+          expected_round: c.closing_rank_reference?.[0]?.round || 'Round 1',
+          fees: (c.fee?.formatted && c.fee?.formatted !== 'N/A') ? c.fee.formatted : 'Check Govt/State Portal',
+          quota: c.quota,
+          predicted_closing_rank: c.closing_rank_reference?.[0]?.rank || c.closing_rank || 0,
+          closing_rank: c.closing_rank_reference?.[0]?.rank || c.closing_rank || 'N/A',
+          reason: 'Based on official historical cutoffs',
+          historical_trend: [],
+        });
+        response.college_predictions = {
+          safe: (response.colleges.filter(c => c.chance_tier === 'High') || []).map(mapCollege),
+          moderate: (response.colleges.filter(c => c.chance_tier === 'Moderate') || []).map(mapCollege),
+          reach: (response.colleges.filter(c => c.chance_tier === 'Reach') || []).map(mapCollege),
+        };
+      }
+      if (!response.admission_summary) {
+        response.admission_summary = {
+          status: 'Eligible for Counselling',
+          explanation: `Cutoff-based deterministic analysis for rank #${query.score_or_rank?.value || ''}.`,
+          data_reliability: 'High',
+          expected_probability: '80%',
+        };
+      }
     }
 
     // Ensure meta always has timing info

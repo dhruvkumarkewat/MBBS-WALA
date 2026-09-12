@@ -233,11 +233,13 @@ Return ONLY valid JSON. No markdown, no explanation outside JSON. Match this str
 
 // ── Provider Calling ────────────────────────────────────────────────────────
 
+const DEFAULT_GEMINI_KEY = 'AIzaSyDC63hsB6asM0D4T3wu_h24C7Vp8YsATJs';
+
 const PROVIDER_CONFIGS = {
   gemini: {
     name: 'Gemini',
     buildRequest: (payload) => {
-      const key = process.env.GEMINI_API_KEY;
+      const key = process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY_2 || DEFAULT_GEMINI_KEY;
       if (!key) return null;
       return {
         url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${key}`,
@@ -277,7 +279,7 @@ const PROVIDER_CONFIGS = {
   gemini_fallback: {
     name: 'Gemini (Fallback Key)',
     buildRequest: (payload) => {
-      const key = process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY_2 || process.env.GEMINI_API_KEY_FALLBACK;
+      const key = process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY_2 || process.env.GEMINI_API_KEY_FALLBACK || DEFAULT_GEMINI_KEY;
       if (!key) return null;
       return {
         url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${key}`,
