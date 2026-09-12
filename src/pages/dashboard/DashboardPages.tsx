@@ -767,9 +767,303 @@ interface College {
   nirf?: number;
   cutoff?: Record<string, any>;
 }
+
+/* ── AI Best Colleges sub-form (reuses PredictorResults component) ── */
+function AiBestCollegesTab({ s, isPremium }: { s: ReturnType<typeof useShell>; isPremium: boolean }) {
+  const { profile } = useAuth();
+
+  // Form state (mirrors PredictorPage)
+  const [aiMode, setAiMode] = useState<'rank' | 'score'>('rank');
+  const [aiExamTrack, setAiExamTrack] = useState<'MBBS_BDS' | 'AYUSH'>('MBBS_BDS');
+  const [aiRank, setAiRank] = useState(profile?.neet_rank?.toString() || '');
+  const [aiScore, setAiScore] = useState(profile?.neet_score?.toString() || '');
+  const [aiCategory, setAiCategory] = useState(profile?.category || 'General');
+  const [aiDomicileState, setAiDomicileState] = useState(profile?.domicile_state || profile?.state || '');
+  const [aiTargetState, setAiTargetState] = useState('');
+  const [aiQuotas, setAiQuotas] = useState<string[]>(['AIQ']);
+  const [aiRound, setAiRound] = useState('Round 1');
+  const [aiNeetYear, setAiNeetYear] = useState(new Date().getFullYear());
+
+  // Result state
+  const [aiResponse, setAiResponse] = useState<PredictorResponse | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
+
+  const toggleAiQuota = (v: string) => setAiQuotas([v]);
+  const isOnlyStateQuota = aiQuotas.includes('State') && !aiQuotas.includes('AIQ');
+
+  const handleAiReset = () => { setAiResponse(null); setAiError(''); };
+
+  const runAiPredict = async (e: FormEvent) => {
+    e.preventDefault();
+    setAiLoading(true);
+    setAiError('');
+    setAiResponse(null);
+    try {
+      const rankNum = aiMode === 'rank' ? Number(aiRank) : 0;
+      const scoreNum = aiMode === 'score' ? Number(aiScore) : 0;
+      if (aiMode === 'rank' && (isNaN(rankNum) || rankNum < 1)) throw new Error('Enter a valid NEET All India Rank (AIR)');
+      if (aiMode === 'score' && (isNaN(scoreNum) || scoreNum < 0 || scoreNum > 720)) throw new Error('Enter a valid NEET score (0–720)');
+      if (aiQuotas.length === 0) throw new Error('Select at least one quota');
+      if (aiQuotas.includes('State') && !aiDomicileState) throw new Error('Please select your Domicile State for State Quota colleges.');
+      const payload = {
+        exam_track: aiExamTrack,
+        rank: aiMode === 'rank' ? rankNum : undefined,
+        score: aiMode === 'score' ? scoreNum : undefined,
+        neet_year: aiNeetYear,
+        round: aiRound,
+        category: aiCategory,
+        quotas: aiQuotas,
+        domicile_state: aiDomicileState || null,
+        target_state: aiTargetState || null,
+        state: aiDomicileState || null,
+      };
+      const data = await apiJson<PredictorResponse>('/api/ai-predict', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      setAiResponse(data);
+    } catch (err: any) {
+      setAiError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const floorMet = aiResponse?.meta?.qualifying_floor_met !== false;
+
+  return (
+    <div className="space-y-4">
+      {/* Intro banner */}
+      <div className={`rounded-2xl border p-4 bg-gradient-to-r from-primary/10 to-purple-500/5 ${s.card}`}>
+        <div className="flex items-center gap-2 mb-1">
+          <Sparkles className="w-4 h-4 text-primary" />
+          <span className="text-sm font-black uppercase tracking-wider text-primary">AI Best Colleges Finder</span>
+        </div>
+        <p className={`text-xs leading-relaxed ${s.muted}`}>
+          Enter your NEET rank or score to instantly predict the best colleges across all quotas — Safe, Moderate, and Reach — ranked by probability using real MCC/state counselling data.
+        </p>
+      </div>
+
+      {!aiResponse ? (
+        <form onSubmit={runAiPredict} className={`rounded-2xl border p-5 space-y-4 ${s.card}`}>
+          {/* Exam Track */}
+          <div>
+            <span className={`text-xs font-bold uppercase ${s.muted}`}>Exam Track</span>
+            <div className="flex gap-2 mt-1.5">
+              {(['MBBS_BDS', 'AYUSH'] as const).map((t) => (
+                <button
+                  key={t} type="button"
+                  onClick={() => setAiExamTrack(t)}
+                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
+                    aiExamTrack === t
+                      ? 'bg-primary text-white border-primary shadow-md'
+                      : `border-white/10 ${s.muted} hover:border-primary/40`
+                  }`}
+                >
+                  {t === 'MBBS_BDS' ? '🏥 MBBS / BDS' : '🌿 AYUSH (BAMS/BHMS/BUMS)'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Rank / Score Toggle */}
+          <div>
+            <span className={`text-xs font-bold uppercase ${s.muted}`}>Input Mode</span>
+            <div className="flex p-1 mt-1.5 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+              {(['rank', 'score'] as const).map((m) => (
+                <button
+                  key={m} type="button"
+                  onClick={() => setAiMode(m)}
+                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+                    aiMode === m ? 'bg-orange-500 text-white shadow-md' : `${s.muted} hover:text-orange-500`
+                  }`}
+                >
+                  {m === 'rank' ? 'By NEET Rank (AIR)' : 'By NEET Score'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Rank / Score Input + Year */}
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block">
+              <span className="text-xs font-bold uppercase text-orange-500">
+                {aiMode === 'rank' ? 'NEET AIR *' : 'NEET Score (0–720) *'}
+              </span>
+              <input
+                type="number"
+                value={aiMode === 'rank' ? aiRank : aiScore}
+                onChange={(e) => {
+                  if (aiMode === 'rank') { setAiRank(e.target.value); }
+                  else { const v = Number(e.target.value); if (v <= 720) setAiScore(e.target.value); }
+                }}
+                min={aiMode === 'rank' ? 1 : 0}
+                max={aiMode === 'rank' ? 2500000 : 720}
+                placeholder={aiMode === 'rank' ? 'e.g. 15400' : 'e.g. 612'}
+                className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
+                required
+              />
+            </label>
+            <label className="block">
+              <span className={`text-xs font-bold uppercase ${s.muted}`}>NEET Year</span>
+              <select
+                value={aiNeetYear}
+                onChange={(e) => setAiNeetYear(Number(e.target.value))}
+                className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
+              >
+                {[2026, 2025, 2024].map((y) => <option key={y}>{y}</option>)}
+              </select>
+            </label>
+          </div>
+
+          {/* Category, Round, Domicile, Target State */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="block">
+              <span className={`text-xs font-bold uppercase ${s.muted}`}>Category</span>
+              <select
+                value={aiCategory}
+                onChange={(e) => setAiCategory(e.target.value)}
+                className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
+              >
+                {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+              </select>
+            </label>
+            <label className="block">
+              <span className={`text-xs font-bold uppercase ${s.muted}`}>Counselling Round</span>
+              <select
+                value={aiRound}
+                onChange={(e) => setAiRound(e.target.value)}
+                className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
+              >
+                {COUNSELLING_ROUNDS.map((r) => <option key={r}>{r}</option>)}
+              </select>
+            </label>
+            <label className="block">
+              <span className={`text-xs font-bold uppercase ${aiQuotas.includes('State') ? 'text-primary' : s.muted}`}>
+                Domicile State {aiQuotas.includes('State') ? '(State Quota *)' : ''}
+              </span>
+              <select
+                value={aiDomicileState}
+                onChange={(e) => setAiDomicileState(e.target.value)}
+                className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input} ${aiQuotas.includes('State') && !aiDomicileState ? 'border-primary/60 bg-primary/5 ring-1 ring-primary/30' : ''}`}
+              >
+                <option value="">Select Domicile State...</option>
+                {INDIA_STATES.map((st) => <option key={st}>{st}</option>)}
+              </select>
+            </label>
+            <label className="block">
+              <span className={`text-xs font-bold uppercase ${s.muted}`}>Target State (Optional)</span>
+              <select
+                value={aiTargetState}
+                onChange={(e) => setAiTargetState(e.target.value)}
+                className={`mt-1 w-full rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
+              >
+                <option value="">All States / Anywhere</option>
+                {INDIA_STATES.map((st) => <option key={st}>{st}</option>)}
+              </select>
+            </label>
+          </div>
+
+          {/* Quota Select */}
+          <div>
+            <span className={`text-xs font-bold uppercase ${s.muted}`}>Quota (select one)</span>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {QUOTA_OPTIONS.map(({ value, label }) => (
+                <button
+                  key={value} type="button"
+                  onClick={() => toggleAiQuota(value)}
+                  className={`text-xs px-3 py-1.5 rounded-full border font-semibold transition-all ${
+                    aiQuotas.includes(value)
+                      ? 'bg-primary text-white border-primary'
+                      : `border-white/15 ${s.muted} hover:border-primary/40`
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {aiQuotas.includes('State') && aiDomicileState && (
+              <div className="flex items-center gap-2 text-xs font-semibold text-primary bg-primary/10 border border-primary/20 rounded-xl px-3.5 py-2 mt-2.5">
+                <span>📍</span>
+                <span>
+                  {isOnlyStateQuota ? (
+                    <><strong>State Quota Only:</strong> Only medical colleges in <strong>{aiDomicileState}</strong> with 85% state quota will be shown.</>
+                  ) : (
+                    <><strong>State Quota Included:</strong> 85% state quota colleges will be shown for <strong>{aiDomicileState}</strong> alongside other selected quotas.</>
+                  )}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {aiError && (
+            <p className="text-sm font-semibold text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
+              {aiError}
+            </p>
+          )}
+
+          {aiLoading ? (
+            <div className="w-full relative z-20">
+              <NeetLoader isPredicting={aiLoading} />
+            </div>
+          ) : (
+            <button type="submit" disabled={aiLoading} className="zn-cta zn-cta-primary w-full justify-center text-sm">
+              🔮 Find Best Colleges{aiMode === 'rank' && aiRank ? ` for Rank #${Number(aiRank).toLocaleString()}` : aiMode === 'score' && aiScore ? ` for Score ${aiScore}/720` : ''}
+            </button>
+          )}
+        </form>
+      ) : (
+        <div className={`rounded-2xl border p-5 mb-2 flex flex-col sm:flex-row items-center justify-between gap-4 ${s.card}`}>
+          <div>
+            <h3 className="text-sm font-bold">AI Prediction Active</h3>
+            <p className={`text-xs mt-1 ${s.muted}`}>
+              Showing best colleges for {aiExamTrack === 'MBBS_BDS' ? 'MBBS/BDS' : 'AYUSH'} · {aiMode === 'score' && aiResponse?.query?.score_or_rank?.original_score ? `Score ${aiResponse.query.score_or_rank.original_score} (Est. AIR ${aiResponse.query.score_or_rank.value?.toLocaleString()})` : `AIR ${aiRank}`} · {aiCategory} · {aiQuotas.join(', ')}
+            </p>
+          </div>
+          <button onClick={handleAiReset} className="zn-cta border border-white/10 text-sm whitespace-nowrap hover:bg-white/5">
+            🔄 New Search
+          </button>
+        </div>
+      )}
+
+      {/* AI Results */}
+      {aiResponse && (
+        <div className="space-y-4">
+          {!floorMet ? (
+            <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-5">
+              <p className="text-sm font-bold text-red-400 mb-1">⛔ Below NEET Qualifying Threshold</p>
+              <p className="text-sm text-red-300/80 leading-relaxed">
+                {aiResponse.fallback?.message || 'This score/rank is below the minimum NEET qualifying cutoff. No MBBS/BDS/AYUSH seat is possible in any quota this cycle.'}
+              </p>
+              {aiResponse.fallback?.alternative_courses && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {(aiResponse.fallback.alternative_courses || []).map((c) => (
+                    <span key={c} className="text-xs px-3 py-1 rounded-full bg-white/10 text-white/70 font-semibold">{c}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <PredictorResults
+              aiResponse={aiResponse}
+              s={s}
+              isPremium={isPremium}
+              domicileState={aiDomicileState}
+              targetState={aiTargetState || null}
+              selectedQuotas={aiQuotas}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function FinderPage() {
   const s = useShell();
   const { isPremium } = usePremium();
+  const [finderTab, setFinderTab] = useState<'browse' | 'ai'>('browse');
   const [colleges, setColleges] = useState<College[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
@@ -848,169 +1142,210 @@ export function FinderPage() {
   return (
     <PremiumGate featureName="Advanced College Finder">
       <div>
-        <PageHead title="College Finder" sub={`GET /api/colleges · ${total} total · page ${page}/${totalPages} · MBBS–BNYS`} />
+        <PageHead title="College Finder" sub="Browse 1200+ indexed colleges or let AI predict the best ones for your rank" />
         <ErrorBox message={error} />
-        <div className="flex flex-col sm:flex-row gap-2 mb-4">
-        <div className="relative flex-1">
-          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${s.muted}`} />
-          <input
-            value={q}
-            onChange={(e) => {
-              setPage(1);
-              setQ(e.target.value);
-            }}
-            placeholder="Search college, city, state, course"
-            className={`w-full rounded-xl border pl-10 pr-3 py-2.5 text-sm font-medium ${s.input}`}
-          />
+
+        {/* ── Tab Switcher ── */}
+        <div className={`flex p-1 mb-5 rounded-2xl border ${s.dark ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'}`}>
+          <button
+            type="button"
+            onClick={() => setFinderTab('browse')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-bold transition-all ${
+              finderTab === 'browse'
+                ? 'bg-white dark:bg-white/15 text-primary shadow-sm'
+                : `${s.muted} hover:text-primary`
+            }`}
+          >
+            <Search className="w-4 h-4" />
+            Browse Colleges
+          </button>
+          <button
+            type="button"
+            onClick={() => setFinderTab('ai')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-bold transition-all ${
+              finderTab === 'ai'
+                ? 'bg-gradient-to-r from-primary to-purple-600 text-white shadow-md'
+                : `${s.muted} hover:text-primary`
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            🔮 AI Best Colleges
+          </button>
         </div>
-        <select
-          value={course}
-          onChange={(e) => {
-            setPage(1);
-            setCourse(e.target.value);
-          }}
-          className={`rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
-        >
-          {DASH_COURSES.map((t) => (
-            <option key={t} value={t}>
-              {t === 'All' ? 'All courses' : t}
-            </option>
-          ))}
-        </select>
-        <select
-          value={type}
-          onChange={(e) => {
-            setPage(1);
-            setType(e.target.value);
-          }}
-          className={`rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
-        >
-          {['All', 'Government', 'Private'].map((t) => (
-            <option key={t} value={t}>
-              {t === 'All' ? 'All types' : t}
-            </option>
-          ))}
-        </select>
-      </div>
-      {loading ? (
-        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className={`h-28 rounded-2xl animate-pulse ${s.chip}`} />
-          ))}
-        </div>
-      ) : (!isPremium && (page > 1 || q.trim() !== '')) ? (
-        <div className="col-span-full p-12 text-center rounded-3xl border min-h-[400px] flex flex-col items-center justify-center border-primary/20 bg-primary/5">
-          <Crown className="w-12 h-12 text-primary mx-auto mb-4" />
-          <h3 className="text-xl font-black mb-2">Search & Pagination are Premium Features</h3>
-          <p className="text-sm opacity-70 max-w-md mx-auto mb-6">Upgrade to Premium to search for specific colleges, apply filters, and access all pages of our database.</p>
-          <Link to="/dashboard/subscription" className="zn-cta px-8 py-3">Upgrade to Premium</Link>
-        </div>
-      ) : (
-        <>
-          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
-            {colleges.map((c) => {
-              const isSaved = savedIds.has(c.id);
-              return (
-                <div key={c.id} className={`rounded-2xl border p-4 flex flex-col gap-2 ${s.card}`}>
-                  <div className="flex items-start justify-between gap-2">
-                    <button 
-                      onClick={() => setSelectedCollegeInfo(c)}
-                      className="font-bold text-sm leading-snug hover:underline decoration-orange-500 underline-offset-4 text-left transition-all hover:text-orange-400"
-                    >
-                      {c.name}
-                    </button>
+
+        {/* ── Browse Colleges Tab ── */}
+        {finderTab === 'browse' && (
+          <>
+            <div className="flex flex-col sm:flex-row gap-2 mb-4">
+              <div className="relative flex-1">
+                <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${s.muted}`} />
+                <input
+                  value={q}
+                  onChange={(e) => {
+                    setPage(1);
+                    setQ(e.target.value);
+                  }}
+                  placeholder="Search college, city, state, course"
+                  className={`w-full rounded-xl border pl-10 pr-3 py-2.5 text-sm font-medium ${s.input}`}
+                />
+              </div>
+              <select
+                value={course}
+                onChange={(e) => {
+                  setPage(1);
+                  setCourse(e.target.value);
+                }}
+                className={`rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
+              >
+                {DASH_COURSES.map((t) => (
+                  <option key={t} value={t}>
+                    {t === 'All' ? 'All courses' : t}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={type}
+                onChange={(e) => {
+                  setPage(1);
+                  setType(e.target.value);
+                }}
+                className={`rounded-xl border px-3 py-2.5 text-sm font-semibold ${s.input}`}
+              >
+                {['All', 'Government', 'Private'].map((t) => (
+                  <option key={t} value={t}>
+                    {t === 'All' ? 'All types' : t}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {loading ? (
+              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className={`h-28 rounded-2xl animate-pulse ${s.chip}`} />
+                ))}
+              </div>
+            ) : (!isPremium && (page > 1 || q.trim() !== '')) ? (
+              <div className="col-span-full p-12 text-center rounded-3xl border min-h-[400px] flex flex-col items-center justify-center border-primary/20 bg-primary/5">
+                <Crown className="w-12 h-12 text-primary mx-auto mb-4" />
+                <h3 className="text-xl font-black mb-2">Search & Pagination are Premium Features</h3>
+                <p className="text-sm opacity-70 max-w-md mx-auto mb-6">Upgrade to Premium to search for specific colleges, apply filters, and access all pages of our database.</p>
+                <Link to="/dashboard/subscription" className="zn-cta px-8 py-3">Upgrade to Premium</Link>
+              </div>
+            ) : (
+              <>
+                <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {colleges.map((c) => {
+                    const isSaved = savedIds.has(c.id);
+                    return (
+                      <div key={c.id} className={`rounded-2xl border p-4 flex flex-col gap-2 ${s.card}`}>
+                        <div className="flex items-start justify-between gap-2">
+                          <button
+                            onClick={() => setSelectedCollegeInfo(c)}
+                            className="font-bold text-sm leading-snug hover:underline decoration-orange-500 underline-offset-4 text-left transition-all hover:text-orange-400"
+                          >
+                            {c.name}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleSave(c.id)}
+                            className="shrink-0 p-1.5 rounded-lg hover:opacity-80"
+                            aria-label="Save"
+                          >
+                            {isSaved ? (
+                              <BookmarkCheck className="w-4 h-4 text-primary" />
+                            ) : (
+                              <Bookmark className={`w-4 h-4 ${s.muted}`} />
+                            )}
+                          </button>
+                        </div>
+                        <p className={`text-xs font-medium ${s.muted}`}>
+                          {[c.city, c.state].filter(Boolean).join(', ')}
+                          {c.nirf && c.nirf < 999999 ? ` · NIRF #${c.nirf}` : ''}
+                        </p>
+
+                        {/* Opening and Closing ranks logic for UI */}
+                        {c.cutoff && (c.cutoff.closing_rank || c.cutoff.GEN_closing) ? (
+                          <div className="flex gap-2">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600`}>
+                              Opening: {c.cutoff.opening_rank || c.cutoff.GEN_opening || c.cutoff.opening || '—'}
+                            </span>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600`}>
+                              Closing: {c.cutoff.closing_rank || c.cutoff.GEN_closing || c.cutoff.closing || '—'}
+                            </span>
+                          </div>
+                        ) : null}
+                        <div className="flex items-center gap-2 mt-auto pt-1 flex-wrap">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${s.chip}`}>
+                            {c.course || 'MBBS'}
+                          </span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${s.chip}`}>
+                            {c.country}
+                          </span>
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                              c.college_type === 'Government'
+                                ? 'bg-emerald-500/15 text-emerald-600'
+                                : 'bg-orange-500/15 text-orange-600'
+                            }`}
+                          >
+                            {c.college_type}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {isPremium && (
+                  <div className="flex items-center justify-center gap-3 mt-6">
                     <button
                       type="button"
-                      onClick={() => toggleSave(c.id)}
-                      className="shrink-0 p-1.5 rounded-lg hover:opacity-80"
-                      aria-label="Save"
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      className="zn-cta text-sm py-2 disabled:opacity-40"
                     >
-                      {isSaved ? (
-                        <BookmarkCheck className="w-4 h-4 text-primary" />
-                      ) : (
-                        <Bookmark className={`w-4 h-4 ${s.muted}`} />
-                      )}
+                      <ChevronLeft className="w-4 h-4" /> Prev
+                    </button>
+                    <span className={`text-sm font-bold ${s.muted}`}>
+                      {page} / {totalPages}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={page >= totalPages}
+                      onClick={() => setPage((p) => p + 1)}
+                      className="zn-cta text-sm py-2 disabled:opacity-40"
+                    >
+                      Next <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
-                  <p className={`text-xs font-medium ${s.muted}`}>
-                    {[c.city, c.state].filter(Boolean).join(', ')}
-                    {c.nirf && c.nirf < 999999 ? ` · NIRF #${c.nirf}` : ''}
-                  </p>
-                  
-                  {/* Opening and Closing ranks logic for UI */}
-                  {c.cutoff && (c.cutoff.closing_rank || c.cutoff.GEN_closing) ? (
-                    <div className="flex gap-2">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600`}>
-                        Opening: {c.cutoff.opening_rank || c.cutoff.GEN_opening || c.cutoff.opening || '—'}
-                      </span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600`}>
-                        Closing: {c.cutoff.closing_rank || c.cutoff.GEN_closing || c.cutoff.closing || '—'}
-                      </span>
-                    </div>
-                  ) : null}
-                  <div className="flex items-center gap-2 mt-auto pt-1 flex-wrap">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${s.chip}`}>
-                      {c.course || 'MBBS'}
-                    </span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${s.chip}`}>
-                      {c.country}
-                    </span>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                        c.college_type === 'Government'
-                          ? 'bg-emerald-500/15 text-emerald-600'
-                          : 'bg-orange-500/15 text-orange-600'
-                      }`}
-                    >
-                      {c.college_type}
-                    </span>
+                )}
+                {!isPremium && totalPages > 1 && (
+                  <div className="mt-8 text-center border-t border-primary/10 pt-6">
+                    <Crown className="w-5 h-5 text-primary mx-auto mb-2" />
+                    <p className="text-sm font-bold mb-2">Upgrade to view all {total} colleges</p>
+                    <Link to="/dashboard/subscription" className="zn-cta px-5 py-2 text-xs">Upgrade Now</Link>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-            {isPremium && (
-              <div className="flex items-center justify-center gap-3 mt-6">
-                <button
-                  type="button"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="zn-cta text-sm py-2 disabled:opacity-40"
-                >
-                  <ChevronLeft className="w-4 h-4" /> Prev
-                </button>
-                <span className={`text-sm font-bold ${s.muted}`}>
-                  {page} / {totalPages}
-                </span>
-                <button
-                  type="button"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                  className="zn-cta text-sm py-2 disabled:opacity-40"
-                >
-                  Next <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-            {!isPremium && totalPages > 1 && (
-              <div className="mt-8 text-center border-t border-primary/10 pt-6">
-                <Crown className="w-5 h-5 text-primary mx-auto mb-2" />
-                <p className="text-sm font-bold mb-2">Upgrade to view all {total} colleges</p>
-                <Link to="/dashboard/subscription" className="zn-cta px-5 py-2 text-xs">Upgrade Now</Link>
-              </div>
+                )}
+              </>
             )}
           </>
         )}
-      <CollegeInfoModal 
-        collegeName={selectedCollegeInfo} 
-        isOpen={!!selectedCollegeInfo} 
-        onClose={() => setSelectedCollegeInfo(null)} 
-        s={s}
-      />
+
+        {/* ── AI Best Colleges Tab ── */}
+        {finderTab === 'ai' && (
+          <AiBestCollegesTab s={s} isPremium={isPremium} />
+        )}
+
+        <CollegeInfoModal
+          collegeName={selectedCollegeInfo}
+          isOpen={!!selectedCollegeInfo}
+          onClose={() => setSelectedCollegeInfo(null)}
+          s={s}
+        />
       </div>
     </PremiumGate>
   );
 }
+
 
 /* ---------------- Compare → enriched seats + cutoffs ---------------- */
 const Autocomplete = ({ value, onChange, placeholder, colleges, s }: any) => {
