@@ -16,8 +16,38 @@ export function isPGCourse(course) {
     up === 'DIPLOMA' ||
     up === 'DNB' ||
     up === 'MDS' ||
-    up.includes('PG')
+    up.includes('PG') ||
+    up.startsWith('MD ') ||
+    up.startsWith('MS ') ||
+    up.startsWith('DNB ') ||
+    up.startsWith('MDS ') ||
+    up.startsWith('DGO') ||
+    up.startsWith('DCH') ||
+    up.startsWith('DMRD') ||
+    up.startsWith('DA ')
   );
+}
+
+export function getFieldForCourse(course) {
+  if (!course) return 'MBBS_BDS';
+  const c = String(course).toUpperCase();
+  if (c.includes('BAMS') || c.includes('BHMS') || c.includes('BUMS') || c.includes('BSMS') || c.includes('BNYS') || c.includes('AYUSH')) {
+    return 'AYUSH';
+  }
+  if (
+    c.includes('MD') ||
+    c.includes('MS') ||
+    c.includes('DIPLOMA') ||
+    c.includes('DNB') ||
+    c.includes('DGO') ||
+    c.includes('DCH') ||
+    c.includes('DMRD') ||
+    c.includes('DA') ||
+    c.includes('PG')
+  ) {
+    return 'NEET_PG';
+  }
+  return 'MBBS_BDS';
 }
 
 export const COURSE_META = {

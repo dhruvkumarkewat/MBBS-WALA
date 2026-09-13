@@ -68,10 +68,14 @@ const CATEGORIES = [
 ];
 
 const COURSES = [
-  { id: 'MBBS', name: 'MBBS (Allopathy)', icon: Stethoscope },
-  { id: 'BDS', name: 'BDS (Dental)', icon: Award },
-  { id: 'BAMS', name: 'BAMS (Ayurvedic)', icon: BookOpen },
-  { id: 'BHMS', name: 'BHMS (Homeopathic)', icon: Compass },
+  { id: 'MBBS', name: 'MBBS', icon: Stethoscope },
+  { id: 'BDS', name: 'BDS', icon: Award },
+  { id: 'BAMS', name: 'BAMS', icon: BookOpen },
+  { id: 'BHMS', name: 'BHMS', icon: Compass },
+  { id: 'BUMS', name: 'BUMS', icon: Compass },
+  { id: 'MD', name: 'MD / MS', icon: Stethoscope },
+  { id: 'Diploma', name: 'PG Diploma', icon: BookOpen },
+  { id: 'DNB', name: 'DNB', icon: Award },
 ];
 
 export default function OnboardingPage() {

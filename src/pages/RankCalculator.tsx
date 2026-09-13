@@ -2,7 +2,19 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Calculator, Sparkles, Trophy, Award, MapPin, CheckCircle2, GraduationCap, ExternalLink } from 'lucide-react';
 import CollegeMatchResults, { type MatchRow } from '../components/CollegeMatchResults';
-import { MEDICAL_COURSES, maxScoreForCourse, INDIAN_STATES, COUNSELLING_ROUNDS } from '../lib/courses';
+import {
+  MEDICAL_COURSES,
+  maxScoreForCourse,
+  INDIAN_STATES,
+  COUNSELLING_ROUNDS,
+  MBBS_BDS_COURSES,
+  AYUSH_COURSES,
+  PG_MD_COURSES,
+  PG_MS_COURSES,
+  PG_DIPLOMA_COURSES,
+  PG_DNB_COURSES,
+  PG_MDS_COURSES,
+} from '../lib/courses';
 
 export interface ScholarshipMatch {
   name: string;
@@ -77,7 +89,7 @@ export default function RankCalculator() {
   const [error, setError] = useState('');
 
   const scoreCap = exam === 'NEET UG' ? maxScoreForCourse(course, exam) : maxScores[exam] || 720;
-  const showCourse = exam === 'NEET UG';
+  const showCourse = exam === 'NEET UG' || exam === 'NEET PG' || exam === 'NEET MDS';
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -220,7 +232,15 @@ export default function RankCalculator() {
               <select
                 value={exam}
                 onChange={(e) => {
-                  setExam(e.target.value);
+                  const newExam = e.target.value;
+                  setExam(newExam);
+                  if (newExam === 'NEET PG') {
+                    setCourse('MD General Medicine');
+                  } else if (newExam === 'NEET MDS') {
+                    setCourse('MDS Orthodontics');
+                  } else {
+                    setCourse('MBBS');
+                  }
                   setResult(null);
                   setMatches([]);
                 }}
@@ -237,7 +257,9 @@ export default function RankCalculator() {
             {/* Course selector */}
             {showCourse && (
               <label className="block text-left">
-                <span className="text-xs font-bold uppercase tracking-wide text-white/50">Course</span>
+                <span className="text-xs font-bold uppercase tracking-wide text-white/50">
+                  {exam === 'NEET PG' ? 'PG Speciality / Course' : 'Course'}
+                </span>
                 <select
                   value={course}
                   onChange={(e) => {
@@ -247,11 +269,53 @@ export default function RankCalculator() {
                   }}
                   className="mt-1.5 w-full border border-white/12 rounded-2xl px-3.5 py-3 font-semibold bg-[#0F1218] text-white focus:outline-none focus:ring-2 focus:ring-[#F97316]/35"
                 >
-                  {MEDICAL_COURSES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
+                  {exam === 'NEET UG' && (
+                    <>
+                      <optgroup label="MBBS & BDS">
+                        {MBBS_BDS_COURSES.map((c) => (
+                          <option key={c.id} value={c.code}>{c.name}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="AYUSH Courses">
+                        {AYUSH_COURSES.map((c) => (
+                          <option key={c.id} value={c.code}>{c.name}</option>
+                        ))}
+                      </optgroup>
+                    </>
+                  )}
+
+                  {exam === 'NEET PG' && (
+                    <>
+                      <optgroup label="MD Specialities (Doctor of Medicine)">
+                        {PG_MD_COURSES.map((c) => (
+                          <option key={c.id} value={c.code}>{c.name}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="MS Specialities (Master of Surgery)">
+                        {PG_MS_COURSES.map((c) => (
+                          <option key={c.id} value={c.code}>{c.name}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="PG Diplomas">
+                        {PG_DIPLOMA_COURSES.map((c) => (
+                          <option key={c.id} value={c.code}>{c.name}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="DNB Specialities">
+                        {PG_DNB_COURSES.map((c) => (
+                          <option key={c.id} value={c.code}>{c.name}</option>
+                        ))}
+                      </optgroup>
+                    </>
+                  )}
+
+                  {exam === 'NEET MDS' && (
+                    <optgroup label="MDS Specialities (Dental PG)">
+                      {PG_MDS_COURSES.map((c) => (
+                        <option key={c.id} value={c.code}>{c.name}</option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </label>
             )}

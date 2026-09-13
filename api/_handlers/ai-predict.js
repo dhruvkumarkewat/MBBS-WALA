@@ -119,18 +119,52 @@ export async function retrieveContext(query) {
     .order('closing_rank', { ascending: true })
     .limit(3000);
 
-  if (examTrack === 'MBBS_BDS') {
-    cutoffQuery = cutoffQuery.in('course_name', ['MBBS', 'BDS']);
-  } else if (examTrack === 'AYUSH') {
-    cutoffQuery = cutoffQuery.in('course_name', ['BAMS', 'BUMS', 'BHMS', 'BSMS', 'BNYS']);
-  } else if (examTrack === 'NEET_PG') {
-    cutoffQuery = cutoffQuery.or('course_name.ilike.%MD%,course_name.ilike.%MS%,course_name.ilike.%Diploma%,course_name.ilike.%DNB%,course_name.ilike.%MDS%');
+  const targetCourse = query.course;
+  if (targetCourse && targetCourse !== 'All') {
+    const tcUpper = targetCourse.toUpperCase();
+    if (tcUpper === 'MBBS') {
+      cutoffQuery = cutoffQuery.eq('course_name', 'MBBS');
+      collegesQuery = collegesQuery.eq('course', 'MBBS');
+    } else if (tcUpper === 'BDS') {
+      cutoffQuery = cutoffQuery.eq('course_name', 'BDS');
+      collegesQuery = collegesQuery.eq('course', 'BDS');
+    } else if (['BAMS', 'BUMS', 'BHMS', 'BSMS', 'BNYS'].includes(tcUpper)) {
+      cutoffQuery = cutoffQuery.eq('course_name', tcUpper);
+      collegesQuery = collegesQuery.eq('course', tcUpper);
+    } else if (tcUpper.startsWith('MD') || query.degree === 'MD') {
+      cutoffQuery = cutoffQuery.ilike('course_name', '%MD%');
+      collegesQuery = collegesQuery.in('course', ['MD', 'MBBS', 'PG']);
+    } else if (tcUpper.startsWith('MS') || query.degree === 'MS') {
+      cutoffQuery = cutoffQuery.ilike('course_name', '%MS%');
+      collegesQuery = collegesQuery.in('course', ['MS', 'MBBS', 'PG']);
+    } else if (tcUpper.startsWith('D') || query.degree === 'Diploma') {
+      cutoffQuery = cutoffQuery.or('course_name.ilike.%Diploma%,course_name.ilike.%DGO%,course_name.ilike.%DCH%,course_name.ilike.%DMRD%,course_name.ilike.%DA%');
+      collegesQuery = collegesQuery.in('course', ['Diploma', 'MBBS', 'PG']);
+    } else if (tcUpper.startsWith('DNB') || query.degree === 'DNB') {
+      cutoffQuery = cutoffQuery.ilike('course_name', '%DNB%');
+      collegesQuery = collegesQuery.in('course', ['DNB', 'MBBS', 'PG']);
+    } else if (tcUpper.startsWith('MDS') || query.degree === 'MDS') {
+      cutoffQuery = cutoffQuery.or('course_name.ilike.%MDS%,course_name.ilike.%BDS%');
+      collegesQuery = collegesQuery.in('course', ['MDS', 'BDS']);
+    }
+  } else {
+    if (examTrack === 'MBBS_BDS') {
+      cutoffQuery = cutoffQuery.in('course_name', ['MBBS', 'BDS']);
+    } else if (examTrack === 'AYUSH') {
+      cutoffQuery = cutoffQuery.in('course_name', ['BAMS', 'BUMS', 'BHMS', 'BSMS', 'BNYS']);
+    } else if (examTrack === 'NEET_PG') {
+      cutoffQuery = cutoffQuery.or('course_name.ilike.%MD%,course_name.ilike.%MS%,course_name.ilike.%Diploma%,course_name.ilike.%DNB%,course_name.ilike.%MDS%');
+    }
+
+    if (examTrack === 'MBBS_BDS') {
+      collegesQuery = collegesQuery.in('course', ['MBBS', 'BDS']);
+    } else if (examTrack === 'AYUSH') {
+      collegesQuery = collegesQuery.in('course', ['BAMS', 'BUMS', 'BHMS', 'BSMS', 'BNYS']);
+    } else if (examTrack === 'NEET_PG') {
+      collegesQuery = collegesQuery.in('course', ['MBBS', 'MD', 'MS', 'Diploma', 'DNB', 'PG']);
+    }
   }
 
-  // Apply state restriction to the DB cutoff query:
-  // - If an explicit target_state is chosen, restrict to that state (regardless of quota)
-  // - If only State quota is selected, restrict to domicile state
-  // - For AIQ with no target state, do NOT restrict — show all-India cutoffs
   const targetStateDb = query.target_state;
   if (targetStateDb) {
     cutoffQuery = cutoffQuery.ilike('state', `%${targetStateDb}%`);
@@ -147,20 +181,8 @@ export async function retrieveContext(query) {
   const { data: directCutoffs } = await cutoffQuery;
 
   // 4. Also fetch from colleges table to ensure full database coverage
-  let collegesQuery = supabase
-    .from('colleges')
-    .select('id, name, state, type, feeGovt, feePvt, seats, cutoff, hospital_beds, established, bond, counselling, course')
-    .limit(3000);
-
-  if (examTrack === 'MBBS_BDS') {
-    collegesQuery = collegesQuery.in('course', ['MBBS', 'BDS']);
-  } else if (examTrack === 'AYUSH') {
-    collegesQuery = collegesQuery.in('course', ['BAMS', 'BUMS', 'BHMS', 'BSMS', 'BNYS']);
-  } else if (examTrack === 'NEET_PG') {
-    collegesQuery = collegesQuery.in('course', ['MBBS', 'MD', 'MS', 'Diploma', 'DNB', 'PG']);
-  }
-
-  const { data: allColleges } = await collegesQuery;
+  let collegesQueryBuilder = collegesQuery;
+  const { data: allColleges } = await collegesQueryBuilder;
 
 const DEEMED_KEYWORDS = [
   'patil', 'd.y. patil', 'd. y. patil', 'dy patil', 'manipal', 'kasturba', 'kmc',
@@ -563,6 +585,9 @@ export default async function handler(req, res) {
     // Normalize input to spec's query schema
     const query = {
       exam_track: body.exam_track || 'MBBS_BDS',
+      course: body.course || null,
+      specialty: body.specialty || body.course || null,
+      degree: body.degree || null,
       score_or_rank: {
         kind: body.rank ? 'air' : 'marks',
         value: Number(body.rank || body.score || 0),
@@ -665,6 +690,9 @@ export default async function handler(req, res) {
     const userPromptText = `
 === STUDENT PROFILE ===
 Exam Track: ${query.exam_track || 'MBBS / BDS'}
+Target Course: ${query.course || 'All eligible courses in this field'}
+${query.specialty ? `Target Speciality: ${query.specialty}` : ''}
+${query.degree ? `Target Degree Level: ${query.degree}` : ''}
 NEET AIR: ${query.score_or_rank.value} (Year: ${query.score_or_rank.neet_year || 2026})
 Category: ${query.category || 'General'}
 Domicile State: ${domicileStateName}
@@ -794,6 +822,9 @@ This is a NEET PG prediction for MD/MS/Diploma/DNB seats.
           }
           // Ensure quota field
           c.quota = c.quota || c.quota_type || c.admission_quota || 'AIQ';
+          // Ensure course and specialty fields
+          c.course = c.course || query.course || (query.exam_track === 'AYUSH' ? 'BAMS' : query.exam_track === 'NEET_PG' ? 'MD' : 'MBBS');
+          c.specialty = c.specialty || query.specialty || c.course;
           // Ensure probability is a string percentage
           if (typeof c.probability === 'number') c.probability = `${c.probability}%`;
           return c;
@@ -971,6 +1002,8 @@ This is a NEET PG prediction for MD/MS/Diploma/DNB seats.
       if (!response.college_predictions && response.colleges) {
         const mapCollege = (c) => ({
           name: c.college_name,
+          course: query.course || c.course || (query.exam_track === 'AYUSH' ? 'BAMS' : query.exam_track === 'NEET_PG' ? 'MD' : 'MBBS'),
+          specialty: query.specialty || query.course || c.course || 'General',
           probability: c.chance_tier,
           expected_round: c.closing_rank_reference?.[0]?.round || 'Round 1',
           fees: (c.fee?.formatted && c.fee?.formatted !== 'N/A') ? c.fee.formatted : 'Check Govt/State Portal',

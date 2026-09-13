@@ -92,9 +92,11 @@ function DarkSearchableSelect({ value, onChange, options, placeholder }: { value
 }
 
 export default function Compare() {
-  const [params, setParams] = useSearchParams();
-  const [colleges, setColleges] = useState<College[]>([]);
+  const [searchParams, setParams] = useSearchParams();
+  const params = searchParams;
   const [course, setCourse] = useState('All');
+  const [fieldTab, setFieldTab] = useState<'ALL' | 'MBBS_BDS' | 'AYUSH' | 'NEET_PG'>('ALL');
+  const [colleges, setColleges] = useState<College[]>([]);
   const [a, setA] = useState('');
   const [b, setB] = useState('');
   const [data, setData] = useState<ComparePayload | null>(null);
@@ -218,26 +220,54 @@ export default function Compare() {
           </p>
         </div>
 
+        {/* Field Filter Tabs */}
+        <div className="flex gap-2 pb-1 overflow-x-auto mb-2">
+          {[
+            { id: 'ALL', label: '🌐 All Courses' },
+            { id: 'MBBS_BDS', label: '🏥 MBBS / BDS' },
+            { id: 'AYUSH', label: '🌿 AYUSH' },
+            { id: 'NEET_PG', label: '🩺 NEET PG' },
+          ].map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => {
+                setFieldTab(f.id as any);
+                if (f.id === 'MBBS_BDS') setCourse('MBBS');
+                else if (f.id === 'AYUSH') setCourse('BAMS');
+                else if (f.id === 'NEET_PG') setCourse('MD');
+                else setCourse('All');
+              }}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${
+                fieldTab === f.id
+                  ? 'bg-[#F97316] text-white border-[#F97316] shadow-sm'
+                  : 'bg-white/5 text-white/70 border-white/10 hover:border-white/20'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Course Filter Pills */}
         <div className="flex flex-wrap gap-1.5 mb-6">
-          <button
-            type="button"
-            onClick={() => setCourse('All')}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold ${
-              course === 'All' ? 'bg-[#F97316] text-white' : 'bg-white/8 text-white/60'
-            }`}
-          >
-            All courses
-          </button>
-          {MEDICAL_COURSES.map((c) => (
+          {(fieldTab === 'MBBS_BDS'
+            ? ['All', 'MBBS', 'BDS']
+            : fieldTab === 'AYUSH'
+            ? ['All', 'BAMS', 'BHMS', 'BUMS', 'BSMS', 'BNYS']
+            : fieldTab === 'NEET_PG'
+            ? ['All', 'MD', 'MS', 'Diploma', 'DNB', 'MDS']
+            : ['All', ...MEDICAL_COURSES]
+          ).map((c) => (
             <button
               key={c}
               type="button"
               onClick={() => setCourse(c)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold ${
-                course === c ? 'bg-[#F97316] text-white' : 'bg-white/8 text-white/60'
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                course === c ? 'bg-white text-black shadow-sm' : 'bg-white/8 text-white/60 hover:bg-white/12'
               }`}
             >
-              {c}
+              {c === 'All' ? `All ${fieldTab === 'ALL' ? 'courses' : fieldTab.replace('_', ' ')}` : c}
             </button>
           ))}
         </div>

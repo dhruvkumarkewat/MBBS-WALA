@@ -44,6 +44,7 @@ import { usePremium, UpgradePrompt, PremiumGate } from '../../lib/premium';
 import { INDIAN_STATES, COUNSELLING_ROUNDS } from '../../lib/courses';
 import { PredictorResults } from './PredictorResults';
 import Cutoffs from '../../pages/Cutoffs';
+import { FieldCourseSelector } from '../../components/ui/FieldCourseSelector';
 
 export { ProfilePage } from './ProfilePage';
 export { SubscriptionPage } from './SubscriptionPage';
@@ -357,6 +358,8 @@ export function PredictorPage() {
   // ── Form state ──
   const [mode, setMode] = useState<'rank' | 'score'>('rank');
   const [examTrack, setExamTrack] = useState<'MBBS_BDS' | 'AYUSH' | 'NEET_PG'>('MBBS_BDS');
+  const [selectedCourse, setSelectedCourse] = useState<string>('All');
+  const [selectedDegree, setSelectedDegree] = useState<string>('ALL');
   const [rank, setRank] = useState(profile?.neet_rank?.toString() || '');
   const [score, setScore] = useState(profile?.neet_score?.toString() || '');
   const [category, setCategory] = useState(profile?.category || 'General');
@@ -386,6 +389,12 @@ export function PredictorPage() {
           if (parsed?.query?.exam_track) {
             setExamTrack(parsed.query.exam_track);
           }
+          if (parsed?.query?.course) {
+            setSelectedCourse(parsed.query.course);
+          }
+          if (parsed?.query?.degree) {
+            setSelectedDegree(parsed.query.degree);
+          }
         } catch (e) {
           console.error('Failed to parse saved prediction');
         }
@@ -411,7 +420,7 @@ export function PredictorPage() {
       if (profile?.id) localStorage.removeItem(`mbbswala_prediction_${profile.id}`);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quotas.join(','), targetState, domicileState, category, examTrack]);
+  }, [quotas.join(','), targetState, domicileState, category, examTrack, selectedCourse, selectedDegree]);
 
   // Sync profile data when loaded
   useEffect(() => {
@@ -464,6 +473,9 @@ export function PredictorPage() {
       try {
         const payload = {
           exam_track: examTrack,
+          course: selectedCourse !== 'All' ? selectedCourse : undefined,
+          specialty: selectedCourse !== 'All' ? selectedCourse : undefined,
+          degree: selectedDegree !== 'ALL' ? selectedDegree : undefined,
           rank: mode === 'rank' ? rankNum : undefined,
           score: mode === 'score' ? scoreNum : undefined,
           neet_year: neetYear,
@@ -558,7 +570,7 @@ export function PredictorPage() {
 
         {/* Exam Track */}
         <div>
-          <span className={`text-xs font-bold uppercase ${s.muted}`}>Exam Track</span>
+          <span className={`text-xs font-bold uppercase ${s.muted}`}>Exam Track / Field</span>
           <div className="grid grid-cols-3 gap-2 mt-1.5">
             {([
               { value: 'MBBS_BDS', label: '🏥 MBBS / BDS', sub: 'NEET UG' },
@@ -567,7 +579,11 @@ export function PredictorPage() {
             ] as const).map(({ value, label, sub }) => (
               <button
                 key={value} type="button"
-                onClick={() => setExamTrack(value)}
+                onClick={() => {
+                  setExamTrack(value);
+                  setSelectedCourse('All');
+                  setSelectedDegree('ALL');
+                }}
                 className={`flex-1 py-2 px-2 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-0.5 ${
                   examTrack === value
                     ? 'bg-primary text-white border-primary shadow-md'
@@ -580,6 +596,18 @@ export function PredictorPage() {
             ))}
           </div>
         </div>
+
+        {/* Course Selection by Field (MBBS/BDS, AYUSH, or PG MD/MS/Diploma) */}
+        <FieldCourseSelector
+          field={examTrack}
+          selectedCourse={selectedCourse}
+          onChange={(c, meta) => {
+            setSelectedCourse(c);
+            if (meta?.degree) setSelectedDegree(meta.degree);
+            setAiResponse(null);
+          }}
+          dark={s.dark}
+        />
 
         {/* Rank / Score Toggle */}
         <div>
@@ -743,10 +771,10 @@ export function PredictorPage() {
             <p className={`text-xs mt-1 ${s.muted}`}>
               Showing results for {
                 (aiResponse?.query?.exam_track || examTrack) === 'NEET_PG'
-                  ? 'NEET PG (MD / MS / Diploma)'
+                  ? `NEET PG (${selectedCourse && selectedCourse !== 'All' ? selectedCourse : 'MD / MS / Diploma'})`
                   : (aiResponse?.query?.exam_track || examTrack) === 'AYUSH'
-                  ? 'AYUSH (BAMS / BHMS / BUMS)'
-                  : 'MBBS / BDS'
+                  ? `AYUSH (${selectedCourse && selectedCourse !== 'All' ? selectedCourse : 'BAMS / BHMS / BUMS'})`
+                  : `MBBS / BDS${selectedCourse && selectedCourse !== 'All' ? ` (${selectedCourse})` : ''}`
               } · {mode === 'score' && aiResponse?.query?.score_or_rank?.original_score ? `Score ${aiResponse.query.score_or_rank.original_score} (Est. AIR ${aiResponse.query.score_or_rank.value?.toLocaleString()})` : `AIR ${rank || aiResponse?.query?.score_or_rank?.value}`} · {category} · {quotas.join(', ')}
             </p>
           </div>
@@ -786,6 +814,8 @@ export function PredictorPage() {
               domicileState={domicileState}
               targetState={targetState || null}
               selectedQuotas={quotas}
+              selectedCourse={selectedCourse}
+              selectedDegree={selectedDegree}
             />
 
           )}

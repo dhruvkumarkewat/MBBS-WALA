@@ -5,7 +5,13 @@ import Table, { type Column } from '../components/ui/Table';
 import SearchInput from '../components/ui/SearchInput';
 import { SkeletonTable } from '../components/ui/Skeleton';
 import { staggerContainer, staggerItem } from '../lib/motion';
-import { MEDICAL_COURSES, INDIAN_STATES, COUNSELLING_ROUNDS } from '../lib/courses';
+import {
+  MEDICAL_COURSES,
+  INDIAN_STATES,
+  COUNSELLING_ROUNDS,
+  MBBS_BDS_COURSES,
+  AYUSH_COURSES,
+} from '../lib/courses';
 
 interface Cutoff {
   id: number;
@@ -24,6 +30,7 @@ export default function Cutoffs() {
   const [rows, setRows] = useState<Cutoff[]>([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('All');
+  const [fieldTab, setFieldTab] = useState<'ALL' | 'MBBS_BDS' | 'AYUSH' | 'NEET_PG'>('MBBS_BDS');
   const [course, setCourse] = useState('MBBS');
   const [state, setState] = useState('All');
   const [round, setRound] = useState('All');
@@ -127,19 +134,56 @@ export default function Cutoffs() {
         initial="initial"
         animate="animate"
       >
+        {/* Field Filter Tabs */}
+        <motion.div className="flex gap-2 pb-1 overflow-x-auto" variants={staggerItem}>
+          {[
+            { id: 'MBBS_BDS', label: '🏥 MBBS / BDS' },
+            { id: 'AYUSH', label: '🌿 AYUSH' },
+            { id: 'NEET_PG', label: '🩺 NEET PG (MD/MS/Diploma)' },
+            { id: 'ALL', label: '🌐 All Courses' },
+          ].map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => {
+                setFieldTab(f.id as any);
+                if (f.id === 'MBBS_BDS') setCourse('MBBS');
+                else if (f.id === 'AYUSH') setCourse('BAMS');
+                else if (f.id === 'NEET_PG') setCourse('MD');
+                else setCourse('All');
+              }}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${
+                fieldTab === f.id
+                  ? 'bg-primary text-white border-primary shadow-md'
+                  : 'bg-white text-slate-700 border-black/10 hover:border-primary/40'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </motion.div>
+
+        {/* Course Pills for Selected Field */}
         <motion.div className="flex flex-wrap gap-2" variants={staggerItem}>
-          {MEDICAL_COURSES.map((c) => (
+          {(fieldTab === 'MBBS_BDS'
+            ? ['All', 'MBBS', 'BDS']
+            : fieldTab === 'AYUSH'
+            ? ['All', 'BAMS', 'BHMS', 'BUMS', 'BSMS', 'BNYS']
+            : fieldTab === 'NEET_PG'
+            ? ['All', 'MD', 'MS', 'Diploma', 'DNB', 'MDS']
+            : ['All', ...MEDICAL_COURSES]
+          ).map((c) => (
             <button
               key={c}
               type="button"
               onClick={() => setCourse(c)}
               className={`px-3 py-1.5 rounded-full border font-semibold text-xs transition-all ${
                 course === c
-                  ? 'bg-primary text-white border-primary shadow-md'
-                  : 'bg-white border-black/10 hover:border-primary/40'
+                  ? 'bg-black text-white border-black shadow-md'
+                  : 'bg-white border-black/10 hover:border-black/30'
               }`}
             >
-              {c}
+              {c === 'All' ? `All ${fieldTab === 'ALL' ? 'Courses' : fieldTab.replace('_', ' ')}` : c}
             </button>
           ))}
         </motion.div>
