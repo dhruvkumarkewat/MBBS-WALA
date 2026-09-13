@@ -513,8 +513,8 @@ export function PredictorPage() {
         }
       } catch (aiErr: any) {
         // AI call failed
-        console.warn('[Predictor] AI endpoint failed:', aiErr.message);
-        throw new Error('Network error, please try again.');
+        console.warn('[Predictor] AI endpoint failed:', aiErr?.message);
+        throw new Error(aiErr?.message || 'Prediction failed. Please try again.');
       }
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.');

@@ -119,57 +119,60 @@ export async function retrieveContext(query) {
     .order('closing_rank', { ascending: true })
     .limit(3000);
 
+  // 4. Also fetch from colleges table to ensure full database coverage
+  let collegesQuery = supabase
+    .from('colleges')
+    .select('id, name, state, type, feeGovt, feePvt, seats, cutoff, hospital_beds, established, bond, counselling, course')
+    .limit(3000);
+
   const targetCourse = query.course;
   if (targetCourse && targetCourse !== 'All') {
     const tcUpper = targetCourse.toUpperCase();
     if (tcUpper === 'MBBS') {
       cutoffQuery = cutoffQuery.eq('course_name', 'MBBS');
-      collegesQuery = collegesQuery.eq('course', 'MBBS');
+      collegesQuery = collegesQuery.or('course.eq.MBBS,course.is.null').not('name', 'ilike', '%Dental%').not('name', 'ilike', '%Ayurved%');
     } else if (tcUpper === 'BDS') {
       cutoffQuery = cutoffQuery.eq('course_name', 'BDS');
-      collegesQuery = collegesQuery.eq('course', 'BDS');
+      collegesQuery = collegesQuery.or('course.eq.BDS,name.ilike.%Dental%,name.ilike.%Dentistry%');
     } else if (['BAMS', 'BUMS', 'BHMS', 'BSMS', 'BNYS'].includes(tcUpper)) {
       cutoffQuery = cutoffQuery.eq('course_name', tcUpper);
-      collegesQuery = collegesQuery.eq('course', tcUpper);
+      collegesQuery = collegesQuery.or(`course.eq.${tcUpper},name.ilike.%Ayurved%,name.ilike.%Ayush%,name.ilike.%Homeopath%`);
     } else if (tcUpper.startsWith('MD') || query.degree === 'MD') {
       cutoffQuery = cutoffQuery.ilike('course_name', '%MD%');
-      collegesQuery = collegesQuery.in('course', ['MD', 'MBBS', 'PG']);
+      collegesQuery = collegesQuery.or('course.eq.MBBS,course.eq.MD,course.eq.MS,course.is.null').not('name', 'ilike', '%Dental%').not('name', 'ilike', '%Ayurved%');
     } else if (tcUpper.startsWith('MS') || query.degree === 'MS') {
       cutoffQuery = cutoffQuery.ilike('course_name', '%MS%');
-      collegesQuery = collegesQuery.in('course', ['MS', 'MBBS', 'PG']);
+      collegesQuery = collegesQuery.or('course.eq.MBBS,course.eq.MD,course.eq.MS,course.is.null').not('name', 'ilike', '%Dental%').not('name', 'ilike', '%Ayurved%');
     } else if (tcUpper.startsWith('D') || query.degree === 'Diploma') {
       cutoffQuery = cutoffQuery.or('course_name.ilike.%Diploma%,course_name.ilike.%DGO%,course_name.ilike.%DCH%,course_name.ilike.%DMRD%,course_name.ilike.%DA%');
-      collegesQuery = collegesQuery.in('course', ['Diploma', 'MBBS', 'PG']);
+      collegesQuery = collegesQuery.or('course.eq.MBBS,course.eq.MD,course.eq.MS,course.is.null').not('name', 'ilike', '%Dental%').not('name', 'ilike', '%Ayurved%');
     } else if (tcUpper.startsWith('DNB') || query.degree === 'DNB') {
       cutoffQuery = cutoffQuery.ilike('course_name', '%DNB%');
-      collegesQuery = collegesQuery.in('course', ['DNB', 'MBBS', 'PG']);
+      collegesQuery = collegesQuery.or('course.eq.MBBS,course.eq.MD,course.eq.MS,course.is.null').not('name', 'ilike', '%Dental%').not('name', 'ilike', '%Ayurved%');
     } else if (tcUpper.startsWith('MDS') || query.degree === 'MDS') {
       cutoffQuery = cutoffQuery.or('course_name.ilike.%MDS%,course_name.ilike.%BDS%');
-      collegesQuery = collegesQuery.in('course', ['MDS', 'BDS']);
+      collegesQuery = collegesQuery.or('course.eq.MDS,course.eq.BDS,name.ilike.%Dental%');
     }
   } else {
     if (examTrack === 'MBBS_BDS') {
       cutoffQuery = cutoffQuery.in('course_name', ['MBBS', 'BDS']);
+      collegesQuery = collegesQuery.or('course.eq.MBBS,course.eq.BDS,course.is.null');
     } else if (examTrack === 'AYUSH') {
       cutoffQuery = cutoffQuery.in('course_name', ['BAMS', 'BUMS', 'BHMS', 'BSMS', 'BNYS']);
+      collegesQuery = collegesQuery.or('course.eq.BAMS,course.eq.BUMS,course.eq.BHMS,course.eq.BSMS,course.eq.BNYS,name.ilike.%Ayurved%,name.ilike.%Ayush%,name.ilike.%Homeopath%');
     } else if (examTrack === 'NEET_PG') {
       cutoffQuery = cutoffQuery.or('course_name.ilike.%MD%,course_name.ilike.%MS%,course_name.ilike.%Diploma%,course_name.ilike.%DNB%,course_name.ilike.%MDS%');
-    }
-
-    if (examTrack === 'MBBS_BDS') {
-      collegesQuery = collegesQuery.in('course', ['MBBS', 'BDS']);
-    } else if (examTrack === 'AYUSH') {
-      collegesQuery = collegesQuery.in('course', ['BAMS', 'BUMS', 'BHMS', 'BSMS', 'BNYS']);
-    } else if (examTrack === 'NEET_PG') {
-      collegesQuery = collegesQuery.in('course', ['MBBS', 'MD', 'MS', 'Diploma', 'DNB', 'PG']);
+      collegesQuery = collegesQuery.or('course.eq.MBBS,course.eq.MD,course.eq.MS,course.is.null').not('name', 'ilike', '%Dental%').not('name', 'ilike', '%Ayurved%');
     }
   }
 
   const targetStateDb = query.target_state;
   if (targetStateDb) {
     cutoffQuery = cutoffQuery.ilike('state', `%${targetStateDb}%`);
+    collegesQuery = collegesQuery.ilike('state', `%${targetStateDb}%`);
   } else if (quotas.includes('State') && domicileState && quotas.length === 1) {
     cutoffQuery = cutoffQuery.ilike('state', `%${domicileState}%`);
+    collegesQuery = collegesQuery.ilike('state', `%${domicileState}%`);
   }
 
   // Filter out any garbage data that might have been incorrectly labelled as MBBS
@@ -178,11 +181,11 @@ export async function retrieveContext(query) {
     .not('college_name', 'ilike', '%NCVT%')
     .not('college_name', 'eq', 'Regulations');
 
-  const { data: directCutoffs } = await cutoffQuery;
+  const { data: directCutoffs, error: cutoffErr } = await cutoffQuery;
+  if (cutoffErr) console.warn('[AI-Predict] Cutoff query error:', cutoffErr);
 
-  // 4. Also fetch from colleges table to ensure full database coverage
-  let collegesQueryBuilder = collegesQuery;
-  const { data: allColleges } = await collegesQueryBuilder;
+  const { data: allColleges, error: collegesErr } = await collegesQuery;
+  if (collegesErr) console.warn('[AI-Predict] Colleges query error:', collegesErr);
 
 const DEEMED_KEYWORDS = [
   'patil', 'd.y. patil', 'd. y. patil', 'dy patil', 'manipal', 'kasturba', 'kmc',
