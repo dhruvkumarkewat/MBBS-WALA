@@ -119,60 +119,19 @@ export async function retrieveContext(query) {
     .order('closing_rank', { ascending: true })
     .limit(3000);
 
-  // 4. Also fetch from colleges table to ensure full database coverage
-  let collegesQuery = supabase
-    .from('colleges')
-    .select('id, name, state, type, feeGovt, feePvt, seats, cutoff, hospital_beds, established, bond, counselling, course')
-    .limit(3000);
-
-  const targetCourse = query.course;
-  if (targetCourse && targetCourse !== 'All') {
-    const tcUpper = targetCourse.toUpperCase();
-    if (tcUpper === 'MBBS') {
-      cutoffQuery = cutoffQuery.eq('course_name', 'MBBS');
-      collegesQuery = collegesQuery.or('course.eq.MBBS,course.is.null').not('name', 'ilike', '%Dental%').not('name', 'ilike', '%Ayurved%');
-    } else if (tcUpper === 'BDS') {
-      cutoffQuery = cutoffQuery.eq('course_name', 'BDS');
-      collegesQuery = collegesQuery.or('course.eq.BDS,name.ilike.%Dental%,name.ilike.%Dentistry%');
-    } else if (['BAMS', 'BUMS', 'BHMS', 'BSMS', 'BNYS'].includes(tcUpper)) {
-      cutoffQuery = cutoffQuery.eq('course_name', tcUpper);
-      collegesQuery = collegesQuery.or(`course.eq.${tcUpper},name.ilike.%Ayurved%,name.ilike.%Ayush%,name.ilike.%Homeopath%`);
-    } else if (tcUpper.startsWith('MD') || query.degree === 'MD') {
-      cutoffQuery = cutoffQuery.ilike('course_name', '%MD%');
-      collegesQuery = collegesQuery.or('course.eq.MBBS,course.eq.MD,course.eq.MS,course.is.null').not('name', 'ilike', '%Dental%').not('name', 'ilike', '%Ayurved%');
-    } else if (tcUpper.startsWith('MS') || query.degree === 'MS') {
-      cutoffQuery = cutoffQuery.ilike('course_name', '%MS%');
-      collegesQuery = collegesQuery.or('course.eq.MBBS,course.eq.MD,course.eq.MS,course.is.null').not('name', 'ilike', '%Dental%').not('name', 'ilike', '%Ayurved%');
-    } else if (tcUpper.startsWith('D') || query.degree === 'Diploma') {
-      cutoffQuery = cutoffQuery.or('course_name.ilike.%Diploma%,course_name.ilike.%DGO%,course_name.ilike.%DCH%,course_name.ilike.%DMRD%,course_name.ilike.%DA%');
-      collegesQuery = collegesQuery.or('course.eq.MBBS,course.eq.MD,course.eq.MS,course.is.null').not('name', 'ilike', '%Dental%').not('name', 'ilike', '%Ayurved%');
-    } else if (tcUpper.startsWith('DNB') || query.degree === 'DNB') {
-      cutoffQuery = cutoffQuery.ilike('course_name', '%DNB%');
-      collegesQuery = collegesQuery.or('course.eq.MBBS,course.eq.MD,course.eq.MS,course.is.null').not('name', 'ilike', '%Dental%').not('name', 'ilike', '%Ayurved%');
-    } else if (tcUpper.startsWith('MDS') || query.degree === 'MDS') {
-      cutoffQuery = cutoffQuery.or('course_name.ilike.%MDS%,course_name.ilike.%BDS%');
-      collegesQuery = collegesQuery.or('course.eq.MDS,course.eq.BDS,name.ilike.%Dental%');
-    }
-  } else {
-    if (examTrack === 'MBBS_BDS') {
-      cutoffQuery = cutoffQuery.in('course_name', ['MBBS', 'BDS']);
-      collegesQuery = collegesQuery.or('course.eq.MBBS,course.eq.BDS,course.is.null');
-    } else if (examTrack === 'AYUSH') {
-      cutoffQuery = cutoffQuery.in('course_name', ['BAMS', 'BUMS', 'BHMS', 'BSMS', 'BNYS']);
-      collegesQuery = collegesQuery.or('course.eq.BAMS,course.eq.BUMS,course.eq.BHMS,course.eq.BSMS,course.eq.BNYS,name.ilike.%Ayurved%,name.ilike.%Ayush%,name.ilike.%Homeopath%');
-    } else if (examTrack === 'NEET_PG') {
-      cutoffQuery = cutoffQuery.or('course_name.ilike.%MD%,course_name.ilike.%MS%,course_name.ilike.%Diploma%,course_name.ilike.%DNB%,course_name.ilike.%MDS%');
-      collegesQuery = collegesQuery.or('course.eq.MBBS,course.eq.MD,course.eq.MS,course.is.null').not('name', 'ilike', '%Dental%').not('name', 'ilike', '%Ayurved%');
-    }
+  if (examTrack === 'MBBS_BDS') {
+    cutoffQuery = cutoffQuery.in('course_name', ['MBBS', 'BDS']);
+  } else if (examTrack === 'AYUSH') {
+    cutoffQuery = cutoffQuery.in('course_name', ['BAMS', 'BUMS', 'BHMS', 'BSMS', 'BNYS']);
+  } else if (examTrack === 'NEET_PG') {
+    cutoffQuery = cutoffQuery.or('course_name.ilike.%MD%,course_name.ilike.%MS%,course_name.ilike.%Diploma%,course_name.ilike.%DNB%,course_name.ilike.%MDS%');
   }
 
   const targetStateDb = query.target_state;
   if (targetStateDb) {
     cutoffQuery = cutoffQuery.ilike('state', `%${targetStateDb}%`);
-    collegesQuery = collegesQuery.ilike('state', `%${targetStateDb}%`);
   } else if (quotas.includes('State') && domicileState && quotas.length === 1) {
     cutoffQuery = cutoffQuery.ilike('state', `%${domicileState}%`);
-    collegesQuery = collegesQuery.ilike('state', `%${domicileState}%`);
   }
 
   // Filter out any garbage data that might have been incorrectly labelled as MBBS
@@ -183,6 +142,20 @@ export async function retrieveContext(query) {
 
   const { data: directCutoffs, error: cutoffErr } = await cutoffQuery;
   if (cutoffErr) console.warn('[AI-Predict] Cutoff query error:', cutoffErr);
+
+  // 4. Also fetch from colleges table to ensure full database coverage
+  let collegesQuery = supabase
+    .from('colleges')
+    .select('id, name, state, type, feeGovt, feePvt, seats, cutoff, hospital_beds, established, bond, counselling, course')
+    .limit(3000);
+
+  if (examTrack === 'MBBS_BDS') {
+    collegesQuery = collegesQuery.in('course', ['MBBS', 'BDS']);
+  } else if (examTrack === 'AYUSH') {
+    collegesQuery = collegesQuery.in('course', ['BAMS', 'BUMS', 'BHMS', 'BSMS', 'BNYS']);
+  } else if (examTrack === 'NEET_PG') {
+    collegesQuery = collegesQuery.in('course', ['MBBS', 'MD', 'MS', 'Diploma', 'DNB', 'PG']);
+  }
 
   const { data: allColleges, error: collegesErr } = await collegesQuery;
   if (collegesErr) console.warn('[AI-Predict] Colleges query error:', collegesErr);
@@ -689,6 +662,8 @@ export default async function handler(req, res) {
       note: `Deemed Universities — Always open to all-India candidates regardless of domicile. Counselling by MCC. Higher fees than government colleges. Not counted in state quota.`,
     };
 
+    const courseLabel = query.course || (query.exam_track === 'NEET_PG' ? 'MD / MS' : query.exam_track === 'AYUSH' ? 'AYUSH (BAMS/BHMS/BUMS)' : 'MBBS / BDS');
+
     // Build the user prompt as a clear human brief
     const userPromptText = `
 === STUDENT PROFILE ===
@@ -711,21 +686,21 @@ ${Object.entries(quotaEligibility).map(([k, v]) => `[${k.toUpperCase()}] ${v.eli
 ${targetStateRulesForAI?.counselling_authority || 'State Counselling Body'}
 
 === WHAT TO PREDICT ===
-The student has selected: ${selectedQuotas.join(', ')} in ${targetStateName}.
+The student has selected: ${selectedQuotas.join(', ')} in ${targetStateName} for ${courseLabel}.
 
 ${selectedQuotas.map(q => {
   const qL = q.toLowerCase();
   if (qL.includes('management') || qL === 'management quota') return quotaEligibility.management.available === false
     ? `MANAGEMENT QUOTA: 🚫 NOT AVAILABLE in ${targetStateName}. Show NO management quota colleges. Instead, in quota_wise_analysis.management_quota set available_in_state: false and give a helpful message suggesting alternatives (${quotaEligibility.aiq.eligible ? 'AIQ' : ''}${domicileMatchesTarget ? ', State Quota' : ''}, Management Quota in other states like Karnataka/Tamil Nadu/Maharashtra).`
     : quotaEligibility.management.eligible
-      ? `MANAGEMENT QUOTA: ✅ Show real private ${targetStateName} medical colleges with management quota seats. Non-domicile allowed. Show 8-12 real colleges.`
+      ? `MANAGEMENT QUOTA: ✅ Show real private ${targetStateName} colleges offering ${courseLabel} with management quota seats. Non-domicile allowed. Show 8-12 real colleges.`
       : `MANAGEMENT QUOTA: ⚠️ Not eligible (domicile mismatch). Show message and suggest alternatives.`;
-  if (qL === 'aiq' || qL.includes('all india')) return `AIQ: ✅ Show real government MBBS colleges ${query.target_state ? `in ${query.target_state}` : 'across All India'} under AIQ. Use actual 2023-2025 closing ranks for ${query.category} category, Round 1 AIQ. Show 10-15 real colleges.`;
+  if (qL === 'aiq' || qL.includes('all india')) return `AIQ: ✅ Show real government ${courseLabel} colleges ${query.target_state ? `in ${query.target_state}` : 'across All India'} under AIQ. Use actual closing ranks for ${query.category} category, Round 1 AIQ. Show 10-15 real colleges.`;
   if (qL.includes('state')) return domicileMatchesTarget
-    ? `STATE QUOTA: ✅ Show real government colleges in ${targetStateName} under 85% state quota for ${query.category} category. Show 8-12 real colleges.`
+    ? `STATE QUOTA: ✅ Show real government ${courseLabel} colleges in ${targetStateName} under 85% state quota for ${query.category} category. Show 8-12 real colleges.`
     : `STATE QUOTA: ⚠️ Not eligible — domicile mismatch. Tell student they need ${targetStateName} domicile for state quota.`;
-  if (qL.includes('nri')) return `NRI QUOTA: Show NRI quota colleges in ${targetStateName} if available, with fee structure. Note that NRI status must be verified.`;
-  return `${q}: Show relevant colleges if available.`;
+  if (qL.includes('nri')) return `NRI QUOTA: Show NRI quota colleges offering ${courseLabel} in ${targetStateName} if available, with fee structure. Note that NRI status must be verified.`;
+  return `${q}: Show relevant colleges for ${courseLabel} if available.`;
 }).join('\n')}
 
 ${isScoreMode ? `

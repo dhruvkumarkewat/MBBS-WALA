@@ -46,7 +46,7 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
 
   // First group by course, then by quota
   const groupedByCourse = displayColleges.reduce((acc: any, c: any) => {
-    const course = c.specialty || c.course || 'MBBS';
+    const course = c.course || 'MBBS';
     const q = c.quota || 'Other';
     if (!acc[course]) acc[course] = {};
     if (!acc[course][q]) acc[course][q] = [];
@@ -102,11 +102,6 @@ const CollegeGroupList = ({ colleges, s, isPremium, maxFreeCount, bgClass, borde
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
                             {c.expected_round}
                           </span>
-                          {(c.specialty || c.course) && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20">
-                              {c.specialty || c.course}
-                            </span>
-                          )}
                           {c.category && (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-500 border border-slate-500/20">
                               {c.category}
