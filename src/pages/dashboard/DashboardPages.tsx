@@ -169,9 +169,12 @@ export function AiAssistantPage() {
       }
     } catch (err) {
       console.error('AI Chat Error:', err);
+      const errMsg = err instanceof Error && err.message && !err.message.includes('failed (4') && !err.message.includes('failed (5')
+        ? err.message
+        : 'Sorry, I am having trouble connecting to the network right now. Please try again later.';
       setMessages((m) => [...m, { 
         role: 'assistant', 
-        text: 'Sorry, I am having trouble connecting to the network right now. Please try again later.' 
+        text: errMsg
       }]);
     }
     
