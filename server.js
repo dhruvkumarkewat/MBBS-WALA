@@ -11,6 +11,7 @@ const PORT = process.env.PORT || 8080;
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Handle backend API requests using the existing Vercel handlers
 app.all('/api/{*splat}', async (req, res) => {

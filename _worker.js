@@ -55,6 +55,9 @@ async function handleApi(request, env) {
       const ct = request.headers.get('content-type') || '';
       if (ct.includes('multipart/form-data')) {
         body = await request.formData().catch(() => new FormData());
+      } else if (ct.includes('application/x-www-form-urlencoded')) {
+        const text = await request.text().catch(() => '');
+        body = Object.fromEntries(new URLSearchParams(text).entries());
       } else {
         body = await request.json().catch(() => ({}));
       }

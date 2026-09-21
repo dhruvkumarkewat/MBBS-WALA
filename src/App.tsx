@@ -237,7 +237,7 @@ export default function App() {
           <Route path="settings" element={<L><SettingsPage /></L>} />
           <Route path="support" element={<L><SupportPage /></L>} />
           <Route path="chat" element={<L><StudentChatPage /></L>} />
-          <Route path="pay" element={<L><UpiPaymentPage /></L>} />
+          <Route path="pay" element={<Navigate to="/dashboard/subscription" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
 

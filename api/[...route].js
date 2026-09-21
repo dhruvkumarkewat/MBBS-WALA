@@ -98,6 +98,7 @@ const routes = {
   'notifications': notifications,
   'packages': packagesHandler,
   'payment': payment,
+  'payment-response': payment,
   'profile': profile,
   'rank-calculator': rankCalculator,
   'referrals': referrals,
@@ -172,7 +173,20 @@ export default async function handler(req, res) {
         buffers.push(chunk);
       }
       const raw = Buffer.concat(buffers).toString('utf-8');
-      req.body = raw ? JSON.parse(raw) : {};
+      if (!raw) {
+        req.body = {};
+      } else {
+        try {
+          req.body = JSON.parse(raw);
+        } catch {
+          // Parse application/x-www-form-urlencoded (e.g. AU Bank / CCAvenue callback)
+          try {
+            req.body = Object.fromEntries(new URLSearchParams(raw).entries());
+          } catch {
+            req.body = {};
+          }
+        }
+      }
     } catch {
       req.body = {};
     }
@@ -180,7 +194,11 @@ export default async function handler(req, res) {
     try {
       req.body = JSON.parse(req.body);
     } catch {
-      // keep as string
+      try {
+        req.body = Object.fromEntries(new URLSearchParams(req.body).entries());
+      } catch {
+        // keep as string
+      }
     }
   }
 
