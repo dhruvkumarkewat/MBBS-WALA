@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import supabase from '../lib/supabase';
 import { signInWithGoogle } from '../lib/googleAuth';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth, checkProfileCompleteness } from '../contexts/AuthContext';
 import { apiJson } from '../lib/api';
 import BrandLogo from '../components/BrandLogo';
 import FullScreenLoader from '../components/FullScreenLoader';
@@ -510,24 +510,23 @@ export default function Login({ defaultPortal }: LoginProps) {
         }
 
         const bannerRedirect = sessionStorage.getItem('mbbs_banner_redirect');
+        const targetFrom = (from && from.startsWith('/') && !from.startsWith('//') && !from.startsWith('/admin') && from !== '/' && from !== '/login')
+          ? from
+          : (sessionStorage.getItem('post_onboarding_redirect') || '');
 
         // Normal student profile verification
         try {
           const prof = await apiJson<any>('/api/profile', {}, true);
-          const isComplete =
-            prof?.profile_completed ||
-            prof?.onboarding_done ||
-            localStorage.getItem('onboarding_done_flag') === 'true' ||
-            (Boolean(prof?.phone) && Boolean(prof?.category) && (prof?.neet_score != null || prof?.neet_rank != null));
+          const isComplete = checkProfileCompleteness(prof);
           if (!isComplete) {
-            window.location.replace('/onboarding');
+            const dest = targetFrom ? `/onboarding?redirect=${encodeURIComponent(targetFrom)}` : '/onboarding';
+            window.location.replace(dest);
             return;
           }
         } catch {
-          if (localStorage.getItem('onboarding_done_flag') !== 'true') {
-            window.location.replace('/onboarding');
-            return;
-          }
+          const dest = targetFrom ? `/onboarding?redirect=${encodeURIComponent(targetFrom)}` : '/onboarding';
+          window.location.replace(dest);
+          return;
         }
 
         if (bannerRedirect) {

@@ -58,32 +58,26 @@ export interface UserProfile {
 }
 
 export function checkProfileCompleteness(p: UserProfile | null | undefined): boolean {
-  // Only trust the stale localStorage flag when we have a real profile object.
-  // A brand-new Google user has no profile yet ('p' will be null/empty fields).
-  // Without this guard, a new Google user on a device with a previous login
-  // would skip onboarding and land directly on the dashboard.
-  if (localStorage.getItem('onboarding_done_flag') === 'true' && p) {
-    return true; // Ultimate fallback: if we saved it in this browser, never loop back
-  }
-
-  if (!p) {
-    console.log('[DEBUG] checkProfileCompleteness: profile is null, returning false');
+  if (!p || !p.id) {
     return false;
   }
 
-  // profile_completed / onboarding_done flags are the primary source of truth
+  // Explicit profile completion from database or user_metadata
   if (p.profile_completed === true || p.onboarding_done === true) {
-    console.log('[DEBUG] checkProfileCompleteness: profile_completed or onboarding_done is true, returning true');
     return true;
   }
 
-  // Fallback: infer completeness from key fields (domicile not required — legacy accounts may lack it)
+  // User-scoped local storage flag (only valid for this specific user ID)
+  if (localStorage.getItem(`onboarding_done_${p.id}`) === 'true') {
+    return true;
+  }
+
+  // Fallback: infer completeness from required fields that are only set after onboarding
   const hasName = Boolean((p.full_name || p.name || '').trim());
   const hasPhone = Boolean((p.phone || '').trim().length >= 8);
   const hasScoreOrRank = p.neet_score != null || p.neet_rank != null;
   const hasCategory = Boolean((p.category || '').trim());
   const isComplete = hasName && hasPhone && hasScoreOrRank && hasCategory;
-  console.log(`[DEBUG] checkProfileCompleteness: Name:${hasName}, Phone:${hasPhone}, ScoreRank:${hasScoreOrRank}, Category:${hasCategory} -> Result: ${isComplete}`);
   return isComplete;
 }
 
@@ -337,8 +331,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setStaffRole(null);
         localStorage.removeItem('mbbswala_admin_token');
         localStorage.removeItem('mbbswala_admin_email');
-        // Clear onboarding flag so the next user on this device goes through onboarding
+        // Clear onboarding flags so the next user on this device goes through onboarding
         localStorage.removeItem('onboarding_done_flag');
+        if (user?.id) {
+          localStorage.removeItem(`onboarding_done_${user.id}`);
+        }
         await supabase.auth.signOut();
         window.location.href = redirectUrl || '/';
       },

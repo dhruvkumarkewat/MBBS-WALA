@@ -341,8 +341,11 @@ export default function OnboardingPage() {
       };
       setProfileState(completedProfile);
       
-      // ULTIMATE SAFETY NET: Save in localStorage so the browser never loops back
-      localStorage.setItem('onboarding_done_flag', 'true');
+      // Save user-scoped flag so this specific account stays completed on this browser
+      if (user?.id) {
+        localStorage.setItem(`onboarding_done_${user.id}`, 'true');
+      }
+      localStorage.removeItem('onboarding_done_flag');
 
       setCompleted(true);
       // Use window.location.replace for a clean page load.
