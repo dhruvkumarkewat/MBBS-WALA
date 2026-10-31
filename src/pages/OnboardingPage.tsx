@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef, FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   User,
@@ -81,6 +81,7 @@ const COURSES = [
 export default function OnboardingPage() {
   const { user, profile, refreshProfile, setProfileState } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -344,12 +345,27 @@ export default function OnboardingPage() {
       // This guarantees a fresh React + Auth state from JWT (which now has profile_completed:true)
       // completely bypassing any stale React state or race conditions.
       redirectTimerRef.current = setTimeout(() => {
+        const postOnboardingRedirect =
+          sessionStorage.getItem('post_onboarding_redirect') ||
+          new URLSearchParams(window.location.search).get('redirect') ||
+          new URLSearchParams(window.location.search).get('from') ||
+          (location.state as any)?.from;
+
         const bannerRedirect = sessionStorage.getItem('mbbs_banner_redirect');
-        if (bannerRedirect) {
+
+        if (postOnboardingRedirect && postOnboardingRedirect.startsWith('/') && !postOnboardingRedirect.startsWith('//')) {
+          sessionStorage.removeItem('post_onboarding_redirect');
+          sessionStorage.removeItem('mbbs_banner_redirect');
+          window.location.replace(postOnboardingRedirect);
+          return;
+        }
+
+        if (bannerRedirect && bannerRedirect.startsWith('/') && !bannerRedirect.startsWith('//')) {
           sessionStorage.removeItem('mbbs_banner_redirect');
           window.location.replace(bannerRedirect);
           return;
         }
+
         window.location.replace('/dashboard');
       }, 1200);
     } catch (err: any) {

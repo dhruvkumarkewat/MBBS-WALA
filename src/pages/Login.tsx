@@ -270,23 +270,32 @@ export default function Login({ defaultPortal }: LoginProps) {
       sessionStorage.removeItem('google_oauth_pending');
 
       const bannerRedirect = sessionStorage.getItem('mbbs_banner_redirect');
+      const targetFrom = (from && from.startsWith('/') && !from.startsWith('//') && !from.startsWith('/admin') && from !== '/' && from !== '/login')
+        ? from
+        : (sessionStorage.getItem('post_onboarding_redirect') || '');
+
+      if (targetFrom) {
+        sessionStorage.setItem('post_onboarding_redirect', targetFrom);
+      }
 
       // For fresh Google OAuth logins: check user_metadata FIRST before the
       // computed isProfileComplete value (which can be spoofed by a stale
       // onboarding_done_flag in localStorage from a previous user on this device).
       if (isGoogleOAuth && !user.user_metadata?.profile_completed) {
-        window.location.replace('/onboarding');
+        const dest = targetFrom ? `/onboarding?redirect=${encodeURIComponent(targetFrom)}` : '/onboarding';
+        window.location.replace(dest);
+        return;
       } else if (!isProfileComplete) {
-        window.location.replace('/onboarding');
+        const dest = targetFrom ? `/onboarding?redirect=${encodeURIComponent(targetFrom)}` : '/onboarding';
+        window.location.replace(dest);
+        return;
       } else if (bannerRedirect) {
         sessionStorage.removeItem('mbbs_banner_redirect');
         window.location.replace(bannerRedirect);
       } else if (from.startsWith('/admin')) {
         window.location.replace('/dashboard');
       } else {
-        // Validate 'from' is a relative path to prevent open redirect attacks
-        const isRelative = from && from.startsWith('/') && !from.startsWith('//');
-        const safeDest = isRelative && !from.startsWith('/admin') && from !== '/' && from !== '/login' ? from : '/dashboard';
+        const safeDest = targetFrom || '/dashboard';
         window.location.replace(safeDest);
       }
     })();

@@ -27,7 +27,9 @@ export default function ProtectedRoute({
   }
 
   if (!user) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+    const fullDest = location.pathname + location.search;
+    sessionStorage.setItem('post_onboarding_redirect', fullDest);
+    return <Navigate to="/login" replace state={{ from: fullDest }} />;
   }
 
   // If staff tries to visit /onboarding, send to /admin
@@ -48,7 +50,9 @@ export default function ProtectedRoute({
   // If profile is not complete and student is trying to access dashboard/crm, redirect to /onboarding
   // BUT only after profileLoading is done — never redirect while loading (race condition)
   if (checkOnboarding && !profileLoading && !isProfileComplete && location.pathname !== '/onboarding') {
-    return <Navigate to="/onboarding" replace state={{ from: location.pathname }} />;
+    const fullDest = location.pathname + location.search;
+    sessionStorage.setItem('post_onboarding_redirect', fullDest);
+    return <Navigate to={`/onboarding?redirect=${encodeURIComponent(fullDest)}`} replace state={{ from: fullDest }} />;
   }
 
   return <>{children}</>;
