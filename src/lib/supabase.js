@@ -1,22 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 
-const rawUrl =
-  import.meta.env.VITE_SUPABASE_URL ||
-  import.meta.env.NEXT_PUBLIC_SUPABASE_URL;
-
 const supabaseUrl =
-  rawUrl && rawUrl !== 'https://dummy.supabase.co' && !rawUrl.includes('dummy')
-    ? rawUrl
-    : 'https://hbzzamezfhzsdupdhcin.supabase.co';
-
-const rawKey =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  import.meta.env.VITE_SUPABASE_URL ||
+  import.meta.env.NEXT_PUBLIC_SUPABASE_URL ||
+  '';
 
 const supabaseKey =
-  rawKey && rawKey !== 'dummy_key' && !rawKey.includes('dummy')
-    ? rawKey
-    : 'sb_publishable_5D517PLNdF92v3Q1s6Dp_w_WaZtsrPo';
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  '';
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('[supabase] VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY env var is not set. Supabase will not work.');
+}
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -40,6 +36,7 @@ if (supabaseUrl?.includes('placeholder')) {
 
   supabase.auth.onAuthStateChange = (cb) => {
     listeners.add(cb);
+    setTimeout(() => cb('INITIAL_SESSION', currentSession), 0);
     return { data: { subscription: { unsubscribe: () => listeners.delete(cb) } } };
   };
 

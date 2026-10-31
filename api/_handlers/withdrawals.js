@@ -37,16 +37,25 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Insufficient wallet balance' });
       }
 
-      const newBal = wallet.balance - amt;
-      const { error: wErr } = await supabase
+      // Use conditional update to prevent race condition / double-spend:
+      // Only deduct if the balance is still >= amt at write time
+      const { data: updatedWallet, error: wErr } = await supabase
         .from('wallets')
         .update({
-          balance: newBal,
+          balance: wallet.balance - amt,
           lifetime_withdrawn: (wallet.lifetime_withdrawn || 0) + amt,
           updated_at: new Date().toISOString(),
         })
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .gte('balance', amt) // atomic guard: only update if balance is still sufficient
+        .select()
+        .maybeSingle();
       if (wErr) throw wErr;
+      if (!updatedWallet) {
+        return res.status(400).json({ error: 'Insufficient wallet balance (concurrent request detected).' });
+      }
+      // Use the DB-confirmed balance
+      const newBal = updatedWallet.balance !== undefined ? updatedWallet.balance : wallet.balance - amt;
 
       const now = new Date().toISOString();
       const { data: wd, error: wdErr } = await supabase

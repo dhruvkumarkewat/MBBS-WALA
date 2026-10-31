@@ -15,9 +15,9 @@ export default async function handler(req, res) {
       // Direct Login for Super Admin (admin@gmail.com or admin@mbbswala.in)
       if (action === 'direct_login') {
         if (cleanEmail === 'admin@gmail.com' || cleanEmail === 'admin@mbbswala.in') {
-          // Accept valid admin password (e.g. admin@123, admin123, 123456, Admin@123)
-          const validPasswords = ['admin@123', 'admin123', 'Admin@123', 'Admin@1234', '123456', '12345678', 'mbbswala123', 'mbbswala@123', 'dhruv123', 'Dhruv@123'];
-          if (password && validPasswords.includes(password)) {
+          // Accept admin password from environment variable only (never hardcoded)
+          const adminPassword = process.env.ADMIN_PASSWORD || process.env.SUPER_ADMIN_PASSWORD;
+          if (adminPassword && password && password === adminPassword) {
             const adminUserId = 'bdcb6828-636a-43e7-99fe-9ccbbc7e6638';
             let staff = await getStaffProfile(adminUserId);
             if (!staff) {
@@ -48,7 +48,7 @@ export default async function handler(req, res) {
               session: sess,
             });
           } else {
-            return res.status(400).json({ error: 'Invalid password. Password must be at least 6 characters.' });
+            return res.status(401).json({ error: 'Invalid password.' });
           }
         }
       }
@@ -118,7 +118,8 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error('admin-auth error', err);
     if (req.method === 'GET') {
-      return res.status(200).json({ isStaff: false, role: 'user' });
+      // Return 503 (not a silent 200) so callers know the DB is unavailable
+      return res.status(503).json({ error: 'Auth service temporarily unavailable', isStaff: false });
     }
     res.status(500).json({ error: err.message || 'Admin authentication error' });
   }

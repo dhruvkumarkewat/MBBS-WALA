@@ -98,8 +98,8 @@ export async function notifyUsers(userIds, title, body) {
   }));
   const { error } = await supabase.from('notifications').insert(rows);
   if (error) {
-    console.error('notifyUsers failed', error);
-    throw error;
+    // Notifications are non-critical — log but never throw (prevents killing parent operations)
+    console.error('notifyUsers failed (non-fatal):', error.message);
   }
   return rows.length;
 }

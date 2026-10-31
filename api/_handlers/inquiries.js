@@ -17,9 +17,9 @@ export default async function handler(req, res) {
         .eq('id', user.id)
         .maybeSingle();
 
-      // Allow any authenticated user for demo; tighten to role=admin when needed
-      if (profile?.role && profile.role !== 'admin' && profile.role !== 'user') {
-        return res.status(403).json({ error: 'Forbidden' });
+      // Only admin users can list all inquiries
+      if (!profile || profile.role !== 'admin') {
+        return res.status(403).json({ error: 'Forbidden: Admin access required' });
       }
 
       const { data, error } = await supabase

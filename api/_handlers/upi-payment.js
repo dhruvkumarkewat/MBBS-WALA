@@ -7,7 +7,8 @@ const ADMIN_EMAILS = ['admin@gmail.com', 'admin@mbbswala.in', 'dhruv@mbbswala.in
 const ADMIN_IDS = ['bdcb6828-636a-43e7-99fe-9ccbbc7e6638'];
 
 function isAdmin(user) {
-  return ADMIN_IDS.includes(user.id) || ADMIN_EMAILS.includes(user.email) || user.role === 'super_admin';
+  // Only trust server-verified ID/email — never trust user.role (comes from user_metadata, bypassable)
+  return ADMIN_IDS.includes(user.id) || ADMIN_EMAILS.includes(user.email);
 }
 
 function resolvePlanByPayment(amount, requestedSlug = '', requestedName = '') {
@@ -192,8 +193,12 @@ export default async function handler(req, res) {
     if (req.method === 'POST' && (action === 'submit' || !action)) {
       const { plan_slug, plan_name, amount, utr_number, screenshot_url } = req.body || {};
 
-      if (!amount || !utr_number) {
-        return res.status(400).json({ error: 'amount and utr_number are required' });
+      const parsedAmount = Number(amount);
+      if (!amount || isNaN(parsedAmount) || parsedAmount <= 0) {
+        return res.status(400).json({ error: 'A valid positive amount is required' });
+      }
+      if (!utr_number || String(utr_number).trim().length < 6) {
+        return res.status(400).json({ error: 'utr_number is required (min 6 characters)' });
       }
 
       const cleanUtr = String(utr_number).trim();

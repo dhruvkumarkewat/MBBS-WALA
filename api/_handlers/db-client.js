@@ -1,15 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 import { triggerRestore } from './db-wake.js';
 
-const rawUrl =
+const supabaseUrl =
   process.env.SUPABASE_URL ||
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  process.env.VITE_SUPABASE_URL;
+  process.env.VITE_SUPABASE_URL ||
+  '';
 
-const supabaseUrl =
-  rawUrl && rawUrl !== 'https://dummy.supabase.co' && !rawUrl.includes('dummy')
-    ? rawUrl
-    : 'https://hbzzamezfhzsdupdhcin.supabase.co';
+if (!supabaseUrl) {
+  console.error('[db-client] SUPABASE_URL env var is not set. Database operations will fail.');
+}
 
 // For database operations: prefer service role key (bypasses RLS), fall back to anon key
 const supabaseServiceKey =
@@ -26,7 +26,7 @@ const rawAnonKey =
 const supabaseAnonKey =
   rawAnonKey && rawAnonKey !== 'dummy_key' && !rawAnonKey.includes('dummy')
     ? rawAnonKey
-    : 'sb_publishable_5D517PLNdF92v3Q1s6Dp_w_WaZtsrPo';
+    : '';
 
 const supabaseKey = supabaseServiceKey || supabaseAnonKey;
 
@@ -36,7 +36,7 @@ export function assertServiceRole() {
   }
 }
 
-console.log('[db-client] Using key type:', supabaseServiceKey ? 'SERVICE_ROLE' : 'ANON', '| URL:', supabaseUrl);
+// Note: startup log removed to avoid leaking environment details
 
 const supabase = createClient(
   supabaseUrl,

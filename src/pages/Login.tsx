@@ -203,8 +203,10 @@ export default function Login({ defaultPortal }: LoginProps) {
   const isSubmitting = useRef(false);
 
   useEffect(() => {
+    // Only reset routing guard when the user object changes (login/logout),
+    // NOT on portal switch — resetting on portal switch re-triggers routing for logged-in users
     routingDone.current = false;
-  }, [user, portal]);
+  }, [user]);
 
   // Sync portal if defaultPortal prop changes
   useEffect(() => {
@@ -269,9 +271,12 @@ export default function Login({ defaultPortal }: LoginProps) {
 
       const bannerRedirect = sessionStorage.getItem('mbbs_banner_redirect');
 
-      if (!isProfileComplete) {
+      // For fresh Google OAuth logins: check user_metadata FIRST before the
+      // computed isProfileComplete value (which can be spoofed by a stale
+      // onboarding_done_flag in localStorage from a previous user on this device).
+      if (isGoogleOAuth && !user.user_metadata?.profile_completed) {
         window.location.replace('/onboarding');
-      } else if (isGoogleOAuth && !user.user_metadata?.profile_completed) {
+      } else if (!isProfileComplete) {
         window.location.replace('/onboarding');
       } else if (bannerRedirect) {
         sessionStorage.removeItem('mbbs_banner_redirect');
@@ -279,7 +284,9 @@ export default function Login({ defaultPortal }: LoginProps) {
       } else if (from.startsWith('/admin')) {
         window.location.replace('/dashboard');
       } else {
-        const safeDest = from && !from.startsWith('/admin') && from !== '/' && from !== '/login' ? from : '/dashboard';
+        // Validate 'from' is a relative path to prevent open redirect attacks
+        const isRelative = from && from.startsWith('/') && !from.startsWith('//');
+        const safeDest = isRelative && !from.startsWith('/admin') && from !== '/' && from !== '/login' ? from : '/dashboard';
         window.location.replace(safeDest);
       }
     })();
@@ -408,11 +415,12 @@ export default function Login({ defaultPortal }: LoginProps) {
         }
 
         setMsg('Staff credentials verified. Opening MBBSWALA CRM…');
+        isSubmitting.current = false;
         navigate('/admin', { replace: true });
         return;
       } else {
         // --- STUDENT LOGIN / SIGNUP FLOW ---
-        const cleanEmail = email.trim().toLowerCase();
+        // Note: cleanEmail is already declared above in the outer try scope
 
         if (mode === 'signup') {
           // ── Step 1: send email OTP (instead of direct signup) ──
@@ -506,7 +514,9 @@ export default function Login({ defaultPortal }: LoginProps) {
         }
 
         // Always send to /dashboard after login (or back to the page they came from, if it's not home/admin/login)
-        const safeDest = from && !from.startsWith('/admin') && from !== '/' && from !== '/login' ? from : '/dashboard';
+        // Validate 'from' is a relative path to prevent open redirect attacks
+        const isRelative = from && from.startsWith('/') && !from.startsWith('//');
+        const safeDest = isRelative && !from.startsWith('/admin') && from !== '/' && from !== '/login' ? from : '/dashboard';
         window.location.replace(safeDest);
       }
     } catch (err: unknown) {
@@ -985,8 +995,8 @@ export default function Login({ defaultPortal }: LoginProps) {
                                     setLoading(false);
                                   }
                                 },
-                                failure: (error: any) => {
-                                  setError(error?.message || 'Phone verification failed. Please try again.');
+                                failure: (otpErr: any) => {
+                                  setError(otpErr?.message || 'Phone verification failed. Please try again.');
                                 },
                               };
 

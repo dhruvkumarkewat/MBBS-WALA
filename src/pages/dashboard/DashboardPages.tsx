@@ -176,9 +176,10 @@ export function AiAssistantPage() {
         role: 'assistant', 
         text: errMsg
       }]);
+    } finally {
+      // Always unblock the input, even if an unexpected error escapes the catch
+      setBusy(false);
     }
-    
-    setBusy(false);
   };
 
   return (
@@ -187,7 +188,7 @@ export function AiAssistantPage() {
       <div className={`flex-1 rounded-2xl border overflow-hidden flex flex-col ${s.card}`}>
         <div className="flex-1 overflow-y-auto p-4 space-y-3 zn-scroll">
           {messages.map((m, i) => (
-            <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div key={`msg-${i}-${m.role}`} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
                 className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm font-medium leading-relaxed ${
                   m.role === 'user'
@@ -434,7 +435,8 @@ export function PredictorPage() {
       const dom = profile.domicile_state || profile.domicile || profile.state;
       if (dom && !domicileState) setDomicileState(dom);
     }
-  }, [profile]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, rank, score, domicileState]);
 
   // Select a single quota
   const toggleQuota = (v: string) => setQuotas([v]);
@@ -870,7 +872,9 @@ export function FinderPage() {
   }, [loadSaved]);
 
   useEffect(() => {
+    const controller = new AbortController();
     const t = setTimeout(async () => {
+      if (controller.signal.aborted) return;
       setLoading(true);
       setError('');
       try {
@@ -897,7 +901,7 @@ export function FinderPage() {
         setLoading(false);
       }
     }, 250);
-    return () => clearTimeout(t);
+    return () => { clearTimeout(t); controller.abort(); };
   }, [q, type, course, page]);
 
   const toggleSave = async (id: number) => {
@@ -1093,8 +1097,15 @@ export function FinderPage() {
 const Autocomplete = ({ value, onChange, placeholder, colleges, s }: any) => {
   const [query, setQuery] = useState(value);
   const [open, setOpen] = useState(false);
+  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { setQuery(value); }, [value]);
+
+  useEffect(() => {
+    return () => {
+      if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
+    };
+  }, []);
 
   const matches = colleges.filter((c: any) => c.name.toLowerCase().includes(query.toLowerCase())).slice(0, 50);
 
@@ -1109,8 +1120,13 @@ const Autocomplete = ({ value, onChange, placeholder, colleges, s }: any) => {
            setQuery(e.target.value);
            setOpen(true);
          }}
-         onFocus={() => setOpen(true)}
-         onBlur={() => setTimeout(() => setOpen(false), 200)}
+         onFocus={() => {
+           if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
+           setOpen(true);
+         }}
+         onBlur={() => {
+           blurTimeoutRef.current = setTimeout(() => setOpen(false), 200);
+         }}
       />
       {open && query && matches.length > 0 && (
         <div className={`absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-xl border shadow-xl ${s.card} ${s.dark ? 'bg-[#0f1f2c]' : 'bg-white'}`}>
@@ -1158,8 +1174,10 @@ export function ComparePage() {
   } | null>(null);
 
   useEffect(() => {
+    const ctrl = new AbortController();
     apiJson<College[]>('/api/colleges?limit=3000')
       .then((d) => {
+        if (ctrl.signal.aborted) return;
         const list = Array.isArray(d) ? d : [];
         setColleges(list);
         if (list.length) {
@@ -1169,8 +1187,9 @@ export function ComparePage() {
           setSearchB(list[Math.min(1, list.length - 1)].name);
         }
       })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+      .catch((e) => { if (!ctrl.signal.aborted) setError(e.message); })
+      .finally(() => { if (!ctrl.signal.aborted) setLoading(false); });
+    return () => ctrl.abort();
   }, []);
 
   useEffect(() => {
@@ -1178,12 +1197,14 @@ export function ComparePage() {
       setPayload(null);
       return;
     }
+    const ctrl = new AbortController();
     setCmpLoading(true);
     setError('');
     apiJson<NonNullable<typeof payload>>(`/api/college-compare?a=${a}&b=${b}`)
-      .then(setPayload)
-      .catch((e) => setError(e.message))
-      .finally(() => setCmpLoading(false));
+      .then((d) => { if (!ctrl.signal.aborted) setPayload(d); })
+      .catch((e) => { if (!ctrl.signal.aborted) setError(e.message); })
+      .finally(() => { if (!ctrl.signal.aborted) setCmpLoading(false); });
+    return () => ctrl.abort();
   }, [a, b]);
 
   return (
@@ -1675,6 +1696,7 @@ export function DashSeatMatrixPage() {
   }, [search]);
 
   useEffect(() => {
+    const ctrl = new AbortController();
     setLoading(true);
     const qs = new URLSearchParams({
       paginate: '1',
@@ -1688,12 +1710,10 @@ export function DashSeatMatrixPage() {
     apiJson<{ data: Array<Record<string, unknown>>; totalPages: number }>(
       `/api/seat-matrix?${qs.toString()}`
     )
-      .then((d) => {
-        setRows(d.data || []);
-        setTotalPages(d.totalPages || 1);
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+      .then((d) => { if (!ctrl.signal.aborted) { setRows(d.data || []); setTotalPages(d.totalPages || 1); } })
+      .catch((e) => { if (!ctrl.signal.aborted) setError(e.message); })
+      .finally(() => { if (!ctrl.signal.aborted) setLoading(false); });
+    return () => ctrl.abort();
   }, [page, debouncedSearch, type, course]);
 
   const visibleRows = isPremium ? rows : rows.slice(0, 3);
@@ -2180,12 +2200,13 @@ export function ApplicationsPage() {
   const [noteDrafts, setNoteDrafts] = useState<Record<number, string>>({});
 
   const load = useCallback(async () => {
+    setError('');
     setLoading(true);
     try {
       const data = await apiJson<
         Array<{ id: number; name: string; status: string; external_id: string; notes?: string }>
       >('/api/applications', {}, true);
-      setApps(data);
+      setApps(Array.isArray(data) ? data : []);
       const notes: Record<number, string> = {};
       data.forEach((a) => {
         notes[a.id] = a.notes || '';
@@ -2506,7 +2527,7 @@ export function NotificationsPage() {
             <div className="space-y-3">
               {news.map((item, i) => (
                 <a
-                  key={i}
+                  key={item.link || item.title || i}
                   href={item.link}
                   target="_blank"
                   rel="noopener noreferrer"

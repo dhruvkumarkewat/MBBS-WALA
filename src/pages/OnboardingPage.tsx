@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, FormEvent } from 'react';
+import { useState, useMemo, useEffect, useRef, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -84,6 +84,14 @@ export default function OnboardingPage() {
 
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cancel any pending redirect on unmount to prevent navigation on stale components
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+    };
+  }, []);
   const [error, setError] = useState('');
   const [completed, setCompleted] = useState(false);
 
@@ -176,6 +184,13 @@ export default function OnboardingPage() {
       }
       return true;
     }
+    if (currentStep === 4) {
+      if (!form.preferred_course) {
+        setError('Please select your target medical course.');
+        return false;
+      }
+      return true;
+    }
     return true;
   };
 
@@ -205,6 +220,13 @@ export default function OnboardingPage() {
   const handleSubmit = async (e?: FormEvent) => {
     if (e) e.preventDefault();
     if (!validateStep(4)) return;
+
+    // Guard: ensure user session is still active before writing data
+    if (!user) {
+      setError('Your session has expired. Please sign in again.');
+      setTimeout(() => window.location.replace('/login'), 1500);
+      return;
+    }
 
     setSubmitting(true);
     setError('');
@@ -255,20 +277,21 @@ export default function OnboardingPage() {
         );
       } catch (apiErr: any) {
         console.warn('API profile save warning, falling back to direct client update:', apiErr.message);
-        if (user) {
-          try {
-            await supabase.from('profiles').upsert(
-              {
-                id: user.id,
-                email: user.email,
-                ...payload,
-                updated_at: new Date().toISOString(),
-              },
-              { onConflict: 'id' }
-            );
-          } catch {}
+        // user is guaranteed non-null here (checked above)
+        const { error: upsertErr } = await supabase.from('profiles').upsert(
+          {
+            id: user.id,
+            email: user.email,
+            ...payload,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'id' }
+        );
+        if (upsertErr) {
+          // Surface error to user — do NOT silently mark profile as complete
+          throw new Error('Failed to save profile: ' + upsertErr.message);
         }
-        updated = { ...payload, id: user?.id || 'uid', email: user?.email || '' };
+        updated = { ...payload, id: user.id, email: user.email || '' };
       }
 
       // Always update user metadata locally to bypass backend cache/schema delays
@@ -320,7 +343,7 @@ export default function OnboardingPage() {
       // Use window.location.replace for a clean page load.
       // This guarantees a fresh React + Auth state from JWT (which now has profile_completed:true)
       // completely bypassing any stale React state or race conditions.
-      setTimeout(() => {
+      redirectTimerRef.current = setTimeout(() => {
         const bannerRedirect = sessionStorage.getItem('mbbs_banner_redirect');
         if (bannerRedirect) {
           sessionStorage.removeItem('mbbs_banner_redirect');
@@ -845,7 +868,7 @@ export default function OnboardingPage() {
                       Preferred States for All India Quota (AIQ)
                     </label>
                     <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto p-2 bg-white/[0.02] border border-white/10 rounded-2xl">
-                      {INDIAN_STATES.slice(0, 16).map((st) => {
+                      {INDIAN_STATES.map((st) => {
                         const selected = form.preferred_states.includes(st);
                         return (
                           <button

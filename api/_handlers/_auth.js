@@ -3,15 +3,13 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl =
   process.env.SUPABASE_URL ||
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  process.env.VITE_SUPABASE_URL ||
-  'https://hbzzamezfhzsdupdhcin.supabase.co';
+  process.env.VITE_SUPABASE_URL;
 
 const supabaseKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.SUPABASE_ANON_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  process.env.VITE_SUPABASE_ANON_KEY ||
-  'sb_publishable_5D517PLNdF92v3Q1s6Dp_w_WaZtsrPo';
+  process.env.VITE_SUPABASE_ANON_KEY;
 
 // Create a client specifically to verify user JWTs.
 // We use the user's own Bearer token as the apikey so Supabase validates it.
@@ -25,7 +23,8 @@ function createAuthClient(userToken) {
 }
 
 export function setCors(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://mbbswala.in';
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
@@ -38,8 +37,8 @@ export async function requireUser(req, res) {
     return null;
   }
 
-  // Handle admin token
-  if (token.startsWith('admin_token_') || token === 'admin_token_bdcb6828-636a-43e7-99fe-9ccbbc7e6638') {
+  // Handle admin token — only allow the exact known admin token, never a prefix-based wildcard
+  if (token === "admin_token_bdcb6828-636a-43e7-99fe-9ccbbc7e6638") {
     return {
       id: 'bdcb6828-636a-43e7-99fe-9ccbbc7e6638',
       email: 'admin@gmail.com',
@@ -48,8 +47,9 @@ export async function requireUser(req, res) {
     };
   }
 
-  // Handle mock tokens in demo mode
-  if (token.startsWith('mock_token_') || token.startsWith('mock_')) {
+  // Mock tokens are disabled in production — only allow in explicit dev/demo mode
+  if ((process.env.NODE_ENV === 'development' || process.env.VITE_DEMO_MODE === '1') &&
+      (token.startsWith('mock_token_') || token.startsWith('mock_'))) {
     return {
       id: 'demo-student-id',
       email: 'demo@mbbswala.in',

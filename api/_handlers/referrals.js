@@ -242,15 +242,7 @@ export default async function handler(req, res) {
     res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
     console.error('referrals API error:', err);
-    if (req.method === 'GET') {
-      return res.status(200).json({
-        referral_code: 'MBBS500',
-        share_url: 'https://mbbs-waala.dhruvkamar2005.workers.dev/login?ref=MBBS500',
-        rewards: { referrer: REFERRER_REWARD, referee: REFEREE_DISCOUNT },
-        stats: { total: 0, completed: 0, pending: 0, earned: 0 },
-        referrals: [],
-      });
-    }
+    // Return proper error status — never return fake data on failure
     res.status(500).json({ error: err.message || 'Referral service error' });
   }
 }

@@ -12,14 +12,12 @@ async function getSupabase() {
   const url =
     process.env.SUPABASE_URL ||
     process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    process.env.VITE_SUPABASE_URL ||
-    'https://hbzzamezfhzsdupdhcin.supabase.co';
+    process.env.VITE_SUPABASE_URL;
   const key =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.SUPABASE_ANON_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    process.env.VITE_SUPABASE_ANON_KEY ||
-    'sb_publishable_5D517PLNdF92v3Q1s6Dp_w_WaZtsrPo';
+    process.env.VITE_SUPABASE_ANON_KEY;
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
@@ -238,6 +236,9 @@ export default async function handler(req, res) {
     /* ── 1. Send email OTP ── */
     if (action === 'send_email_otp') {
       if (!email) return res.status(400).json({ error: 'email is required' });
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        return res.status(400).json({ error: 'Invalid email address format.' });
+      }
 
       // Check if email already exists in Supabase auth
       const { data: existing } = await supabase
@@ -296,8 +297,15 @@ export default async function handler(req, res) {
       if (new Date(row.expires_at) < new Date()) {
         return res.status(400).json({ error: 'OTP has expired. Please request a new code.' });
       }
+      // Increment attempt counter to prevent brute-force
+      const attempts = (row.attempts || 0) + 1;
+      if (attempts > 5) {
+        await supabase.from('otp_verifications').delete().eq('id', row.id);
+        return res.status(429).json({ error: 'Too many incorrect attempts. Please request a new OTP.' });
+      }
+      await supabase.from('otp_verifications').update({ attempts }).eq('id', row.id);
       if (row.otp !== otp.trim()) {
-        return res.status(400).json({ error: 'Incorrect OTP. Please check your email and try again.' });
+        return res.status(400).json({ error: `Incorrect OTP. ${5 - attempts} attempt(s) remaining.` });
       }
 
       await supabase
@@ -329,8 +337,11 @@ export default async function handler(req, res) {
       }
 
       if (!MSG91_AUTH_KEY) {
-        // If no MSG91 key configured, allow bypass in dev mode (log warning)
-        console.warn('[auth-otp] MSG91_AUTH_KEY not set — skipping phone token verification (dev mode)');
+        // Block bypass in production — only allow in explicit development mode
+        if (process.env.NODE_ENV !== 'development' && process.env.VITE_DEMO_MODE !== '1') {
+          return res.status(503).json({ error: 'Phone verification service is not configured. Please contact support.' });
+        }
+        console.warn('[auth-otp] MSG91_AUTH_KEY not set — skipping phone token verification (dev mode only)');
         // Mark phone as verified in DB
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
         await supabase.from('otp_verifications').delete().eq('email', email.trim().toLowerCase()).eq('type', 'phone');
@@ -408,8 +419,8 @@ export default async function handler(req, res) {
 
       // Create Supabase account
       const { createClient } = await import('@supabase/supabase-js');
-      const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hbzzamezfhzsdupdhcin.supabase.co';
-      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+      const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
       const adminClient = createClient(url, serviceKey, { auth: { persistSession: false } });
 
       const { data: authData, error: signUpErr } = await adminClient.auth.signUp({

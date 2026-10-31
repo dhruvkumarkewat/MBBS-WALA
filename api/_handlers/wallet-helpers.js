@@ -39,35 +39,60 @@ export async function ensureWallet(user) {
 }
 
 export async function creditWallet(userId, amount, type, description, meta = {}) {
-  const { data: wallet } = await supabase
-    .from('wallets')
-    .select('*')
-    .eq('user_id', userId)
-    .maybeSingle();
-  if (!wallet) throw new Error('Wallet not found');
+  // Atomic update using Supabase RPC to avoid read-modify-write race conditions.
+  // Falls back to manual read+write if the RPC is not available.
+  try {
+    const { data: rpcData, error: rpcErr } = await supabase.rpc('increment_wallet_balance', {
+      p_user_id: userId,
+      p_amount: amount,
+    });
+    if (rpcErr) throw rpcErr;
+    const newBal = rpcData ?? 0;
 
-  const newBal = (wallet.balance || 0) + amount;
-  const newEarned = amount > 0 ? (wallet.lifetime_earned || 0) + amount : wallet.lifetime_earned || 0;
+    const { error: tErr } = await supabase.from('wallet_transactions').insert({
+      user_id: userId,
+      type,
+      amount,
+      balance_after: newBal,
+      description,
+      meta,
+      created_at: new Date().toISOString(),
+    });
+    if (tErr) throw tErr;
+    return newBal;
+  } catch (rpcCallErr) {
+    // Fallback: manual read+write (still has a race window — prefer the RPC path)
+    console.warn('[creditWallet] RPC unavailable, falling back to manual update:', rpcCallErr.message);
+    const { data: wallet } = await supabase
+      .from('wallets')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (!wallet) throw new Error('Wallet not found');
 
-  const { error: uErr } = await supabase
-    .from('wallets')
-    .update({
-      balance: newBal,
-      lifetime_earned: newEarned,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('user_id', userId);
-  if (uErr) throw uErr;
+    const newBal = (wallet.balance || 0) + amount;
+    const newEarned = amount > 0 ? (wallet.lifetime_earned || 0) + amount : wallet.lifetime_earned || 0;
 
-  const { error: tErr } = await supabase.from('wallet_transactions').insert({
-    user_id: userId,
-    type,
-    amount,
-    balance_after: newBal,
-    description,
-    meta,
-    created_at: new Date().toISOString(),
-  });
-  if (tErr) throw tErr;
-  return newBal;
+    const { error: uErr } = await supabase
+      .from('wallets')
+      .update({
+        balance: newBal,
+        lifetime_earned: newEarned,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', userId);
+    if (uErr) throw uErr;
+
+    const { error: tErr } = await supabase.from('wallet_transactions').insert({
+      user_id: userId,
+      type,
+      amount,
+      balance_after: newBal,
+      description,
+      meta,
+      created_at: new Date().toISOString(),
+    });
+    if (tErr) throw tErr;
+    return newBal;
+  }
 }

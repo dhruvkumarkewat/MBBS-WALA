@@ -58,7 +58,11 @@ export interface UserProfile {
 }
 
 export function checkProfileCompleteness(p: UserProfile | null | undefined): boolean {
-  if (localStorage.getItem('onboarding_done_flag') === 'true') {
+  // Only trust the stale localStorage flag when we have a real profile object.
+  // A brand-new Google user has no profile yet ('p' will be null/empty fields).
+  // Without this guard, a new Google user on a device with a previous login
+  // would skip onboarding and land directly on the dashboard.
+  if (localStorage.getItem('onboarding_done_flag') === 'true' && p) {
     return true; // Ultimate fallback: if we saved it in this browser, never loop back
   }
 
@@ -172,6 +176,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const promise = (async () => {
       try {
+        // Concurrently verify staff role and fetch student profile
+        await checkStaffRole(currUser.id);
         const data = await apiJson<UserProfile>('/api/profile', {}, true);
         // OVERRIDE stale backend data with user_metadata if user_metadata says it's completed
         if (currUser?.user_metadata?.profile_completed) {
@@ -181,6 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(data);
         return data;
       } catch {
+        await checkStaffRole(currUser.id).catch(() => {});
         // API failed — try direct Supabase client query as fallback
         // This works even when the backend API is broken (e.g., missing service role key)
         try {
@@ -229,7 +236,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     activeFetchRef.current = promise;
     return promise;
-  }, []);
+  }, [checkStaffRole]);
 
   const refreshSession = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
@@ -278,40 +285,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      if (!mounted) return;
-      setSession(s);
-      const u = s?.user ?? null;
-      setUser(u);
-      setLoading(false);
-      if (u) {
-        checkStaffRole(u.id);
-        fetchProfile(u);
-        tryInitPush(u.id); // ← Subscribe to push on initial load
-      } else {
-        setIsStaff(false);
-        setStaffRole(null);
-        setProfile(null);
-        setProfileLoading(false);
-      }
-    });
-
+    // onAuthStateChange handles INITIAL_SESSION on mount and all subsequent auth events
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, s) => {
+      if (!mounted) return;
       setSession(s);
       const u = s?.user ?? null;
       setUser(u);
       setLoading(false);
       if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') return;
       if (u) {
-        checkStaffRole(u.id);
-        // For SIGNED_IN (e.g. Google OAuth callback), do NOT skip loading state so
-        // the Login routing effect waits for real profile data before deciding
-        // whether to send the user to /onboarding or /dashboard.
-        // For other events (e.g. initial session restore) we also want fresh data.
+        // fetchProfile concurrently checks staff role & student profile
         fetchProfile(u, false);
-        if (event === 'SIGNED_IN') tryInitPush(u.id); // ← Subscribe to push on login
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') tryInitPush(u.id);
       } else {
         setIsStaff(false);
         setStaffRole(null);
@@ -350,6 +337,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setStaffRole(null);
         localStorage.removeItem('mbbswala_admin_token');
         localStorage.removeItem('mbbswala_admin_email');
+        // Clear onboarding flag so the next user on this device goes through onboarding
+        localStorage.removeItem('onboarding_done_flag');
         await supabase.auth.signOut();
         window.location.href = redirectUrl || '/';
       },

@@ -11,6 +11,12 @@ import {
   getAuBankConfig,
 } from './aubank-utils.js';
 
+// Escape special chars to prevent XSS when embedding values in inline <script> blocks
+function escapeForJs(str) {
+  return String(str).replace(/\\/g, '\\\\\\\\').replace(/'/g, "\\'").replace(/"/g, '\\\\"').replace(/</g, '\\\\u003c').replace(/>/g, '\\\\u003e').replace(/&/g, '\\\\u0026').replace(/\\r/g, '\\\\r').replace(/\\n/g, '\\\\n');
+}
+
+
 const REFERRAL_REWARD_AMOUNT = 500;
 
 const PLANS = {
@@ -292,7 +298,8 @@ export default async function handler(req, res) {
         } catch (decErr) {
           console.error('[AU Bank Callback] Decryption failed:', decErr.message);
         }
-      } else if (req.body?.order_status || req.body?.order_id) {
+      } else if ((process.env.NODE_ENV === 'development') && (req.body?.order_status || req.body?.order_id)) {
+        // Only accept unencrypted callback in development mode (AU Bank working key not configured in prod)
         parsedData = req.body;
       }
 
@@ -357,10 +364,10 @@ export default async function handler(req, res) {
   <meta http-equiv="refresh" content="1;url=${redirectUrl}" />
   <script>
     if (window.opener) {
-      try { window.opener.postMessage({ type: 'AUBANK_SUCCESS', orderId: '${orderId}' }, '*'); window.close(); } catch(e){}
+      try { window.opener.postMessage({ type: 'AUBANK_SUCCESS', orderId: '${escapeForJs(orderId)}' }, '*'); window.close(); } catch(e){}
     }
     if (window.parent && window.parent !== window) {
-      try { window.parent.postMessage({ type: 'AUBANK_SUCCESS', orderId: '${orderId}' }, '*'); } catch(e){}
+      try { window.parent.postMessage({ type: 'AUBANK_SUCCESS', orderId: '${escapeForJs(orderId)}' }, '*'); } catch(e){}
     }
     window.location.href = '${redirectUrl}';
   </script>
@@ -398,10 +405,10 @@ export default async function handler(req, res) {
   <meta http-equiv="refresh" content="2;url=${failUrl}" />
   <script>
     if (window.opener) {
-      try { window.opener.postMessage({ type: 'AUBANK_FAILED', error: '${failureMsg}' }, '*'); window.close(); } catch(e){}
+      try { window.opener.postMessage({ type: 'AUBANK_FAILED', error: '${escapeForJs(failureMsg)}' }, '*'); window.close(); } catch(e){}
     }
     if (window.parent && window.parent !== window) {
-      try { window.parent.postMessage({ type: 'AUBANK_FAILED', error: '${failureMsg}' }, '*'); } catch(e){}
+      try { window.parent.postMessage({ type: 'AUBANK_FAILED', error: '${escapeForJs(failureMsg)}' }, '*'); } catch(e){}
     }
     window.location.href = '${failUrl}';
   </script>

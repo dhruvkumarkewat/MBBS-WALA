@@ -140,6 +140,21 @@ export default async function handler(req, res) {
       if (findErr) throw findErr;
       if (!row) return res.status(404).json({ error: 'Not found' });
 
+      // Remove the actual file from Supabase Storage if it exists
+      if (row.file_url) {
+        try {
+          // Extract the storage path from the public URL
+          const urlObj = new URL(row.file_url);
+          const pathMatch = urlObj.pathname.match(/\/storage\/v1\/object\/public\/user-documents\/(.+)/);
+          if (pathMatch && pathMatch[1]) {
+            await supabase.storage.from('user-documents').remove([decodeURIComponent(pathMatch[1])]);
+          }
+        } catch (storageErr) {
+          // Non-fatal: log but continue with DB update
+          console.warn('documents DELETE: failed to remove storage file:', storageErr.message);
+        }
+      }
+
       const { data, error } = await supabase
         .from('user_documents')
         .update({

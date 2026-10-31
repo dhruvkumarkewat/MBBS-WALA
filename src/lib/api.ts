@@ -34,7 +34,9 @@ export async function getAccessToken(forceRefresh = false): Promise<string | nul
     }
 
     lastRefreshTime = now;
-    refreshPromise = (async () => {
+    // Capture the promise before the finally block clears it
+    // (await refreshPromise after finally runs would await null)
+    const p = (async () => {
       try {
         const refreshed = await supabase.auth.refreshSession();
         return refreshed.data.session?.access_token ?? null;
@@ -45,8 +47,9 @@ export async function getAccessToken(forceRefresh = false): Promise<string | nul
         refreshPromise = null;
       }
     })();
+    refreshPromise = p;
 
-    return await refreshPromise;
+    return await p;
   } catch {
     try {
       const { data } = await supabase.auth.getSession();

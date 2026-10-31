@@ -154,32 +154,36 @@ function ActivityChart({ dark }: { dark: boolean }) {
   );
 }
 
+const MEDICAL_KEYWORDS = [
+  'neet', 'mbbs', 'bds', 'ayush', 'ayurveda', 'mcc', 'medical college',
+  'medical admission', 'medical seat', 'counselling', 'counseling',
+  'medical entrance', 'pg medical', 'ug medical', 'medical cutoff',
+  'aiims', 'medical student', 'medical exam', 'medical university',
+  'state quota', 'all india quota', 'merit list'
+];
+
+const FALLBACK_HEADLINE = {
+  title: 'NEET UG 2026 — Exam Date Announced',
+  source_id: 'NTA Official',
+  pubDate: new Date().toISOString(),
+  link: 'https://nta.ac.in',
+};
+
 function NewsWidget({ dark }: { dark: boolean }) {
   const [headline, setHeadline] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  const MEDICAL_KEYWORDS = [
-    'neet', 'mbbs', 'bds', 'ayush', 'ayurveda', 'mcc', 'medical college',
-    'medical admission', 'medical seat', 'counselling', 'counseling',
-    'medical entrance', 'pg medical', 'ug medical', 'medical cutoff',
-    'aiims', 'medical student', 'medical exam', 'medical university',
-    'state quota', 'all india quota', 'merit list'
-  ];
-
-  const FALLBACK_HEADLINE = {
-    title: 'NEET UG 2026 — Exam Date Announced',
-    source_id: 'NTA Official',
-    pubDate: new Date().toISOString(),
-    link: 'https://nta.ac.in',
-  };
-
   useEffect(() => {
-    fetch('https://newsdata.io/api/1/news?apikey=pub_8e7f2b8fe15c4a13bb444bf2e8b0c195&q=NEET%20OR%20MBBS%20OR%20%22medical%20college%22&country=in&language=en&category=health')
+    const controller = new AbortController();
+    let mounted = true;
+    // Note: the API key here should be moved to a backend proxy to avoid exposure in the bundle
+    fetch('https://newsdata.io/api/1/news?apikey=pub_8e7f2b8fe15c4a13bb444bf2e8b0c195&q=NEET%20OR%20MBBS%20OR%20%22medical%20college%22&country=in&language=en&category=health', { signal: controller.signal })
       .then(r => {
         if (!r.ok) throw new Error('rate-limited');
         return r.json();
       })
       .then(d => {
+        if (!mounted) return;
         if (d && Array.isArray(d.results) && d.results.length > 0) {
           const filtered = d.results.filter((item: any) => {
             const text = ((item.title || '') + ' ' + (item.description || '')).toLowerCase();
@@ -190,8 +194,9 @@ function NewsWidget({ dark }: { dark: boolean }) {
           setHeadline(FALLBACK_HEADLINE);
         }
       })
-      .catch(() => setHeadline(FALLBACK_HEADLINE))
-      .finally(() => setLoading(false));
+      .catch((err) => { if (mounted && err.name !== 'AbortError') setHeadline(FALLBACK_HEADLINE); })
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; controller.abort(); };
   }, []);
 
   return (

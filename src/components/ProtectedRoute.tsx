@@ -15,9 +15,9 @@ export default function ProtectedRoute({
   const location = useLocation();
 
   // Block with loading spinner ONLY if we don't yet know the profile status.
-  // If isProfileComplete is already true, let the user through immediately —
+  // If isProfileComplete is already true or user is known staff, let them through immediately —
   // don't block them with a spinner that could cause a race condition redirect.
-  if (loading || (user && profileLoading && checkOnboarding && !isProfileComplete)) {
+  if (loading || (user && profileLoading && !isProfileComplete && !isStaff)) {
     return (
       <FullScreenLoader
         title="Verifying your profile…"
@@ -37,14 +37,17 @@ export default function ProtectedRoute({
 
   // If user completed profile and tries to visit /onboarding, send to /dashboard
   if (location.pathname === '/onboarding' && isProfileComplete) {
-    console.log('[DEBUG] ProtectedRoute: User is on /onboarding and isProfileComplete=true, redirecting to /dashboard');
     return <Navigate to="/dashboard" replace />;
   }
 
-  // If profile is not complete and user is trying to access dashboard/crm, redirect to /onboarding
+  // If user is staff, never send them to student onboarding
+  if (isStaff) {
+    return <>{children}</>;
+  }
+
+  // If profile is not complete and student is trying to access dashboard/crm, redirect to /onboarding
   // BUT only after profileLoading is done — never redirect while loading (race condition)
   if (checkOnboarding && !profileLoading && !isProfileComplete && location.pathname !== '/onboarding') {
-    console.log(`[DEBUG] ProtectedRoute: Rejecting access to ${location.pathname}. checkOnboarding=${checkOnboarding}, profileLoading=${profileLoading}, isProfileComplete=${isProfileComplete}`);
     return <Navigate to="/onboarding" replace state={{ from: location.pathname }} />;
   }
 
