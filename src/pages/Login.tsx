@@ -149,7 +149,13 @@ export default function Login({ defaultPortal }: LoginProps) {
   };
 
   const isRefFromURL = useMemo(() => !!new URLSearchParams(window.location.search).get('ref'), []);
-  const from = (location.state as { from?: string } | null)?.from || '/dashboard';
+  const from = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    const queryTarget = params.get('redirect') || (params.get('from') !== 'banner_99' ? params.get('from') : '') || '';
+    const stateTarget = (location.state as { from?: string } | null)?.from || '';
+    const raw = (stateTarget && stateTarget !== '/dashboard') ? stateTarget : (queryTarget || stateTarget || '/dashboard');
+    return raw;
+  }, [location.state]);
 
   // Check if visitor entered via the ₹99 Pack Offer Banner
   const isFromBanner = useMemo(() => {
@@ -161,11 +167,19 @@ export default function Login({ defaultPortal }: LoginProps) {
     );
   }, [location.state]);
 
-  // Persist banner redirect flag in sessionStorage if entered through banner
+  // Persist banner redirect flag and post-onboarding redirect in sessionStorage
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const redirectParam = params.get('redirect') || (params.get('from') !== 'banner_99' ? params.get('from') : '');
+    if (redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')) {
+      sessionStorage.setItem('post_onboarding_redirect', redirectParam);
+    } else if (location.state && (location.state as any).from) {
+      sessionStorage.setItem('post_onboarding_redirect', (location.state as any).from);
+    }
+
     if (params.get('from') === 'banner_99' || (location.state as { fromBanner?: boolean } | null)?.fromBanner) {
       sessionStorage.setItem('mbbs_banner_redirect', '/dashboard/subscription');
+      sessionStorage.setItem('post_onboarding_redirect', '/dashboard/subscription');
     }
   }, [location.state]);
 

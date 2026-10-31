@@ -89,6 +89,10 @@ export default function OnboardingPage() {
 
   // Cancel any pending redirect on unmount to prevent navigation on stale components
   useEffect(() => {
+    const qRedirect = new URLSearchParams(window.location.search).get('redirect') || new URLSearchParams(window.location.search).get('from');
+    if (qRedirect) {
+      sessionStorage.setItem('post_onboarding_redirect', qRedirect);
+    }
     return () => {
       if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
     };
@@ -351,12 +355,25 @@ export default function OnboardingPage() {
           new URLSearchParams(window.location.search).get('from') ||
           (location.state as any)?.from;
 
+        let dest = (postOnboardingRedirect || '').trim();
+        try {
+          if (dest.startsWith('http://') || dest.startsWith('https://')) {
+            const parsed = new URL(dest);
+            dest = parsed.pathname + parsed.search;
+          }
+        } catch {}
+
+        const planParam = new URLSearchParams(window.location.search).get('plan');
+        if (!dest && planParam) {
+          dest = `/dashboard/subscription?plan=${encodeURIComponent(planParam)}`;
+        }
+
         const bannerRedirect = sessionStorage.getItem('mbbs_banner_redirect');
 
-        if (postOnboardingRedirect && postOnboardingRedirect.startsWith('/') && !postOnboardingRedirect.startsWith('//')) {
+        if (dest && dest.startsWith('/') && !dest.startsWith('//') && !dest.startsWith('/login') && !dest.startsWith('/onboarding')) {
           sessionStorage.removeItem('post_onboarding_redirect');
           sessionStorage.removeItem('mbbs_banner_redirect');
-          window.location.replace(postOnboardingRedirect);
+          window.location.replace(dest);
           return;
         }
 
