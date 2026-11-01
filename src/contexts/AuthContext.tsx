@@ -72,12 +72,14 @@ export function checkProfileCompleteness(p: UserProfile | null | undefined): boo
     return true;
   }
 
-  // Fallback: infer completeness from required fields that are only set after onboarding
+  // Fallback: infer completeness from fields set during onboarding.
+  // We only require name + phone + category (not NEET score) because on production
+  // the score may not save to DB if RLS blocks the write, but the user did fill the form.
   const hasName = Boolean((p.full_name || p.name || '').trim());
   const hasPhone = Boolean((p.phone || '').trim().length >= 8);
-  const hasScoreOrRank = p.neet_score != null || p.neet_rank != null;
   const hasCategory = Boolean((p.category || '').trim());
-  const isComplete = hasName && hasPhone && hasScoreOrRank && hasCategory;
+  // Profile is considered complete if core personal fields are present
+  const isComplete = hasName && hasPhone && hasCategory;
   return isComplete;
 }
 

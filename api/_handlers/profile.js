@@ -264,6 +264,18 @@ export default async function handler(req, res) {
         .then((r) => r.count || 0)
         .catch(() => 0);
 
+      // Infer profile completion from DB flags OR from name+phone+category fields
+      // (on production without service role key, DB flags may not save due to RLS)
+      const isCompletedByFlag = Boolean(data.profile_completed || data.onboarding_done || user.user_metadata?.profile_completed || user.user_metadata?.onboarding_done);
+      const hasNameF = Boolean((data.full_name || data.name || '').trim());
+      const hasPhoneF = Boolean((data.phone || '').trim().length >= 8);
+      const hasCategoryF = Boolean((data.category || '').trim());
+      const isCompletedByFields = hasNameF && hasPhoneF && hasCategoryF;
+      const isProfileDone = isCompletedByFlag || isCompletedByFields;
+      // Auto-heal: write profile_completed=true back to DB if inferred complete
+      if (isProfileDone && !data.profile_completed) {
+        supabase.from('profiles').update({ profile_completed: true, onboarding_done: true }).eq('id', user.id).then(() => {}).catch(() => {});
+      }
       const completion = computeProfileCompletion(data);
 
       return res.status(200).json({
@@ -289,8 +301,8 @@ export default async function handler(req, res) {
         saved_colleges_count: savedCount || 0,
         bookmarks_count: bookmarksCount || 0,
         completion_percentage: completion,
-        profile_completed: Boolean(data.profile_completed || data.onboarding_done || user.user_metadata?.profile_completed || user.user_metadata?.onboarding_done),
-        onboarding_done: Boolean(data.profile_completed || data.onboarding_done || user.user_metadata?.profile_completed || user.user_metadata?.onboarding_done),
+        profile_completed: isProfileDone,
+        onboarding_done: isProfileDone,
       });
     }
 
@@ -526,6 +538,7 @@ export default async function handler(req, res) {
       }
 
       const completion = computeProfileCompletion(data || {});
+
       return res.status(200).json({ 
         ...data, 
         completion_percentage: completion,
