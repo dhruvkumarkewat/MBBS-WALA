@@ -292,14 +292,8 @@ export default function Login({ defaultPortal }: LoginProps) {
         sessionStorage.setItem('post_onboarding_redirect', targetFrom);
       }
 
-      // For fresh Google OAuth logins: check user_metadata FIRST before the
-      // computed isProfileComplete value (which can be spoofed by a stale
-      // onboarding_done_flag in localStorage from a previous user on this device).
-      if (isGoogleOAuth && !user.user_metadata?.profile_completed) {
-        const dest = targetFrom ? `/onboarding?redirect=${encodeURIComponent(targetFrom)}` : '/onboarding';
-        window.location.replace(dest);
-        return;
-      } else if (!isProfileComplete) {
+      // If the student's profile is not complete in the database, always enforce onboarding
+      if (!isProfileComplete) {
         const dest = targetFrom ? `/onboarding?redirect=${encodeURIComponent(targetFrom)}` : '/onboarding';
         window.location.replace(dest);
         return;

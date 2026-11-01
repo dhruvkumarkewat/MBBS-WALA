@@ -62,30 +62,19 @@ export function checkProfileCompleteness(p: UserProfile | null | undefined): boo
     return false;
   }
 
-  // Phone and category are ONLY set during onboarding — never pre-seeded from metadata.
-  // If these are missing, the user has NOT completed onboarding, regardless of any flags.
-  const hasPhone = Boolean((p.phone || '').trim().length >= 8);
-  const hasCategory = Boolean((p.category || '').trim());
-
-  // If the core onboarding fields are absent, profile is definitely incomplete.
-  // Skip localStorage check entirely — it may be stale from a previous session.
-  if (!hasPhone || !hasCategory) {
-    return false;
-  }
-
-  // Explicit DB flag — trust this when fields are present
+  // Explicit completion flag from database
   if (p.profile_completed === true || p.onboarding_done === true) {
     return true;
   }
 
-  // User-scoped localStorage flag — only trust when phone+category already exist in DB
-  if (localStorage.getItem(`onboarding_done_${p.id}`) === 'true') {
+  // User-scoped localStorage flag — only trust if user has basic name and phone
+  const hasName = Boolean((p.full_name || p.name || '').trim());
+  const hasPhone = Boolean((p.phone || '').trim().length >= 8);
+  if (localStorage.getItem(`onboarding_done_${p.id}`) === 'true' && hasName && hasPhone) {
     return true;
   }
 
-  // Full field check — name + phone + category all filled
-  const hasName = Boolean((p.full_name || p.name || '').trim());
-  return hasName && hasPhone && hasCategory;
+  return false;
 }
 
 interface AuthContextValue {
@@ -180,17 +169,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Concurrently verify staff role and fetch student profile
         await checkStaffRole(currUser.id);
         const data = await apiJson<UserProfile>('/api/profile', {}, true);
-        // OVERRIDE stale backend data with user_metadata if user_metadata says it's completed
-        if (currUser?.user_metadata?.profile_completed) {
-          data.profile_completed = true;
-          data.onboarding_done = true;
-        }
         setProfile(data);
         return data;
       } catch {
         await checkStaffRole(currUser.id).catch(() => {});
         // API failed — try direct Supabase client query as fallback
-        // This works even when the backend API is broken (e.g., missing service role key)
         try {
           const { data: directData } = await supabase
             .from('profiles')
@@ -198,13 +181,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .eq('id', currUser.id)
             .maybeSingle();
           if (directData) {
-            const meta = currUser.user_metadata || {};
-            // Trust profile_completed from DB OR user_metadata (whichever is true)
             const isCompleted = Boolean(
               directData.profile_completed ||
-              directData.onboarding_done ||
-              meta.profile_completed ||
-              meta.onboarding_done
+              directData.onboarding_done
             );
             const merged = {
               ...directData,

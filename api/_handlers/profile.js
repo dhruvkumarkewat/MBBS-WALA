@@ -92,8 +92,8 @@ export default async function handler(req, res) {
             (user.email ? user.email.split('@')[0] : 'Student'),
           phone: user.user_metadata?.phone || '',
           avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
-          category: 'General',
-          domicile: 'Madhya Pradesh',
+          category: null,
+          domicile: null,
           exam: 'NEET UG',
           role: 'student',
           is_premium: false,
@@ -264,23 +264,8 @@ export default async function handler(req, res) {
         .then((r) => r.count || 0)
         .catch(() => 0);
 
-      // Infer profile completion from DB fields (phone + category are ONLY set during onboarding)
-      // IMPORTANT: phone and category are the ground truth — do NOT trust user_metadata flags
-      // alone because they may be stale after an admin reset. Fields must be present in the DB.
-      const hasPhoneF = Boolean((data.phone || '').trim().length >= 8);
-      const hasCategoryF = Boolean((data.category || '').trim());
-      const hasNameF = Boolean((data.full_name || data.name || '').trim());
-      // Profile is only complete if the actual DB fields exist
-      const isCompletedByFields = hasNameF && hasPhoneF && hasCategoryF;
-      // Trust DB profile_completed flag only when core fields are also present (prevents stale flag issue)
-      const isCompletedByDBFlag = Boolean(data.profile_completed || data.onboarding_done) && hasPhoneF && hasCategoryF;
-      // Trust user_metadata flag only when core DB fields are present
-      const isCompletedByMeta = Boolean(user.user_metadata?.profile_completed || user.user_metadata?.onboarding_done) && hasPhoneF && hasCategoryF;
-      const isProfileDone = isCompletedByFields || isCompletedByDBFlag || isCompletedByMeta;
-      // Auto-heal: write profile_completed=true back to DB if inferred complete
-      if (isProfileDone && !data.profile_completed) {
-        supabase.from('profiles').update({ profile_completed: true, onboarding_done: true }).eq('id', user.id).then(() => {}).catch(() => {});
-      }
+      // Profile completion is determined strictly by the database flags set during onboarding
+      const isProfileDone = Boolean(data.profile_completed || data.onboarding_done);
       const completion = computeProfileCompletion(data);
 
       return res.status(200).json({
