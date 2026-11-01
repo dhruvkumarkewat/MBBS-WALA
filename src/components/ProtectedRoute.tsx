@@ -37,8 +37,21 @@ export default function ProtectedRoute({
     return <Navigate to="/admin" replace />;
   }
 
-  // If user completed profile and tries to visit /onboarding, send to /dashboard
+  // If user completed profile and tries to visit /onboarding, send them to their saved redirect or /dashboard
   if (location.pathname === '/onboarding' && isProfileComplete) {
+    const savedRedirect = sessionStorage.getItem('post_onboarding_redirect') || '';
+    const isRedirectValid = (
+      savedRedirect.startsWith('/') &&
+      !savedRedirect.startsWith('//') &&
+      !savedRedirect.startsWith('/admin') &&
+      savedRedirect !== '/' &&
+      savedRedirect !== '/login' &&
+      savedRedirect !== '/onboarding'
+    );
+    if (isRedirectValid) {
+      sessionStorage.removeItem('post_onboarding_redirect');
+      return <Navigate to={savedRedirect} replace />;
+    }
     return <Navigate to="/dashboard" replace />;
   }
 

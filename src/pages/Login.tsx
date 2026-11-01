@@ -535,10 +535,23 @@ export default function Login({ defaultPortal }: LoginProps) {
           return;
         }
 
-        // Always send to /dashboard after login (or back to the page they came from, if it's not home/admin/login)
-        // Validate 'from' is a relative path to prevent open redirect attacks
+        // Redirect priority: 1) 'from' URL/state param, 2) saved sessionStorage redirect, 3) /dashboard
+        // Ensures users sent to /login from /dashboard/subscription land back there after login
+        const savedPostRedirect = sessionStorage.getItem('post_onboarding_redirect') || '';
+        const isSavedValid = (
+          savedPostRedirect.startsWith('/') &&
+          !savedPostRedirect.startsWith('//') &&
+          !savedPostRedirect.startsWith('/admin') &&
+          savedPostRedirect !== '/' &&
+          savedPostRedirect !== '/login' &&
+          savedPostRedirect !== '/onboarding'
+        );
         const isRelative = from && from.startsWith('/') && !from.startsWith('//');
-        const safeDest = isRelative && !from.startsWith('/admin') && from !== '/' && from !== '/login' ? from : '/dashboard';
+        const isFromValid = isRelative && !from.startsWith('/admin') && from !== '/' && from !== '/login';
+        const safeDest = isFromValid ? from : (isSavedValid ? savedPostRedirect : '/dashboard');
+        if (isSavedValid && !isFromValid) {
+          sessionStorage.removeItem('post_onboarding_redirect');
+        }
         window.location.replace(safeDest);
       }
     } catch (err: unknown) {
