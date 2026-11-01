@@ -29,7 +29,8 @@ export default function ProtectedRoute({
   if (!user) {
     const fullDest = location.pathname + location.search;
     sessionStorage.setItem('post_onboarding_redirect', fullDest);
-    return <Navigate to="/login" replace state={{ from: fullDest }} />;
+    localStorage.setItem('post_onboarding_redirect', fullDest);
+    return <Navigate to={`/login?redirect=${encodeURIComponent(fullDest)}`} replace state={{ from: fullDest }} />;
   }
 
   // If staff tries to visit /onboarding, send to /admin
@@ -39,7 +40,10 @@ export default function ProtectedRoute({
 
   // If user completed profile and tries to visit /onboarding, send them to their saved redirect or /dashboard
   if (location.pathname === '/onboarding' && isProfileComplete) {
-    const savedRedirect = sessionStorage.getItem('post_onboarding_redirect') || '';
+    const savedRedirect =
+      sessionStorage.getItem('post_onboarding_redirect') ||
+      localStorage.getItem('post_onboarding_redirect') ||
+      '';
     const isRedirectValid = (
       savedRedirect.startsWith('/') &&
       !savedRedirect.startsWith('//') &&
@@ -50,6 +54,7 @@ export default function ProtectedRoute({
     );
     if (isRedirectValid) {
       sessionStorage.removeItem('post_onboarding_redirect');
+      localStorage.removeItem('post_onboarding_redirect');
       return <Navigate to={savedRedirect} replace />;
     }
     return <Navigate to="/dashboard" replace />;
@@ -65,6 +70,7 @@ export default function ProtectedRoute({
   if (checkOnboarding && !profileLoading && !isProfileComplete && location.pathname !== '/onboarding') {
     const fullDest = location.pathname + location.search;
     sessionStorage.setItem('post_onboarding_redirect', fullDest);
+    localStorage.setItem('post_onboarding_redirect', fullDest);
     return <Navigate to={`/onboarding?redirect=${encodeURIComponent(fullDest)}`} replace state={{ from: fullDest }} />;
   }
 

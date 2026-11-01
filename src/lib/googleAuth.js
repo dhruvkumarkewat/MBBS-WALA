@@ -6,7 +6,30 @@ import supabase from './supabase';
  */
 export async function signInWithGoogle(_appName = 'MBBSWala') {
   try {
-    const redirectTo = `${window.location.origin}/login`;
+    const saved =
+      sessionStorage.getItem('post_onboarding_redirect') ||
+      localStorage.getItem('post_onboarding_redirect') ||
+      new URLSearchParams(window.location.search).get('redirect') ||
+      new URLSearchParams(window.location.search).get('from') ||
+      '';
+    const cleanTarget =
+      saved &&
+      saved.startsWith('/') &&
+      !saved.startsWith('//') &&
+      saved !== '/login' &&
+      saved !== '/onboarding'
+        ? saved
+        : '';
+
+    if (cleanTarget) {
+      sessionStorage.setItem('post_onboarding_redirect', cleanTarget);
+      localStorage.setItem('post_onboarding_redirect', cleanTarget);
+    }
+
+    const redirectTo = cleanTarget
+      ? `${window.location.origin}/login?redirect=${encodeURIComponent(cleanTarget)}`
+      : `${window.location.origin}/login`;
+
     // Set a flag so the Login page knows we're returning from a Google OAuth flow
     sessionStorage.setItem('google_oauth_pending', '1');
     const { data, error } = await supabase.auth.signInWithOAuth({

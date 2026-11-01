@@ -172,9 +172,9 @@ export default function Login({ defaultPortal }: LoginProps) {
     const params = new URLSearchParams(window.location.search);
     const redirectParam = params.get('redirect') || (params.get('from') !== 'banner_99' ? params.get('from') : '');
     if (redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')) {
-      sessionStorage.setItem('post_onboarding_redirect', redirectParam);
+      sessionStorage.setItem('post_onboarding_redirect', redirectParam); localStorage.setItem('post_onboarding_redirect', redirectParam);
     } else if (location.state && (location.state as any).from) {
-      sessionStorage.setItem('post_onboarding_redirect', (location.state as any).from);
+      sessionStorage.setItem('post_onboarding_redirect', (location.state as any).from); localStorage.setItem('post_onboarding_redirect', (location.state as any).from);
     }
 
     if (params.get('from') === 'banner_99' || (location.state as { fromBanner?: boolean } | null)?.fromBanner) {
@@ -286,7 +286,7 @@ export default function Login({ defaultPortal }: LoginProps) {
       const bannerRedirect = sessionStorage.getItem('mbbs_banner_redirect');
       const targetFrom = (from && from.startsWith('/') && !from.startsWith('//') && !from.startsWith('/admin') && from !== '/' && from !== '/login')
         ? from
-        : (sessionStorage.getItem('post_onboarding_redirect') || '');
+        : (sessionStorage.getItem('post_onboarding_redirect') || localStorage.getItem('post_onboarding_redirect') || '');
 
       if (targetFrom) {
         sessionStorage.setItem('post_onboarding_redirect', targetFrom);
@@ -531,7 +531,7 @@ export default function Login({ defaultPortal }: LoginProps) {
 
         // Redirect priority: 1) 'from' URL/state param, 2) saved sessionStorage redirect, 3) /dashboard
         // Ensures users sent to /login from /dashboard/subscription land back there after login
-        const savedPostRedirect = sessionStorage.getItem('post_onboarding_redirect') || '';
+        const savedPostRedirect = sessionStorage.getItem('post_onboarding_redirect') || localStorage.getItem('post_onboarding_redirect') || '';
         const isSavedValid = (
           savedPostRedirect.startsWith('/') &&
           !savedPostRedirect.startsWith('//') &&
@@ -544,7 +544,7 @@ export default function Login({ defaultPortal }: LoginProps) {
         const isFromValid = isRelative && !from.startsWith('/admin') && from !== '/' && from !== '/login';
         const safeDest = isFromValid ? from : (isSavedValid ? savedPostRedirect : '/dashboard');
         if (isSavedValid && !isFromValid) {
-          sessionStorage.removeItem('post_onboarding_redirect');
+          sessionStorage.removeItem('post_onboarding_redirect'); localStorage.removeItem('post_onboarding_redirect');
         }
         window.location.replace(safeDest);
       }

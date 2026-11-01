@@ -354,6 +354,7 @@ export default function OnboardingPage() {
       redirectTimerRef.current = setTimeout(() => {
         const postOnboardingRedirect =
           sessionStorage.getItem('post_onboarding_redirect') ||
+          localStorage.getItem('post_onboarding_redirect') ||
           new URLSearchParams(window.location.search).get('redirect') ||
           new URLSearchParams(window.location.search).get('from') ||
           (location.state as any)?.from;
@@ -375,6 +376,7 @@ export default function OnboardingPage() {
 
         if (dest && dest.startsWith('/') && !dest.startsWith('//') && !dest.startsWith('/login') && !dest.startsWith('/onboarding')) {
           sessionStorage.removeItem('post_onboarding_redirect');
+          localStorage.removeItem('post_onboarding_redirect');
           sessionStorage.removeItem('mbbs_banner_redirect');
           window.location.replace(dest);
           return;
