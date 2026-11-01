@@ -62,25 +62,30 @@ export function checkProfileCompleteness(p: UserProfile | null | undefined): boo
     return false;
   }
 
-  // Explicit profile completion from database or user_metadata
+  // Phone and category are ONLY set during onboarding — never pre-seeded from metadata.
+  // If these are missing, the user has NOT completed onboarding, regardless of any flags.
+  const hasPhone = Boolean((p.phone || '').trim().length >= 8);
+  const hasCategory = Boolean((p.category || '').trim());
+
+  // If the core onboarding fields are absent, profile is definitely incomplete.
+  // Skip localStorage check entirely — it may be stale from a previous session.
+  if (!hasPhone || !hasCategory) {
+    return false;
+  }
+
+  // Explicit DB flag — trust this when fields are present
   if (p.profile_completed === true || p.onboarding_done === true) {
     return true;
   }
 
-  // User-scoped local storage flag (only valid for this specific user ID)
+  // User-scoped localStorage flag — only trust when phone+category already exist in DB
   if (localStorage.getItem(`onboarding_done_${p.id}`) === 'true') {
     return true;
   }
 
-  // Fallback: infer completeness from fields set during onboarding.
-  // We only require name + phone + category (not NEET score) because on production
-  // the score may not save to DB if RLS blocks the write, but the user did fill the form.
+  // Full field check — name + phone + category all filled
   const hasName = Boolean((p.full_name || p.name || '').trim());
-  const hasPhone = Boolean((p.phone || '').trim().length >= 8);
-  const hasCategory = Boolean((p.category || '').trim());
-  // Profile is considered complete if core personal fields are present
-  const isComplete = hasName && hasPhone && hasCategory;
-  return isComplete;
+  return hasName && hasPhone && hasCategory;
 }
 
 interface AuthContextValue {
